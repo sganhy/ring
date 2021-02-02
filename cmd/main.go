@@ -128,7 +128,7 @@ func Test__Table__GetFieldByName() {
 	var relations = []schema.Relation{}
 	var indexes = []schema.Index{}
 	var table = new(schema.Table)
-	const FIELD_COUNT = 10000
+	const FIELD_COUNT = 20000
 
 	// added invalid fields
 	for i := -100; i <= FIELD_COUNT; i++ {
@@ -141,16 +141,9 @@ func Test__Table__GetFieldByName() {
 	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
 		physicaltype.Table, -111, tabletype.Business, "", true, false, true, true)
 
-	for i := len(fields) - 1; i > 0; i-- {
-		fieldName := fields[i].GetName()
-		field := table.GetFieldByName(fieldName)
-		// test valid field only
-		if fields[i].IsValid() == true {
-			if field == nil {
-				fmt.Println("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s", i, fieldName)
-				break
-			}
-		}
+	field := table.GetFieldById(FIELD_COUNT >> 2)
+	if field == nil {
+		fmt.Sprintf("Table.GetFieldById() ==> cannot find current id %d \n", FIELD_COUNT>>2)
 	}
 
 	table.ToFile("c:\\temp\\data.txt")

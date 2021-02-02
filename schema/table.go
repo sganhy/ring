@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"os"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
@@ -262,9 +263,9 @@ func (table *Table) ToFile(filename string) {
 	f, _ := os.OpenFile(filename,
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
-	for i := 0; i < len(table.fields); i++ {
-		field := table.fields[i]
-		message := "field (%d) name=%s" + field.GetName()
+	for i := 0; i < len(table.fieldsById); i++ {
+		field := table.fieldsById[i]
+		message := fmt.Sprintf("field (%d) name=%s \n", field.GetId(), field.GetName())
 		f.WriteString(message)
 	}
 }
