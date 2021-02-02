@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"os"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -34,6 +33,7 @@ type Table struct {
 
 const postgreSqlSchema string = "information_schema"
 const fieldNotFound int = -1
+const relationNotFound int = -1
 const metaSchemaId string = "schema_id"
 const metaId string = "id"
 const metaObjectType string = "object_type"
@@ -166,9 +166,10 @@ func (table *Table) GetFieldById(id int32) *Field {
 	for indexerLeft <= indexerRigth {
 		indexerMiddle = indexerLeft + indexerRigth
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
-		if table.fieldsById[indexerMiddle].id == id {
+
+		if id == table.fieldsById[indexerMiddle].id {
 			return table.fieldsById[indexerMiddle]
-		} else if table.fieldsById[indexerMiddle].id > id {
+		} else if id > table.fieldsById[indexerMiddle].id {
 			indexerLeft = indexerMiddle + 1
 		} else {
 			indexerRigth = indexerMiddle - 1
@@ -244,7 +245,7 @@ func (table *Table) GetRelationIndexByName(name string) int {
 			indexerRigth = indexerMiddle - 1
 		}
 	}
-	return fieldNotFound
+	return relationNotFound
 }
 
 func (table *Table) GetPrimaryKey() *Field {
@@ -256,17 +257,6 @@ func (table *Table) GetPrimaryKey() *Field {
 
 func (table *Table) GetSql(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) string {
 	return ""
-}
-
-func (table *Table) ToFile(filename string) {
-	f, _ := os.OpenFile(filename,
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	defer f.Close()
-	for i := 0; i < len(table.fields); i++ {
-		field := table.fields[i]
-		message := "field (%d) name=%s" + field.GetName()
-		f.WriteString(message)
-	}
 }
 
 //******************************
@@ -406,7 +396,6 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 }
 
 func (table *Table) loadRelations(relations []Relation) {
-	// allo structure
 	table.relations = make([]*Relation, 0, len(relations))
 	table.copyRelations(relations)
 	table.sortRelations()

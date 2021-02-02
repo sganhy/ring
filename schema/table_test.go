@@ -4,12 +4,13 @@ import (
 	"math/rand"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
+	"ring/schema/relationtype"
 	"ring/schema/tabletype"
 	"strings"
 	"testing"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 
 func randStringBytes(n int) string {
 	b := make([]byte, n)
@@ -117,6 +118,7 @@ func Test__Table__Init(t *testing.T) {
 
 }
 
+//test: GetFieldByName, GetFieldByNameI, GetFieldById, and GetFieldIndexByName
 func Test__Table__GetFieldByName(t *testing.T) {
 	var fields = []Field{}
 	var relations = []Relation{}
@@ -161,8 +163,26 @@ func Test__Table__GetFieldByName(t *testing.T) {
 		}
 	}
 
+	// getFieldById
+	field := table.GetFieldById(10)
+	if field == nil {
+		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", 10)
+	}
+	field = table.GetFieldById((FIELD_COUNT >> 1) + 1)
+	if field == nil {
+		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", (FIELD_COUNT>>1)+1)
+	}
+	field = table.GetFieldById(FIELD_COUNT >> 2)
+	if field == nil {
+		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", FIELD_COUNT>>2)
+	}
+	field = table.GetFieldById(-1)
+	if field != nil {
+		t.Errorf("Table.GetFieldById() ==> getFieldById(-1) cannot be find")
+	}
+
 	//find primary key
-	field := table.GetFieldByName("id")
+	field = table.GetFieldByName("id")
 	if field == nil {
 		t.Errorf("Table.GetFieldByName() ==> Cannot find primary key")
 	} else if field.IsPrimaryKey() == false {
@@ -190,7 +210,69 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	}
 	field = table.GetFieldByNameI("111")
 	if field != nil {
-		t.Errorf("Table.GetFieldByNameI() ==> field '111' cannot be found")
+		t.Errorf("Table.GetFieldByNameI() ==> field '111' cannot be found!!")
+	}
+
+	position := table.GetFieldIndexByName("111")
+	if position != fieldNotFound {
+		t.Errorf("Table.GetFieldIndexByName() ==> field '111' index cannot be found!!")
+	}
+}
+
+//test: GetRelationByName, GetRelationIndexByName, and GetPrimaryKey
+func Test__Table__GetRelationByName(t *testing.T) {
+	var fields = []Field{}
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var table = new(Table)
+	const RELATION_COUNT = 20000
+
+	// added invalid fields (101)
+	for i := -100; i <= RELATION_COUNT; i++ {
+		relation := new(Relation)
+		nameLenght := (abs(i) % 30) + 2
+		// fixture
+		relationName := randStringBytes(nameLenght)
+		relation.Init(int32(i), relationName, "11", "hell1", "52", nil, relationtype.Mtm, false, true, false)
+		relations = append(relations, *relation)
+	}
+
+	//t.Errorf("fields.Count ==> %d ", len(fields))
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
+		physicaltype.Table, -111, tabletype.Mtm, "", true, false, true, true)
+
+	for i := 0; i < len(relations); i++ {
+		// test valid field only
+		relationName := relations[i].name
+		relation := table.GetRelationByName(relationName)
+		if relation == nil {
+			t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, id=%d", i, relationName, relations[i].id)
+			break
+		} else {
+			if relationName != relation.GetName() {
+				t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, found=%s", i, relationName, table.GetRelationByName(fields[i].name).GetName())
+				break
+			}
+		}
+	}
+	// test nil
+	relation := table.GetRelationByName("22222")
+	if relation != nil {
+		t.Errorf("Table.GetRelationByName() ==> relation '22222' cannot be found!!")
+	}
+
+	position := table.GetRelationIndexByName("22222")
+	if position != relationNotFound {
+		t.Errorf("Table.GetRelationIndexByName() ==> relation '22222' index cannot be found!!")
+	}
+	position = table.GetRelationIndexByName(relations[RELATION_COUNT>>2].name)
+	if position == relationNotFound {
+		t.Errorf("Table.GetRelationIndexByName() ==> relation index must be found!!")
+	}
+
+	field := table.GetPrimaryKey()
+	if field != nil {
+		t.Errorf("Table.GetPrimaryKey() ==> field cannot be found")
 	}
 }
 
