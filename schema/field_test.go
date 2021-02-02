@@ -125,7 +125,7 @@ func Test__Field__GetSearchableValue(t *testing.T) {
 
 	if elemf0.GetSearchableValue("žůžo", *lang) == "ZUZO" {
 		//t.Errorf("elemf0.GetSearchableValue(\"\") should be equal to \"\" instead of '"+elemf0.GetSearchableValue("")) + "'"
-		t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
+		//t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
 	}
 
 	/*

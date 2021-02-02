@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"math/rand"
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
@@ -14,12 +15,16 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 //**************************
 // configuration methods
 //**************************
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		"localhost", 5432, "postgres", "sa", "postgres")
+
+	Test__Table__GetFieldByName()
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -116,5 +121,54 @@ func main() {
 	fmt.Println(lang.GetNativeName())
 	fmt.Println(meta1.GetName())
 	fmt.Println(meta1.GetPhysicalName())
+}
 
+func Test__Table__GetFieldByName() {
+	var fields = []schema.Field{}
+	var relations = []schema.Relation{}
+	var indexes = []schema.Index{}
+	var table = new(schema.Table)
+	const FIELD_COUNT = 10000
+
+	// added invalid fields
+	for i := -100; i <= FIELD_COUNT; i++ {
+		field := new(schema.Field)
+		nameLenght := (abs(i) % 30) + 2
+		field.Init(int32(i), randStringBytes(nameLenght), "", fieldtype.Int, 0, "", true, true, true, false, true)
+		fields = append(fields, *field)
+	}
+
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
+		physicaltype.Table, -111, tabletype.Business, "", true, false, true, true)
+
+	for i := len(fields) - 1; i > 0; i-- {
+		fieldName := fields[i].GetName()
+		field := table.GetFieldByName(fieldName)
+		// test valid field only
+		if fields[i].IsValid() == true {
+			if field == nil {
+				fmt.Println("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s", i, fieldName)
+				break
+			}
+		}
+	}
+
+	table.ToFile("c:\\temp\\data.txt")
+
+}
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+func abs(value int) int {
+	if value >= 0 {
+		return value
+	} else {
+		return -value
+	}
 }

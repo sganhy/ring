@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"os"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -257,15 +258,31 @@ func (table *Table) GetSql(provider databaseprovider.DatabaseProvider, tablespac
 	return ""
 }
 
+func (table *Table) ToFile(filename string) {
+	f, _ := os.OpenFile(filename,
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	for i := 0; i < len(table.fields); i++ {
+		field := table.fields[i]
+		message := "field (%d) name=%s" + field.GetName()
+		f.WriteString(message)
+	}
+}
+
 //******************************
 // private methods
 //******************************
 
 // return -1 if not found
 func findPrimaryKey(fields []Field) (int, *Field) {
+	var invalidFieldCount int = 0
 	for i := 0; i < len(fields); i++ {
+		if fields[i].IsValid() == false {
+			invalidFieldCount++
+			continue
+		}
 		if strings.EqualFold(fields[i].name, primaryKeyFielName) {
-			return i, &fields[i]
+			return i - invalidFieldCount, &fields[i]
 		}
 	}
 	return -1, nil
@@ -275,7 +292,7 @@ func (table *Table) copyFields(fields []Field) {
 	// copy fields
 	for i := 0; i < len(fields); i++ {
 		// append only valid fields
-		if fields[i].id > 0 {
+		if fields[i].IsValid() == true {
 			table.fields = append(table.fields, &fields[i])         // sorted by name
 			table.fieldsById = append(table.fieldsById, &fields[i]) // sorted by id
 		}
@@ -350,7 +367,7 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 	if fields != nil {
 		var capacity int = len(fields)
 		var primaryKey *Field = nil
-		var primaryKeyIndex int = 0
+		var primaryKeyIndex int = -1
 
 		// missing primaryKey ? for business tables
 		if tableType == tabletype.Business {
@@ -366,15 +383,16 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// add missing primary key
 		if primaryKey == nil && tableType == tabletype.Business {
-			table.fields = append(table.fields, getDefaultPrimaryKey(fieldtype.Long))
-			table.fieldsById = append(table.fieldsById, getDefaultPrimaryKey(fieldtype.Long))
+			var defaultPrimaryKey = getDefaultPrimaryKey(fieldtype.Long)
+			table.fields = append(table.fields, defaultPrimaryKey)         // sorted by name
+			table.fieldsById = append(table.fieldsById, defaultPrimaryKey) // sorted by id
 		}
 
 		table.copyFields(fields)
 
 		// replace primary key
 		if tableType == tabletype.Business && primaryKey != nil {
-			defaultPrimaryKey := getDefaultPrimaryKey(primaryKey.fieldType)
+			var defaultPrimaryKey = getDefaultPrimaryKey(primaryKey.fieldType)
 			table.fields[primaryKeyIndex] = defaultPrimaryKey
 			table.fieldsById[primaryKeyIndex] = defaultPrimaryKey
 		}

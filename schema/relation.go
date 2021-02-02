@@ -52,8 +52,8 @@ func (relation *Relation) GetInverseRelationName() string {
 	return relation.inverseRelationName
 }
 
-func (relation *Relation) GetMtmTable() string {
-	return relation.inverseRelationName
+func (relation *Relation) GetMtmTableName() string {
+	return relation.mtmTable
 }
 
 func (relation *Relation) GetToTable() *Table {
