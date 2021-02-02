@@ -168,6 +168,13 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	} else if field.IsPrimaryKey() == false {
 		t.Errorf("Table.GetFieldByName() ==> Cannot find primary key reference")
 	}
+	field = table.GetPrimaryKey()
+	if field == nil {
+		t.Errorf("Table.GetFieldByName() ==> Cannot find primary key")
+	} else if field.IsPrimaryKey() == false {
+		t.Errorf("Table.GetFieldByName() ==> Cannot find primary key reference")
+	}
+
 	field = table.GetFieldByName("111")
 	if field != nil {
 		t.Errorf("Table.GetFieldByName() ==> field '111' cannot be found")
