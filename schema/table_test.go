@@ -227,7 +227,6 @@ func Test__Table__GetRelationByName(t *testing.T) {
 	var table = new(Table)
 	const RELATION_COUNT = 20000
 
-	// added invalid fields (101)
 	for i := -100; i <= RELATION_COUNT; i++ {
 		relation := new(Relation)
 		nameLenght := (abs(i) % 30) + 2
@@ -274,6 +273,65 @@ func Test__Table__GetRelationByName(t *testing.T) {
 	if field != nil {
 		t.Errorf("Table.GetPrimaryKey() ==> field cannot be found")
 	}
+}
+
+func Test__Table__GetIndexByName(t *testing.T) {
+	var fields = []Field{}
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var table = new(Table)
+	const INDEX_COUNT = 20000
+	aarr := []string{"Gga", "Zorba", "testllk", "testllk22"}
+
+	// creating fields
+	field0 := Field{}
+	field0.Init(1, "Gga", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field0)
+	field1 := Field{}
+	field1.Init(2, "Zorba", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field1)
+	field2 := Field{}
+	field2.Init(3, "testllk", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field2)
+	field3 := Field{}
+	field3.Init(4, "testllk22", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field3)
+
+	for i := -100; i <= INDEX_COUNT; i++ {
+		index := new(Index)
+		nameLenght := (abs(i) % 30) + 2
+		// fixture
+		indexName := randStringBytes(nameLenght)
+		index.Init(21, indexName, "hellkzae", aarr, false, true, false, true)
+		indexes = append(indexes, *index)
+	}
+
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
+		physicaltype.Table, -111, tabletype.Fake, "", true, false, true, true)
+
+	//t.Errorf("indexes.Count ==> %d ", len(table.indexes))
+
+	for i := 0; i < len(indexes); i++ {
+		// test valid field only
+		indexName := indexes[i].name
+		index := table.GetIndexByName(indexName)
+		if index == nil {
+			t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, id=%d", i, indexName, indexes[i].id)
+			break
+		} else {
+			if indexName != index.GetName() {
+				t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, found=%s", i, indexName, table.GetIndexByName(indexes[i].name).GetName())
+				break
+			}
+		}
+	}
+
+	// test nil
+	index := table.GetIndexByName("22222")
+	if index != nil {
+		t.Errorf("Table.GetIndexByName() ==> index '22222' cannot be found!!")
+	}
+
 }
 
 func abs(value int) int {

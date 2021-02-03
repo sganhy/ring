@@ -23,11 +23,6 @@ type Meta struct {
 	value       string
 }
 
-func (meta *Meta) Init(flags uint64) {
-	meta.flags = flags
-
-}
-
 const (
 	bitPositionFieldCaseSensitive   uint8 = 2
 	bitPositionFieldNotNull         uint8 = 3
@@ -44,12 +39,6 @@ const (
 //******************************
 // getters
 //******************************
-func (meta *Meta) GetFlags() uint64 {
-	return meta.flags
-}
-func (meta *Meta) GetId() int32 {
-	return meta.id
-}
 
 //******************************
 // public methods
@@ -65,6 +54,21 @@ func (meta *Meta) IsFieldCaseSensitive() bool {
 }
 func (meta *Meta) IsFieldNotNull() bool {
 	return meta.readFlag(bitPositionFieldNotNull)
+}
+func (meta *Meta) IsEntityBaseline() bool {
+	return meta.readFlag(bitPositionEntityBaseline)
+}
+func (meta *Meta) IsEntityEnabled() bool {
+	return meta.readFlag(bitPositionEntityEnabled)
+}
+func (meta *Meta) IsRelationNotNull() bool {
+	return meta.readFlag(bitPositionRelationNotNull)
+}
+func (meta *Meta) IsIndexUnique() bool {
+	return meta.readFlag(bitPositionIndexUnique)
+}
+func (meta *Meta) IsIndexBitmap() bool {
+	return meta.readFlag(bitPositionIndexBitmap)
 }
 func (meta *Meta) GetFieldType() fieldtype.FieldType {
 	var result = fieldtype.FieldType(meta.dataType & 127)
@@ -83,22 +87,6 @@ func (meta *Meta) GetFieldType() fieldtype.FieldType {
 		result = fieldtype.NotDefined
 	}
 	return result
-}
-
-func (meta *Meta) IsEntityBaseline() bool {
-	return meta.readFlag(bitPositionEntityBaseline)
-}
-func (meta *Meta) IsEntityEnabled() bool {
-	return meta.readFlag(bitPositionEntityEnabled)
-}
-func (meta *Meta) IsRelationNotNull() bool {
-	return meta.readFlag(bitPositionRelationNotNull)
-}
-func (meta *Meta) IsIndexUnique() bool {
-	return meta.readFlag(bitPositionIndexUnique)
-}
-func (meta *Meta) IsIndexBitmap() bool {
-	return meta.readFlag(bitPositionIndexBitmap)
 }
 func (meta *Meta) GetEntityType() entitytype.EntityType {
 	var result = entitytype.EntityType(meta.objectType & 127)

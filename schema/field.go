@@ -211,7 +211,7 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	return result
 }
 
-func (field *Field) GetSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
 	return strings.TrimSpace(field.getSqlFieldName(provider) + " " + field.getSqlDataType(provider) + " " +
 		field.getSqlConstraint(provider, tableType))
 }

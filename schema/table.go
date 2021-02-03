@@ -409,7 +409,7 @@ func (table *Table) loadIndexes(indexes []Index) {
 	table.sortIndexes()
 }
 
-func GetMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
+func getMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
 	var fields = make([]Field, 0, 16)
 	var relations = make([]Relation, 0, 16)
 	var indexes = make([]Index, 0, 16)
@@ -447,7 +447,7 @@ func GetMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
 	return table
 }
 
-func GetMetaTable(provider databaseprovider.DatabaseProvider) *Table {
+func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	var fields = []Field{}
 	var relations = []Relation{}
 	var indexes = []Index{}
@@ -506,7 +506,7 @@ func GetMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	return table
 }
 
-func GetLogTable() *Table {
+func getLogTable() *Table {
 	var fields = []Field{}
 	var relations = []Relation{}
 	var indexes = []Index{}

@@ -2,6 +2,8 @@ package entitytype
 
 type EntityType int8
 
+//!!! reserved value for unitesting {4, 5, 6} !!!
+
 const (
 	Table      EntityType = 0
 	Field      EntityType = 1

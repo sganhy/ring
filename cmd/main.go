@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/rand"
 	"ring/schema"
-	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -87,7 +86,7 @@ func main() {
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := schema.Index{}
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
 	fmt.Println(elemr.GetName())
 
 	var fields = []schema.Field{}
@@ -117,11 +116,6 @@ func main() {
 		fmt.Println(elemt.GetPhysicalName())
 		fmt.Println(elemt2.GetPhysicalName())
 	*/
-
-	var meta1 = schema.GetMetaTable(databaseprovider.PostgreSql)
-	fmt.Println(lang.GetNativeName())
-	fmt.Println(meta1.GetName())
-	fmt.Println(meta1.GetPhysicalName())
 
 	reg := []string{"a", "b", "c"}
 	fmt.Println(strings.Join(reg[:], ","))
