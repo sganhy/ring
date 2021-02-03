@@ -106,7 +106,7 @@ func (relation *Relation) ToMeta(tableId int32) *Meta {
 	result.setRelationType(relation.relationType)
 
 	result.value = relation.inverseRelationName
-	result.name = relation.name // max lenght 30 !! must be valided before
+	result.name = relation.name // max length 30 !! must be valided before
 	result.description = relation.description
 
 	return result

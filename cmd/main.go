@@ -10,6 +10,7 @@ import (
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/tabletype"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -121,6 +122,9 @@ func main() {
 	fmt.Println(lang.GetNativeName())
 	fmt.Println(meta1.GetName())
 	fmt.Println(meta1.GetPhysicalName())
+
+	reg := []string{"a", "b", "c"}
+	fmt.Println(strings.Join(reg[:], ","))
 }
 
 func Test__Table__GetFieldByName() {

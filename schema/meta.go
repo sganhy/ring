@@ -4,10 +4,12 @@ import (
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
+	"strings"
 )
 
 const maxInt32 int64 = 2147483647
 const maxInt8 int64 = 127
+const metaIndexSeparator string = ";"
 
 type Meta struct {
 	id          int32
@@ -30,6 +32,8 @@ const (
 	bitPositionFieldCaseSensitive   uint8 = 2
 	bitPositionFieldNotNull         uint8 = 3
 	bitPositionFieldMultilingual    uint8 = 4
+	bitPositionIndexBitmap          uint8 = 9
+	bitPositionIndexUnique          uint8 = 10
 	bitPositionEntityEnabled        uint8 = 13
 	bitPositionEntityBaseline       uint8 = 14
 	bitPositionFirstPositionSize    uint8 = 17 // max value bit pos for field=16 !!!
@@ -90,6 +94,12 @@ func (meta *Meta) IsEntityEnabled() bool {
 func (meta *Meta) IsRelationNotNull() bool {
 	return meta.readFlag(bitPositionRelationNotNull)
 }
+func (meta *Meta) IsIndexUnique() bool {
+	return meta.readFlag(bitPositionIndexUnique)
+}
+func (meta *Meta) IsIndexBitmap() bool {
+	return meta.readFlag(bitPositionIndexBitmap)
+}
 func (meta *Meta) GetEntityType() entitytype.EntityType {
 	var result = entitytype.EntityType(meta.objectType & 127)
 	if result != entitytype.Field &&
@@ -141,6 +151,18 @@ func (meta *Meta) ToRelation() *Relation {
 	return nil
 }
 
+func (meta *Meta) ToIndex() *Index {
+	if entitytype.EntityType(meta.objectType) == entitytype.Index {
+		var index = new(Index)
+		var arr = strings.Split(meta.value, metaIndexSeparator)
+		// call exemple 	elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
+		index.Init(meta.id, meta.name, meta.description, arr, meta.IsIndexBitmap(), meta.IsIndexUnique(),
+			meta.IsEntityBaseline(), meta.IsEntityEnabled())
+		return index
+	}
+	return nil
+}
+
 //******************************
 // private methods
 //******************************
@@ -173,6 +195,13 @@ func (meta *Meta) setEntityEnabled(value bool) {
 
 func (meta *Meta) setRelationNotNull(value bool) {
 	meta.writeFlag(bitPositionRelationNotNull, value)
+}
+
+func (meta *Meta) setIndexBitmap(value bool) {
+	meta.writeFlag(bitPositionIndexBitmap, value)
+}
+func (meta *Meta) setIndexUnique(value bool) {
+	meta.writeFlag(bitPositionIndexUnique, value)
 }
 
 func (meta *Meta) setRelationType(relationType relationtype.RelationType) {

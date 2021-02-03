@@ -432,7 +432,7 @@ func GetMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
-	uk.Init(1, "pk_@meta_id", "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, "pk_@meta_id", "", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)
 	fields = append(fields, schemaId)
@@ -485,7 +485,7 @@ func GetMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, "pk_@meta", "", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2

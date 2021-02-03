@@ -58,7 +58,7 @@ func Test__Table__Init(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2

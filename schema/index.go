@@ -1,11 +1,15 @@
 package schema
 
+import (
+	"ring/schema/entitytype"
+	"strings"
+)
+
 type Index struct {
 	id          int32
 	name        string
 	description string
 	fields      []string
-	tableId     int32
 	bitmap      bool
 	unique      bool
 	baseline    bool
@@ -13,13 +17,12 @@ type Index struct {
 }
 
 // call exemple elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
-func (index *Index) Init(id int32, name string, description string, fields []string, tableId int32, bitmap bool,
+func (index *Index) Init(id int32, name string, description string, fields []string, bitmap bool,
 	unique bool, baseline bool, active bool) {
 	index.id = id
 	index.name = name
 	index.description = description
 	index.loadFields(fields)
-	index.tableId = tableId
 	index.bitmap = bitmap
 	index.unique = unique
 	index.baseline = baseline
@@ -45,10 +48,6 @@ func (index *Index) GetFields() []string {
 	return index.fields
 }
 
-func (index *Index) GetTableId() int32 {
-	return index.tableId
-}
-
 func (index *Index) IsUnique() bool {
 	return index.unique
 }
@@ -68,6 +67,25 @@ func (index *Index) IsActive() bool {
 func (index *Index) ToMeta(tableId int32) *Meta {
 	// we cannot have error here
 	var result = new(Meta)
+
+	// key
+	result.id = index.id
+	result.refId = tableId
+	result.objectType = int8(entitytype.Index)
+
+	// others
+	result.dataType = 0
+	result.name = index.name // max lenght 30 !! must be valided before
+	result.description = index.description
+	result.value = strings.Join(index.fields[:], metaIndexSeparator)
+
+	// flags
+	result.flags = 0
+	result.setIndexBitmap(index.bitmap)
+	result.setIndexUnique(index.unique)
+	result.setEntityEnabled(index.active)
+	result.setEntityBaseline(index.baseline)
+
 	return result
 }
 

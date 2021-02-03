@@ -181,4 +181,5 @@ func Test__Field__ToMeta(t *testing.T) {
 	if elemf0.IsActive() != elemf1.IsActive() {
 		t.Errorf("Field.ToMeta() ==> f0.IsActive() must be equal to f1.IsActive()")
 	}
+
 }

@@ -42,5 +42,42 @@ func Test__Relation__Init(t *testing.T) {
 	if elemr0.GetToTable() != elemt {
 		t.Errorf("Relationeld.Init() ==> GetToTable() <> table pointer")
 	}
+}
 
+func Test__Relation__ToMeta(t *testing.T) {
+
+	elemr0 := Relation{}
+	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Otop, false, true, false)
+
+	meta := elemr0.ToMeta(777)
+	elemr1 := meta.ToRelation()
+
+	if elemr0.GetId() != elemr1.GetId() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetId() must be equal to r1.GetId()")
+	}
+	if elemr0.GetName() != elemr1.GetName() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetName() must be equal to r1.GetName()")
+	}
+	if elemr0.GetDescription() != elemr1.GetDescription() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetDescription() must be equal to r1.GetDescription()")
+	}
+	if elemr0.GetInverseRelationName() != elemr1.GetInverseRelationName() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetInverseRelationName() must be equal to r1.GetInverseRelationName()")
+	}
+	if elemr0.GetType() != elemr1.GetType() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetType() must be equal to r1.GetType()")
+	}
+	if elemr0.GetToTable() != elemr1.GetToTable() {
+		t.Errorf("Relation.ToMeta() ==> r0.GetToTable() must be equal to r1.GetToTable()")
+	}
+	if elemr0.IsBaseline() != elemr1.IsBaseline() {
+		t.Errorf("Relation.ToMeta() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
+	}
+	if elemr0.IsNotNull() != elemr1.IsNotNull() {
+		t.Errorf("Relation.ToMeta() ==> r0.IsNotNull() must be equal to r1.IsNotNull()")
+	}
+	if elemr0.IsActive() != elemr1.IsActive() {
+		t.Errorf("Relation.ToMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
+	}
 }
