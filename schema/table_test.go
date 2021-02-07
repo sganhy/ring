@@ -145,7 +145,6 @@ func Test__Table__GetFieldByName(t *testing.T) {
 
 	//t.Errorf("Table.fields.Count ==> %d /%d", len(table.fields), cap(table.fields))
 	//t.Errorf("Table.fieldsById.Count ==> %d /%d", len(table.fieldsById), cap(table.fieldsById))
-
 	for i := 0; i < len(fields); i++ {
 		// test valid field only
 		if fields[i].IsValid() == true {
@@ -162,7 +161,6 @@ func Test__Table__GetFieldByName(t *testing.T) {
 			}
 		}
 	}
-
 	// getFieldById
 	field := table.GetFieldById(10)
 	if field == nil {

@@ -82,7 +82,7 @@ func Test__Meta__ToField(t *testing.T) {
 	if meta.ToField() != nil {
 		t.Errorf("Meta.ToField() ==> objectType==4 must return nil")
 	}
-	if meta.ToRelation() != nil {
+	if meta.ToRelation(nil) != nil {
 		t.Errorf("Meta.ToField() ==> objectType==4 must return nil")
 	}
 	if meta.ToIndex() != nil {

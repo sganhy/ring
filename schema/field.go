@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
@@ -17,6 +18,8 @@ import (
 var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
+
+const unknowFieldDataType string = ""
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",
@@ -211,9 +214,25 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	return result
 }
 
-func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) (string, error) {
+	datatype := field.getSqlDataType(provider)
+	if datatype == unknowFieldDataType {
+		return unknowFieldDataType, errors.New(fmt.Sprintf("Unknow datatype {provider: %s, dataTypeId: %d, fieldName: %s}",
+			provider, field.fieldType, field.name))
+	}
 	return strings.TrimSpace(field.getSqlFieldName(provider) + " " + field.getSqlDataType(provider) + " " +
-		field.getSqlConstraint(provider, tableType))
+		field.getSqlConstraint(provider, tableType)), nil
+}
+
+func (field *Field) Clone() *Field {
+	newField := new(Field)
+	/*
+		id int32, name string, description string, fieldType fieldtype.FieldType, size uint32,
+		defaultValue string, baseline bool, notNull bool, casesensitive bool, multilingual bool, active bool
+	*/
+	newField.Init(field.id, field.name, field.description, field.fieldType, field.size, field.defaultValue, field.baseline,
+		field.notNull, field.caseSensitive, field.multilingual, field.active)
+	return newField
 }
 
 //******************************
@@ -232,7 +251,7 @@ func getDefaultPrimaryKey(fldtype fieldtype.FieldType) *Field {
 }
 
 func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) string {
-	var result = ""
+	var result = unknowFieldDataType
 	switch provider {
 	case databaseprovider.MySql:
 		if val, ok := postgreDataType[field.fieldType]; ok {

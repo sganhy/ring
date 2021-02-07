@@ -2,7 +2,11 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
+	"ring/schema/fieldtype"
+	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
+	"ring/schema/tabletype"
+	"strings"
 	"testing"
 )
 
@@ -44,14 +48,27 @@ func Test__Relation__Init(t *testing.T) {
 	}
 }
 
+// test ToMeta, GetDdlSql
 func Test__Relation__ToMeta(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+
+	elemf := Field{}
+	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+
+	//var prim = schema.GetDefaultPrimaryKey()
+	fields = append(fields, elemf)
+	elemt := Table{}
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
+		"schema.t_site", physicaltype.Table, 64, tabletype.Business, "subject test", true, false, true, false)
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
 
 	meta := elemr0.ToMeta(777)
-	elemr1 := meta.ToRelation()
+	elemr1 := meta.ToRelation(&elemt)
 
 	if elemr0.GetId() != elemr1.GetId() {
 		t.Errorf("Relation.ToMeta() ==> r0.GetId() must be equal to r1.GetId()")
@@ -68,8 +85,9 @@ func Test__Relation__ToMeta(t *testing.T) {
 	if elemr0.GetType() != elemr1.GetType() {
 		t.Errorf("Relation.ToMeta() ==> r0.GetType() must be equal to r1.GetType()")
 	}
+	// check reference of table must be the same
 	if elemr0.GetToTable() != elemr1.GetToTable() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetToTable() must be equal to r1.GetToTable()")
+		t.Errorf("Relation.ToMeta() ==> r0.GetToTable() reference must be equal to r1.GetToTable()")
 	}
 	if elemr0.IsBaseline() != elemr1.IsBaseline() {
 		t.Errorf("Relation.ToMeta() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
@@ -79,5 +97,10 @@ func Test__Relation__ToMeta(t *testing.T) {
 	}
 	if elemr0.IsActive() != elemr1.IsActive() {
 		t.Errorf("Relation.ToMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
+	}
+	// test GetDdlSql
+	var sql, _ = elemr0.GetDdlSql(databaseprovider.PostgreSql)
+	if strings.ToUpper(sql) != "REL TEST INT8" {
+		t.Errorf("Field.GetSql() ==> (1) sql should be equal to REL TEST INT8")
 	}
 }

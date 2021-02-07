@@ -77,7 +77,7 @@ func (index *Index) ToMeta(tableId int32) *Meta {
 	result.dataType = 0
 	result.name = index.name // max lenght 30 !! must be valided before
 	result.description = index.description
-	result.value = strings.Join(index.fields[:], metaIndexSeparator)
+	result.value = strings.Join(index.fields, metaIndexSeparator)
 
 	// flags
 	result.flags = 0
@@ -87,6 +87,25 @@ func (index *Index) ToMeta(tableId int32) *Meta {
 	result.setEntityBaseline(index.baseline)
 
 	return result
+}
+
+//******************************
+// public methods
+//******************************
+func (index *Index) Clone() *Index {
+	newIndex := new(Index)
+	/*
+		id int32, name string, description string, fields []string, bitmap bool,
+			unique bool, baseline bool, active bool
+	*/
+	fields := []string{}
+
+	for i := 0; i < len(index.fields); i++ {
+		fields = append(fields, index.fields[i])
+	}
+	newIndex.Init(index.id, index.name, index.description,
+		fields, index.bitmap, index.unique, index.baseline, index.active)
+	return newIndex
 }
 
 //******************************

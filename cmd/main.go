@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"ring/schema"
+	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -46,8 +47,6 @@ func main() {
 
 	meta := elemf0.ToMeta(12)
 	elemf00 := meta.ToField()
-	fmt.Println(meta.GetEntityType())
-	fmt.Println(meta.GetFlags())
 	fmt.Println(elemf0.IsNotNull())
 	fmt.Println(meta.IsFieldNotNull())
 	fmt.Println(elemf00.GetSize())
@@ -74,12 +73,12 @@ func main() {
 	elemf4.Init(7, "id", "id", fieldtype.DateTime, 5, "", true, false, false, true, true)
 
 	elemf5 := schema.Field{}
-	elemf5.Init(88, "id", "id", fieldtype.DateTime, 5, "", true, false, false, true, true)
+	elemf5.Init(88, "id", "id", fieldtype.String, 5, "", true, false, false, true, true)
 
 	// RELATIONS **********
 	elemt := new(schema.Table)
 	elemr := schema.Relation{}
-	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
+	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
 	elemr0 := schema.Relation{}
 	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
 
@@ -108,6 +107,8 @@ func main() {
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool,  bool
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
 		"schema.t_site", physicaltype.Table, 64, tabletype.Business, "subject test", true, false, true, false)
+	sql2, _ := elemt.GetDdlSql(databaseprovider.PostgreSql, nil)
+	fmt.Println(sql2)
 	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
 	//fmt.Println(elemt.GetFieldById(4).GetName())
 	//fmt.Println(elemt.GetPrimaryKey().GetName())
@@ -118,7 +119,7 @@ func main() {
 	*/
 
 	reg := []string{"a", "b", "c"}
-	fmt.Println(strings.Join(reg[:], ","))
+	fmt.Println(strings.Join(reg, ","))
 }
 
 func Test__Table__GetFieldByName() {

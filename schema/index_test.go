@@ -72,8 +72,8 @@ func Test__Index__ToMeta(t *testing.T) {
 		t.Errorf("Index.ToMeta() ==> i1.fields cannot be nil")
 	} else {
 		// keep ";" hardcoded to detectec metaIndexSeparator constant change
-		arr0str := strings.Join(elemi0.fields[:], ";")
-		arr1str := strings.Join(elemi1.fields[:], ";")
+		arr0str := strings.Join(elemi0.fields, ";")
+		arr1str := strings.Join(elemi1.fields, ";")
 		if arr0str != arr1str {
 			t.Errorf("Index.ToMeta() ==> elemi0.fields is not equal to elemi1.fields")
 		}

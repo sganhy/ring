@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -31,6 +32,7 @@ type Table struct {
 	//internal readonly LexiconIndex[] LexiconIndexes;
 }
 
+const createTableSql string = "CREATE TABLE %s (\n%s\n)"
 const postgreSqlSchema string = "information_schema"
 const fieldNotFound int = -1
 const relationNotFound int = -1
@@ -255,8 +257,56 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
-func (table *Table) GetSql(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) string {
-	return ""
+func (table *Table) GetDdlSql(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) (string, error) {
+	var fields = []string{}
+	for i := 0; i < len(table.fields); i++ {
+		fieldSql, err := table.fields[i].GetDdlSql(provider, table.tableType)
+		if err == nil {
+			fields = append(fields, fieldSql)
+		} else {
+			return "", err
+		}
+	}
+	for i := 0; i < len(table.relations); i++ {
+		relationSql, err := table.relations[i].GetDdlSql(provider)
+		if err == nil {
+			fields = append(fields, relationSql)
+		} else {
+			return "", err
+		}
+	}
+	sql := fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
+	if tablespace != nil {
+		sql = sql + " " + getDdlTableSpace(provider, tablespace)
+	}
+	return sql, nil
+}
+
+func (table *Table) Clone() *Table {
+	newTable := new(Table)
+	var fields = []Field{}
+	var relations = []Relation{}
+	var indexes = []Index{}
+	/*
+		id int32, name string, description string, fields []Field, relations []Relation, indexes []Index, physicalName string,
+		physicalType physicaltype.PhysicalType, schemaId int32, tableType tabletype.TableType, subject string,
+		cached bool, readonly bool, baseline bool, active bool
+	*/
+	// don't clone ToTable for reflexive relationship (recursive call)
+	for i := 0; i < len(table.fields); i++ {
+		fields = append(fields, *table.fields[i].Clone())
+	}
+	for i := 0; i < len(table.relations); i++ {
+		relations = append(relations, *table.relations[i].Clone())
+	}
+	for i := 0; i < len(table.indexes); i++ {
+		indexes = append(indexes, *table.indexes[i].Clone())
+	}
+	newTable.Init(table.id, table.name, table.description, fields, relations, indexes,
+		table.physicalName, table.physicalType, table.schemaId, table.tableType, table.subject,
+		table.cached, table.readonly, table.baseline, table.active)
+
+	return newTable
 }
 
 //******************************
@@ -565,4 +615,19 @@ func getPhysicalName(provider databaseprovider.DatabaseProvider, name string) st
 		physicalName = "Sqlite"
 	}
 	return physicalName
+}
+
+func getDdlTableSpace(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) string {
+	var sql string
+	switch provider {
+	case databaseprovider.PostgreSql:
+		sql = "TABLESPACE " + tablespace.name
+	case databaseprovider.MySql:
+		sql = ""
+	case databaseprovider.Oracle:
+		sql = ""
+	case databaseprovider.Sqlite3:
+		sql = ""
+	}
+	return sql
 }

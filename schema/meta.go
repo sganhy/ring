@@ -127,12 +127,12 @@ func (meta *Meta) ToField() *Field {
 	return nil
 }
 
-func (meta *Meta) ToRelation() *Relation {
+func (meta *Meta) ToRelation(table *Table) *Relation {
 	if entitytype.EntityType(meta.objectType) == entitytype.Relation {
 		var relation = new(Relation)
 		// call exemple 	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
 		relation.Init(meta.id, meta.name, meta.description,
-			meta.value, meta.value, nil, meta.GetRelationType(),
+			meta.value, meta.value, table, meta.GetRelationType(),
 			meta.IsRelationNotNull(), meta.IsEntityBaseline(), meta.IsEntityEnabled())
 		return relation
 	}

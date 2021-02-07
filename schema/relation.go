@@ -1,6 +1,9 @@
 package schema
 
 import (
+	"errors"
+	"fmt"
+	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/relationtype"
 )
@@ -79,8 +82,24 @@ func (relation *Relation) IsActive() bool {
 //******************************
 // public methods
 //******************************
+func (relation *Relation) GetDdlSql(provider databaseprovider.DatabaseProvider) (string, error) {
+	if relation.toTable != nil {
+		targetPrimaryKey := relation.toTable.GetPrimaryKey()
+		if targetPrimaryKey != nil {
+			datatype := targetPrimaryKey.getSqlDataType(provider)
+			if datatype != unknowFieldDataType {
+				return relation.name + " " + datatype, nil
+			}
+		}
+	}
+	return "", errors.New(fmt.Sprintf("Invalid relation {name: %s}", relation.name))
+}
+
 func (relation *Relation) GetInverseRelation() *Relation {
-	return relation.toTable.GetRelationByName(relation.inverseRelationName)
+	if relation.toTable != nil {
+		return relation.toTable.GetRelationByName(relation.inverseRelationName)
+	}
+	return nil
 }
 
 func (relation *Relation) ToMeta(tableId int32) *Meta {
@@ -110,4 +129,17 @@ func (relation *Relation) ToMeta(tableId int32) *Meta {
 	result.description = relation.description
 
 	return result
+}
+
+func (relation *Relation) Clone() *Relation {
+	newRelation := new(Relation)
+	/*
+		id int32, name string, description string, inverseRelationName string,
+			mtmTable string, toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool
+	*/
+	// don't clone ToTable for reflexive relationship (recursive call)
+	newRelation.Init(relation.id, relation.name, relation.description,
+		relation.inverseRelationName, relation.mtmTable, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
+		relation.active)
+	return newRelation
 }
