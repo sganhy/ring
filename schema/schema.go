@@ -101,3 +101,21 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 		schema.tablespaces = append(schema.tablespaces, &tablespaces[i])
 	}
 }
+
+func GetMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string) *Schema {
+	var tables = []Table{}
+	var tablespaces = []Tablespace{}
+	var schema = Schema{}
+	var language = Language{}
+
+	language.Init("EN")
+	metaTable := getMetaTable(provider)
+
+	tables = append(tables, *metaTable)
+	tables = append(tables, *getMetaIdTable(provider))
+	tables = append(tables, *getLogTable(provider))
+
+	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
+	schema.Init(0, metaTable.name, metaTable.description, connectionstring, language, tables, tablespaces, provider, true, true)
+	return &schema
+}

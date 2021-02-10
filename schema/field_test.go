@@ -59,11 +59,18 @@ func Test__Field__Init(t *testing.T) {
 		t.Errorf("Field.Init() ==> IsPrimaryKey() <> false")
 	}
 
+	// computed default value
 	elemf1 := Field{}
-	elemf1.Init(0, "aName Test", "AField Test", fieldtype.DateTime, 5, "test default", true, false, false, true, true)
-	if elemf1.IsValid() != false {
-		t.Errorf("Field.Init() ==> IsValid() <> false")
+	elemf1.Init(0, "aName Test", "AField Test", fieldtype.Long, 5, "", true, false, false, true, true)
+	if elemf1.GetDefaultValue() != "0" {
+		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
 	}
+	elemf2 := Field{}
+	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Float, 5, "", true, false, false, true, true)
+	if elemf2.GetDefaultValue() != "0" {
+		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
+	}
+
 }
 
 // getDefaultPrimaryKey
@@ -125,13 +132,14 @@ func Test__Field__GetDdlSql(t *testing.T) {
 
 // GetSearchableValue
 func Test__Field__GetSearchableValue(t *testing.T) {
-	var lang = NewLanguage("Fr")
+	var lang = Language{}
+	lang.Init("FR")
 
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 5, "test default", true, false, false, true, true)
 
-	if elemf0.GetSearchableValue("žůžo", *lang) == "ZUZO" {
+	if elemf0.GetSearchableValue("žůžo", lang) == "ZUZO" {
 		//t.Errorf("elemf0.GetSearchableValue(\"\") should be equal to \"\" instead of '"+elemf0.GetSearchableValue("")) + "'"
 		//t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
 	}

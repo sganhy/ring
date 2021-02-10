@@ -120,14 +120,13 @@ func (relation *Relation) ToMeta(tableId int32) *Meta {
 	result.flags = 0
 	result.setEntityBaseline(relation.baseline)
 	// add flags for relation tyoe
-	result.setEntityEnabled(relation.active)
 	result.setRelationNotNull(relation.notNull)
 	result.setRelationType(relation.relationType)
 
 	result.value = relation.inverseRelationName
 	result.name = relation.name // max length 30 !! must be valided before
 	result.description = relation.description
-
+	result.enabled = relation.active
 	return result
 }
 

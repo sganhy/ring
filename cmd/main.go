@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"math/rand"
+	"ring/data"
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
@@ -24,9 +24,14 @@ const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func main() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		"localhost", 5432, "postgres", "sa", "postgres")
-
-	Test__Table__GetFieldByName()
-
+	recordType := ".@meta2"
+	var index = strings.Index(recordType, ".")
+	schema.Init(databaseprovider.MySql, "zorba")
+	fmt.Println(recordType[:index])
+	fmt.Println(recordType[index+1:])
+	var rcd = new(data.Record)
+	rcd.SetRecordType("@meta.@meta")
+	fmt.Println(data.IsValidInteger("-2147483648", fieldtype.Int))
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)
@@ -43,7 +48,7 @@ func main() {
 
 	// FIELDS **********
 	elemf0 := schema.Field{}
-	elemf0.Init(11, "aField Test", "AField Test", fieldtype.DateTime, 5, "test default", true, false, false, true, true)
+	elemf0.Init(11, "aField Test", "AField Test", fieldtype.Long, 5, "test default", true, false, false, true, true)
 
 	meta := elemf0.ToMeta(12)
 	elemf00 := meta.ToField()
@@ -53,15 +58,16 @@ func main() {
 
 	elemf := schema.Field{}
 	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
-	var lang = schema.NewLanguage("Fr")
+	var lang = schema.Language{}
+	lang.Init("FR")
 	fmt.Println(meta.IsEntityBaseline())
 	fmt.Println(elemf00.GetDefaultValue())
 	fmt.Println(elemf.IsNumeric())
-	fmt.Println(elemf.GetSearchableValue("žůžo", *lang))
-	fmt.Println(elemf.GetSearchableValue("zuzo", *lang))
-	fmt.Println(elemf.GetSearchableValue("Français", *lang))
-	fmt.Println(elemf.GetSearchableValue("", *lang))
-	fmt.Println(elemf.GetSearchableValue("a", *lang))
+	fmt.Println(elemf.GetSearchableValue("žůžo", lang))
+	fmt.Println(elemf.GetSearchableValue("zuzo", lang))
+	fmt.Println(elemf.GetSearchableValue("Français", lang))
+	fmt.Println(elemf.GetSearchableValue("", lang))
+	fmt.Println(elemf.GetSearchableValue("a", lang))
 
 	elemf2 := schema.Field{}
 	elemf2.Init(4, "Zorba", "Zorba", fieldtype.Double, 5, "", true, false, false, true, true)
@@ -120,47 +126,4 @@ func main() {
 
 	reg := []string{"a", "b", "c"}
 	fmt.Println(strings.Join(reg, ","))
-}
-
-func Test__Table__GetFieldByName() {
-	var fields = []schema.Field{}
-	var relations = []schema.Relation{}
-	var indexes = []schema.Index{}
-	var table = new(schema.Table)
-	const FIELD_COUNT = 20000
-
-	// added invalid fields
-	for i := 1; i <= FIELD_COUNT; i++ {
-		field := new(schema.Field)
-		nameLenght := (abs(i) % 30) + 2
-		field.Init(int32(i), randStringBytes(nameLenght), "", fieldtype.Int, 0, "", true, true, true, false, true)
-		fields = append(fields, *field)
-	}
-
-	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.Business, "", true, false, true, true)
-
-	field := table.GetFieldById(FIELD_COUNT >> 2)
-	if field == nil {
-		fmt.Printf("Table.GetFieldById() ==> cannot find current id %d \n", FIELD_COUNT>>2)
-	} else {
-		fmt.Println("FOUND!!")
-	}
-
-}
-
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
-}
-
-func abs(value int) int {
-	if value >= 0 {
-		return value
-	} else {
-		return -value
-	}
 }

@@ -18,6 +18,7 @@ import (
 var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
+var defaultNumberValue = "0"
 
 const unknowFieldDataType string = ""
 
@@ -88,7 +89,7 @@ func (field *Field) Init(id int32, name string, description string, fieldType fi
 	field.description = description
 	field.fieldType = fieldType
 	field.size = size
-	field.defaultValue = defaultValue
+	field.defaultValue = getDefaultValue(defaultValue, field)
 	field.baseline = baseline
 	field.notNull = notNull
 	field.active = active
@@ -208,9 +209,9 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	result.setFieldCaseSensitive(field.caseSensitive)
 	result.setFieldMultilingual(field.multilingual)
 	result.setEntityBaseline(field.baseline)
-	result.setEntityEnabled(field.active)
 	result.setFieldSize(field.size)
 
+	result.enabled = field.active
 	return result
 }
 
@@ -238,6 +239,16 @@ func (field *Field) Clone() *Field {
 //******************************
 // private methods
 //******************************
+
+func getDefaultValue(defaultValue string, field *Field) string {
+	if defaultValue == "" {
+		if field.IsNumeric() {
+			return defaultNumberValue
+		}
+	}
+	return defaultValue
+}
+
 func getDefaultPrimaryKey(fldtype fieldtype.FieldType) *Field {
 	switch fldtype {
 	case fieldtype.Int:

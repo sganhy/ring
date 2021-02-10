@@ -83,9 +83,8 @@ func (index *Index) ToMeta(tableId int32) *Meta {
 	result.flags = 0
 	result.setIndexBitmap(index.bitmap)
 	result.setIndexUnique(index.unique)
-	result.setEntityEnabled(index.active)
 	result.setEntityBaseline(index.baseline)
-
+	result.enabled = index.active
 	return result
 }
 

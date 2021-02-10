@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/tabletype"
@@ -132,6 +133,10 @@ func (table *Table) IsActive() bool {
 	return table.active
 }
 
+func (table *Table) GetFieldCount() int {
+	return len(table.fields)
+}
+
 //******************************
 // public methods
 //******************************
@@ -196,6 +201,20 @@ func (table *Table) GetFieldIndexByName(name string) int {
 		}
 	}
 	return fieldNotFound
+}
+
+func (table *Table) GetFieldByIndex(index int) *Field {
+	if index >= 0 && index < len(table.fields) {
+		return table.fields[index]
+	}
+	return nil
+}
+
+func (table *Table) GetFieldTypeByIndex(index int) fieldtype.FieldType {
+	if index >= 0 && index < len(table.fields) {
+		return table.fields[index].fieldType
+	}
+	return fieldtype.NotDefined
 }
 
 func (table *Table) GetRelationByName(name string) *Relation {
@@ -307,6 +326,46 @@ func (table *Table) Clone() *Table {
 		table.cached, table.readonly, table.baseline, table.active)
 
 	return newTable
+}
+
+func (table *Table) ToMeta() []*Meta {
+	var capacity = 1 + len(table.fields) + len(table.relations) + len(table.indexes)
+	var result = make([]*Meta, 0, capacity)
+	var metaTable = new(Meta)
+
+	// key
+	metaTable.id = table.id
+	metaTable.refId = 0
+	metaTable.objectType = int8(entitytype.Table)
+
+	// others
+	metaTable.dataType = 0
+	metaTable.name = table.name // max lenght 30 !! must be valided before
+	metaTable.description = table.description
+	metaTable.value = table.subject
+
+	// flags
+	metaTable.flags = 0
+	/*
+		metaTable.setFieldNotNull(field.notNull)
+		metaTable.setFieldCaseSensitive(field.caseSensitive)
+		metaTable.setFieldMultilingual(field.multilingual)
+		metaTable.setEntityBaseline(field.baseline)
+		metaTable.setEntityEnabled(field.active)
+		metaTable.setFieldSize(field.size)
+	*/
+	result = append(result, metaTable)
+
+	for i := 0; i < len(table.fields); i++ {
+		result = append(result, table.fields[i].ToMeta(table.id))
+	}
+	for i := 0; i < len(table.relations); i++ {
+		result = append(result, table.relations[i].ToMeta(table.id))
+	}
+	for i := 0; i < len(table.indexes); i++ {
+		result = append(result, table.indexes[i].ToMeta(table.id))
+	}
+	return result
 }
 
 //******************************
@@ -556,7 +615,7 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	return table
 }
 
-func getLogTable() *Table {
+func getLogTable(provider databaseprovider.DatabaseProvider) *Table {
 	var fields = []Field{}
 	var relations = []Relation{}
 	var indexes = []Index{}

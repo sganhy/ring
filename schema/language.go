@@ -11,6 +11,7 @@ type Language struct {
 	nativeName string
 }
 
+//TODO add countries
 var languages = map[string]Language{
 	"aa": {code: "aa", name: "Afar", nativeName: "Afaraf"},
 	"ab": {code: "ab", name: "Abkhaz", nativeName: "аҧсуа бызшәа"},
@@ -198,15 +199,13 @@ var languages = map[string]Language{
 	"zu": {code: "zu", name: "Zulu", nativeName: "isiZulu"},
 }
 
-func NewLanguage(code string) *Language {
+func (language *Language) Init(code string) {
 	if val, ok := languages[strings.TrimSpace(strings.ToLower(code))]; ok {
-		var result = new(Language)
-		result.code = val.code
-		result.name = val.name
-		result.nativeName = val.nativeName
-		return result
+		language.code = val.code
+		language.name = val.name
+		language.nativeName = val.nativeName
 	}
-	return nil
+
 }
 
 //******************************

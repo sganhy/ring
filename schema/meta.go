@@ -21,6 +21,7 @@ type Meta struct {
 	objectType  int8
 	refId       int32 // ref id to Id
 	value       string
+	enabled     bool
 }
 
 const (
@@ -57,9 +58,6 @@ func (meta *Meta) IsFieldNotNull() bool {
 }
 func (meta *Meta) IsEntityBaseline() bool {
 	return meta.readFlag(bitPositionEntityBaseline)
-}
-func (meta *Meta) IsEntityEnabled() bool {
-	return meta.readFlag(bitPositionEntityEnabled)
 }
 func (meta *Meta) IsRelationNotNull() bool {
 	return meta.readFlag(bitPositionRelationNotNull)
@@ -121,7 +119,7 @@ func (meta *Meta) ToField() *Field {
 		field.Init(meta.id, meta.name, meta.description,
 			meta.GetFieldType(), meta.GetFieldSize(), meta.value,
 			meta.IsEntityBaseline(), meta.IsFieldNotNull(), meta.IsFieldCaseSensitive(),
-			meta.IsFieldMultilingual(), meta.IsEntityEnabled())
+			meta.IsFieldMultilingual(), meta.enabled)
 		return field
 	}
 	return nil
@@ -133,7 +131,7 @@ func (meta *Meta) ToRelation(table *Table) *Relation {
 		// call exemple 	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
 		relation.Init(meta.id, meta.name, meta.description,
 			meta.value, meta.value, table, meta.GetRelationType(),
-			meta.IsRelationNotNull(), meta.IsEntityBaseline(), meta.IsEntityEnabled())
+			meta.IsRelationNotNull(), meta.IsEntityBaseline(), meta.enabled)
 		return relation
 	}
 	return nil
@@ -145,7 +143,7 @@ func (meta *Meta) ToIndex() *Index {
 		var arr = strings.Split(meta.value, metaIndexSeparator)
 		// call exemple 	elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 		index.Init(meta.id, meta.name, meta.description, arr, meta.IsIndexBitmap(), meta.IsIndexUnique(),
-			meta.IsEntityBaseline(), meta.IsEntityEnabled())
+			meta.IsEntityBaseline(), meta.enabled)
 		return index
 	}
 	return nil
@@ -177,10 +175,6 @@ func (meta *Meta) setFieldSize(size uint32) {
 func (meta *Meta) setEntityBaseline(value bool) {
 	meta.writeFlag(bitPositionEntityBaseline, value)
 }
-func (meta *Meta) setEntityEnabled(value bool) {
-	meta.writeFlag(bitPositionEntityEnabled, value)
-}
-
 func (meta *Meta) setRelationNotNull(value bool) {
 	meta.writeFlag(bitPositionRelationNotNull, value)
 }
