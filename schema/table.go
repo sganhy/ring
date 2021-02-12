@@ -210,13 +210,6 @@ func (table *Table) GetFieldByIndex(index int) *Field {
 	return nil
 }
 
-func (table *Table) GetFieldTypeByIndex(index int) fieldtype.FieldType {
-	if index >= 0 && index < len(table.fields) {
-		return table.fields[index].fieldType
-	}
-	return fieldtype.NotDefined
-}
-
 func (table *Table) GetRelationByName(name string) *Relation {
 	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.relations) - 1, 0, 0
 	for indexerLeft <= indexerRigth {
@@ -655,7 +648,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider) *Table {
 	fields = append(fields, schemaId)  //8
 	fields = append(fields, message)   //9
 
-	table.Init(int32(tabletype.MetaId), metaTableName, "", fields, relations, indexes, "", physicaltype.Table, 0, tabletype.MetaId, "",
+	table.Init(int32(tabletype.MetaId), "@log", "", fields, relations, indexes, "", physicaltype.Table, 0, tabletype.MetaId, "",
 		false, false, true, true)
 	return table
 }

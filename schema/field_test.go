@@ -198,3 +198,112 @@ func Test__Field__ToMeta(t *testing.T) {
 		t.Errorf("Field.ToMeta() ==> f0.IsActive() must be equal to f1.IsActive()")
 	}
 }
+
+func Test__Field__isValidInteger(t *testing.T) {
+
+	// ========== POSITIVE tests
+	// INT
+	if isValidInteger("55451", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> 55451 is a valid integer (32 bits)")
+	}
+	if isValidInteger("-55451", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> -55451 is a valid integer (32 bits)")
+	}
+	if isValidInteger("0", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> 0 is a valid integer (32 bits)")
+	}
+	if isValidInteger("2147483647", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> 2147483647 is a valid integer (32 bits)")
+	}
+	if isValidInteger("2147483646", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> 2147483646 is a valid integer (32 bits)")
+	}
+	if isValidInteger("-7483646", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> -7483646 is a valid integer (32 bits)")
+	}
+	if isValidInteger("-2147483648", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> -2147483648 is a valid integer (32 bits)")
+	}
+	if isValidInteger("-2147483647", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> -2147483647 is a valid integer (32 bits)")
+	}
+	if isValidInteger("-214748364", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> -214748364 is a valid integer (32 bits)")
+	}
+	if isValidInteger("758645454", fieldtype.Int) == false {
+		t.Errorf("Field.isValidInteger() ==> 758645454 is a valid integer (32 bits)")
+	}
+	// LONG
+	if isValidInteger("9223372036854775807", fieldtype.Long) == false {
+		t.Errorf("Field.isValidInteger() ==> 9223372036854775807 string is not a valid integer (64 bits)")
+	}
+	if isValidInteger("0", fieldtype.Long) == false {
+		t.Errorf("Field.isValidInteger() ==> 0 string is not a valid integer (64 bits)")
+	}
+	//SHORT
+	if isValidInteger("-32768", fieldtype.Short) == false {
+		t.Errorf("Field.isValidInteger() ==> -32768 string is not a valid integer (16 bits)")
+	}
+	if isValidInteger("32767", fieldtype.Short) == false {
+		t.Errorf("Field.isValidInteger() ==> 32767 string is not a valid integer (16 bits)")
+	}
+	if isValidInteger("-564", fieldtype.Short) == false {
+		t.Errorf("Field.isValidInteger() ==> -564 string is not a valid integer (16 bits)")
+	}
+	if isValidInteger("0", fieldtype.Short) == false {
+		t.Errorf("Field.isValidInteger() ==> 0 string is not a valid integer (16 bits)")
+	}
+
+	//BYTE
+	if isValidInteger("127", fieldtype.Byte) == false {
+		t.Errorf("Field.isValidInteger() ==> 127 string is not a valid integer (8 bits)")
+	}
+	if isValidInteger("11", fieldtype.Byte) == false {
+		t.Errorf("Field.isValidInteger() ==> 127 string is not a valid integer (8 bits)")
+	}
+	if isValidInteger("-128", fieldtype.Byte) == false {
+		t.Errorf("Field.isValidInteger() ==> -128 string is not a valid integer (8 bits)")
+	}
+
+	// ========== NEGATIVE tests
+	//INT
+	if isValidInteger("", fieldtype.Long) != false {
+		t.Errorf("Field.isValidInteger() ==> empty string is not a valid integer (32 bits)")
+	}
+	if isValidInteger("21474836490", fieldtype.Int) != false {
+		t.Errorf("Field.isValidInteger() ==> 21474836490 is not a valid integer (32 bits)")
+	}
+	if isValidInteger("2-14836490", fieldtype.Int) != false {
+		t.Errorf("Field.isValidInteger() ==> 2-14836490 is not a valid integer (32 bits)")
+	}
+	if isValidInteger("2147483648", fieldtype.Int) != false {
+		t.Errorf("Field.isValidInteger() ==> 2147483648 is not a valid integer (32 bits)")
+	}
+	if isValidInteger("-2147483651", fieldtype.Int) != false {
+		t.Errorf("Field.isValidInteger() ==> -2147483651 is not a valid integer (32 bits)")
+	}
+	if isValidInteger("", fieldtype.Int) != false {
+		t.Errorf("Field.isValidInteger() ==> empty string is not a valid integer (32 bits)")
+	}
+	if isValidInteger("9223372036854775808", fieldtype.Long) != false {
+		t.Errorf("Field.isValidInteger() ==> 9223372036854775808 string is not a valid integer (64 bits)")
+	}
+	//SHORT
+	if isValidInteger("40000", fieldtype.Short) != false {
+		t.Errorf("Field.isValidInteger() ==> 40000 string is not a valid integer (16 bits)")
+	}
+	if isValidInteger("-40000", fieldtype.Short) != false {
+		t.Errorf("Field.isValidInteger() ==> -40000 string is not a valid integer (64 bits)")
+	}
+	//BYTE
+	if isValidInteger("256", fieldtype.Byte) != false {
+		t.Errorf("Field.isValidInteger() ==> 256 string is not a valid integer (8 bits)")
+	}
+	if isValidInteger("128", fieldtype.Byte) != false {
+		t.Errorf("Field.isValidInteger() ==> 128 string is not a valid integer (8 bits)")
+	}
+	if isValidInteger("-129", fieldtype.Byte) != false {
+		t.Errorf("Field.isValidInteger() ==> -129 string is not a valid integer (8 bits)")
+	}
+
+}

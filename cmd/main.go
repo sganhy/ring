@@ -16,7 +16,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const minint32 string = "-2147483648"
 
 //**************************
 // configuration methods
@@ -30,8 +30,11 @@ func main() {
 	fmt.Println(recordType[:index])
 	fmt.Println(recordType[index+1:])
 	var rcd = new(data.Record)
-	rcd.SetRecordType("@meta.@meta")
-	fmt.Println(data.IsValidInteger("-2147483648", fieldtype.Int))
+	rcd.SetRecordType("@meta")
+	rcd.SetField("description", "758645454")
+	fmt.Println(rcd.SetField("reference_id", "758640005454"))
+	fmt.Println(rcd.GetField("description"))
+	fmt.Println(rcd.GetField("reference_id"))
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
 		panic(err)

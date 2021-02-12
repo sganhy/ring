@@ -2,6 +2,7 @@ package schema
 
 import (
 	"math/rand"
+	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -161,7 +162,7 @@ func Test__Table__GetFieldByName(t *testing.T) {
 			}
 		}
 	}
-	// getFieldById
+	//Testing GetFieldById
 	field := table.GetFieldById(10)
 	if field == nil {
 		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", 10)
@@ -211,10 +212,17 @@ func Test__Table__GetFieldByName(t *testing.T) {
 		t.Errorf("Table.GetFieldByNameI() ==> field '111' cannot be found!!")
 	}
 
+	//Testing GetFieldIndexByName
 	position := table.GetFieldIndexByName("111")
 	if position != fieldNotFound {
 		t.Errorf("Table.GetFieldIndexByName() ==> field '111' index cannot be found!!")
 	}
+	table = getMetaTable(databaseprovider.MySql)
+	position = table.GetFieldIndexByName("description")
+	if position != 2 {
+		t.Errorf("Table.GetFieldIndexByName() ==> field '%s' index should be equal to 2", field.name)
+	}
+
 }
 
 //test: GetRelationByName, GetRelationIndexByName, and GetPrimaryKey

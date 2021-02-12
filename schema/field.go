@@ -7,7 +7,9 @@ import (
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/tabletype"
+	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"golang.org/x/text/runes"
@@ -19,6 +21,14 @@ var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
 var defaultNumberValue = "0"
+var maxint08 string = "127"
+var maxint16 string = "32767"
+var maxint32 string = "2147483647"
+var maxint64 string = "9223372036854775807"
+var minint08 string = "-128"
+var minint16 string = "-32768"
+var minint32 string = "-2147483648"
+var minint64 string = "-9223372036854775808"
 
 const unknowFieldDataType string = ""
 
@@ -225,6 +235,28 @@ func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableT
 		field.getSqlConstraint(provider, tableType)), nil
 }
 
+func (field *Field) IsValueValid(value string) bool {
+	switch field.fieldType {
+	case fieldtype.Long, fieldtype.Int, fieldtype.Short, fieldtype.Byte:
+		return isValidInteger(value, field.fieldType)
+	case fieldtype.Double:
+		_, err := strconv.ParseFloat(value, 64)
+		return err == nil
+	case fieldtype.Float:
+		_, err := strconv.ParseFloat(value, 32)
+		return err == nil
+		break
+	case fieldtype.String:
+		return true
+	case fieldtype.DateTime, fieldtype.LongDateTime, fieldtype.ShortDateTime:
+		_, err := time.Parse("2006-01-02 15:04", "2011-01-19 22:15")
+		return err == nil
+	case fieldtype.Boolean:
+		return strings.ToLower(value) == "true" || strings.ToLower(value) == "false"
+	}
+	return false
+}
+
 func (field *Field) Clone() *Field {
 	newField := new(Field)
 	/*
@@ -239,6 +271,58 @@ func (field *Field) Clone() *Field {
 //******************************
 // private methods
 //******************************
+func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
+	var sign, size int = 0, len(value)
+	for _, v := range value {
+		if v >= '0' && v <= '9' {
+			sign++
+			continue
+		} else if v == '-' && sign == 0 {
+			sign -= size
+			continue
+		} else {
+			return false
+		}
+	}
+	// it's a digit
+	switch fieldtyp {
+	case fieldtype.Byte:
+		return int08Condition(value, size, sign)
+	case fieldtype.Short:
+		return int16Condition(value, size, sign)
+	case fieldtype.Int:
+		return int32Condition(value, size, sign)
+	case fieldtype.Long:
+		return int64Condition(value, size, sign)
+	}
+	return false
+}
+
+func int08Condition(value string, size int, sign int) bool {
+	return (size > 0 && size < 3) ||
+		(size == 3 && value <= maxint08 && sign > 0) ||
+		(size == 3 && sign == -1) ||
+		(size == 4 && value <= minint08 && sign == -1)
+}
+
+func int16Condition(value string, size int, sign int) bool {
+	return (size > 0 && size < 5) ||
+		(size == 5 && value <= maxint16 && sign > 0) ||
+		(size == 5 && sign == -1) ||
+		(size == 6 && value <= minint16 && sign == -1)
+}
+func int32Condition(value string, size int, sign int) bool {
+	return (size > 0 && size < 10) ||
+		(size == 10 && value <= maxint32 && sign > 0) ||
+		(size == 10 && sign == -1) ||
+		(size == 11 && value <= minint32 && sign == -1)
+}
+func int64Condition(value string, size int, sign int) bool {
+	return (size > 0 && size < 19) ||
+		(size == 19 && value <= maxint64 && sign > 0) ||
+		(size == 19 && sign == -1) ||
+		(size == 20 && value <= minint64 && sign == -1)
+}
 
 func getDefaultValue(defaultValue string, field *Field) string {
 	if defaultValue == "" {
