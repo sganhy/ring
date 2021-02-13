@@ -61,13 +61,17 @@ func Test__Field__Init(t *testing.T) {
 
 	// computed default value
 	elemf1 := Field{}
-	elemf1.Init(0, "aName Test", "AField Test", fieldtype.Long, 5, "", true, false, false, true, true)
+	elemf1.Init(0, "aName Test", "AField Test", fieldtype.Long, 5, "", true, true, false, true, true)
 	if elemf1.GetDefaultValue() != "0" {
 		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
 	}
 	elemf2 := Field{}
-	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Float, 5, "", true, false, false, true, true)
-	if elemf2.GetDefaultValue() != "0" {
+	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Float, 5, "4154", true, true, false, true, true)
+	if elemf2.GetDefaultValue() != "4154" {
+		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
+	}
+	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Boolean, 5, "", true, true, false, true, true)
+	if strings.ToLower(elemf2.GetDefaultValue()) != "false" {
 		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
 	}
 

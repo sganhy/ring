@@ -22,6 +22,7 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		"localhost", 5432, "postgres", "sa", "postgres")
 	recordType := ".@meta2"
@@ -32,7 +33,7 @@ func main() {
 	var rcd = new(data.Record)
 	rcd.SetRecordType("@meta")
 	rcd.SetField("description", "758645454")
-	fmt.Println(rcd.SetField("reference_id", "758640005454"))
+	rcd.SetField("value", 40.4)
 	fmt.Println(rcd.GetField("description"))
 	fmt.Println(rcd.GetField("reference_id"))
 	db, err := sql.Open("postgres", psqlInfo)

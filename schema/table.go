@@ -578,11 +578,11 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	referenceId.Init(1021, "reference_id", "", fieldtype.Int, 0, "", true, true, true, false, true)
 	dataType.Init(1031, "data_type", "", fieldtype.Int, 0, "", true, false, true, false, true)
 
-	flags.Init(1039, "flags", "", fieldtype.Long, 0, "", true, false, true, false, true)
-	name.Init(1061, "name", "", fieldtype.String, 30, "", true, false, true, false, true)
+	flags.Init(1039, "flags", "", fieldtype.Long, 0, "", true, true, true, false, true)
+	name.Init(1061, "name", "", fieldtype.String, 30, "", true, true, true, false, true)
 	description.Init(1069, "description", "", fieldtype.String, 0, "", true, false, true, false, true)
-	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
-	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, false, true, false, true)
+	value.Init(1087, metaValue, "", fieldtype.Double, 0, "", true, false, true, false, true)
+	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type

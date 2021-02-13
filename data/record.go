@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ring/schema"
 	"ring/schema/fieldtype"
+	"strconv"
 )
 
 const unknowFieldDataType string = ""
@@ -47,7 +48,6 @@ func (record *Record) GetField(name string) string {
 			if value != emptyField {
 				return value
 			} else {
-
 				return record.recordType.GetFieldByIndex(fieldId).GetDefaultValue()
 			}
 		}
@@ -55,15 +55,31 @@ func (record *Record) GetField(name string) string {
 	return emptyField
 }
 
-func (record *Record) SetField(name string, value string) error {
+func (record *Record) SetField(name string, value interface{}) error {
 	if record.recordType != nil {
 		var fieldId = record.recordType.GetFieldIndexByName(name)
 		if fieldId >= 0 {
 			var field = record.recordType.GetFieldByIndex(fieldId)
-			if field.IsValueValid(value) {
-				record.data[fieldId] = value
+			var val string
+			switch value.(type) {
+			case string:
+				val = value.(string)
+				break
+			case float64:
+				val = strconv.FormatFloat(value.(float64), 'f', -1, 64)
+				break
+			case int:
+				val = strconv.Itoa(value.(int))
+				break
+			case bool:
+				val = strconv.FormatBool(value.(bool))
+				break
+			default:
+			}
+			if field.IsValueValid(val) {
+				record.data[fieldId] = val
 			} else {
-				return errors.New(getMsgInvalidValue(value, field.GetType()))
+				return errors.New(getMsgInvalidValue(val, field.GetType()))
 			}
 			return nil
 		}
@@ -75,6 +91,18 @@ func (record *Record) SetField(name string, value string) error {
 // set field without validation
 func (record *Record) setField(name string, value string) {
 	record.data[record.recordType.GetFieldIndexByName(name)] = value
+}
+
+func (record *Record) Copy() *Record {
+	var result = new(Record)
+	if record.recordType != nil {
+		result.recordType = record.recordType
+		result.data = make([]string, len(record.data), cap(record.data))
+		for i := 0; i < len(record.data); i++ {
+			result.data[i] = record.data[i]
+		}
+	}
+	return result
 }
 
 //******************************

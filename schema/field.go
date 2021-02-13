@@ -21,6 +21,7 @@ var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
 var defaultNumberValue = "0"
+var defaultBooleanValue = "false"
 var maxint08 string = "127"
 var maxint16 string = "32767"
 var maxint32 string = "2147483647"
@@ -60,7 +61,7 @@ type Field struct {
 	name          string
 	description   string
 	fieldType     fieldtype.FieldType
-	size          uint32
+	size          uint16
 	defaultValue  string
 	baseline      bool
 	notNull       bool
@@ -98,13 +99,19 @@ func (field *Field) Init(id int32, name string, description string, fieldType fi
 	field.name = name
 	field.description = description
 	field.fieldType = fieldType
-	field.size = size
-	field.defaultValue = getDefaultValue(defaultValue, field)
+	if size > 65535 {
+		field.size = 0
+	} else {
+		field.size = uint16(size)
+	}
+
 	field.baseline = baseline
 	field.notNull = notNull
 	field.active = active
 	field.multilingual = multilingual
 	field.caseSensitive = casesensitive
+	//!!! at the end only
+	field.defaultValue = getDefaultValue(defaultValue, field)
 }
 
 //******************************
@@ -126,7 +133,7 @@ func (field *Field) GetType() fieldtype.FieldType {
 	return field.fieldType
 }
 
-func (field *Field) GetSize() uint32 {
+func (field *Field) GetSize() uint16 {
 	return field.size
 }
 
@@ -219,7 +226,7 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	result.setFieldCaseSensitive(field.caseSensitive)
 	result.setFieldMultilingual(field.multilingual)
 	result.setEntityBaseline(field.baseline)
-	result.setFieldSize(field.size)
+	result.setFieldSize(uint32(field.size))
 
 	result.enabled = field.active
 	return result
@@ -245,7 +252,6 @@ func (field *Field) IsValueValid(value string) bool {
 	case fieldtype.Float:
 		_, err := strconv.ParseFloat(value, 32)
 		return err == nil
-		break
 	case fieldtype.String:
 		return true
 	case fieldtype.DateTime, fieldtype.LongDateTime, fieldtype.ShortDateTime:
@@ -263,7 +269,7 @@ func (field *Field) Clone() *Field {
 		id int32, name string, description string, fieldType fieldtype.FieldType, size uint32,
 		defaultValue string, baseline bool, notNull bool, casesensitive bool, multilingual bool, active bool
 	*/
-	newField.Init(field.id, field.name, field.description, field.fieldType, field.size, field.defaultValue, field.baseline,
+	newField.Init(field.id, field.name, field.description, field.fieldType, uint32(field.size), field.defaultValue, field.baseline,
 		field.notNull, field.caseSensitive, field.multilingual, field.active)
 	return newField
 }
@@ -326,8 +332,11 @@ func int64Condition(value string, size int, sign int) bool {
 
 func getDefaultValue(defaultValue string, field *Field) string {
 	if defaultValue == "" {
-		if field.IsNumeric() {
+		if field.IsNumeric() && field.notNull {
 			return defaultNumberValue
+		}
+		if field.fieldType == fieldtype.Boolean && field.notNull {
+			return defaultBooleanValue
 		}
 	}
 	return defaultValue
