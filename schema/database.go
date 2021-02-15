@@ -18,8 +18,9 @@ import (
 //******************************
 
 // sorted by id
-var schemaCollection *[]*Schema          // assign firstly --> not sorted
-var schemaNameCollection *map[string]int // assign secondly structure
+var schemaCollection *[]*Schema // assign firstly --> not sorted
+//TODO replace by slice
+var schemaNameCollection *map[string]int // assign secondly structure -->
 var metaSchemaName string
 var defaultSchemaName string
 
@@ -48,10 +49,16 @@ func GetMetaSchemaName() string {
 	return metaSchemaName
 }
 
+func GetDefaultSchema() *Schema {
+	return GetSchemaByName(metaSchemaName)
+}
+
 func SetDefaultSchema(name string) {
 	var currentSchemaCollection = schemaCollection
 	var currentSchemaNameCollection = schemaNameCollection
 
+	// thread safe?
+	// check if schema name exist
 	if schemaId, ok := (*currentSchemaNameCollection)[name]; ok {
 		currSchema := (*currentSchemaCollection)[schemaId]
 		defaultSchemaName = currSchema.name
@@ -80,6 +87,15 @@ func GetTableBySchemaName(recordType string) *Table {
 	if schemaId, ok := (*currentSchemaNameCollection)[strings.ToUpper(defaultSchemaName)]; ok {
 		currSchema := (*currentSchemaCollection)[schemaId]
 		return currSchema.GetTableByName(recordType)
+	}
+	return nil
+}
+
+func GetSchemaByName(name string) *Schema {
+	var currentSchemaCollection = schemaCollection
+	var currentSchemaNameCollection = schemaNameCollection
+	if schemaId, ok := (*currentSchemaNameCollection)[name]; ok {
+		return (*currentSchemaCollection)[schemaId]
 	}
 	return nil
 }

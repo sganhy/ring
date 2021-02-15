@@ -6,6 +6,9 @@ type List struct {
 	itemType string
 }
 
+var ItemTypeRecord = "Record"
+var ItemTypeInteger = "Integer"
+
 //******************************
 // public methods
 //******************************
@@ -32,18 +35,31 @@ func (list *List) ItemByIndex(index int) *Record {
 }
 
 //func (list *List) AppendItem(item *Record) {
-func (list *List) AppendItem(item interface{}) {
+func (list *List) AppendItem(item interface{}) error {
+
 	if list.data == nil {
 		list.data = make([]*Record, 0, 2)
 	}
+	var validItemType bool = false
 	switch v := item.(type) {
 	case int:
 		break
 	case *Record:
-		list.appendItem(v)
+		if list.itemType == ItemTypeRecord {
+			list.appendItem(v)
+			validItemType = true
+		}
 	case Record:
-		list.appendItem(&v)
+		if list.itemType == ItemTypeRecord {
+			list.appendItem(&v)
+			validItemType = true
+		}
 	default:
+	}
+	if validItemType == true {
+		return nil
+	} else {
+		return nil
 	}
 }
 

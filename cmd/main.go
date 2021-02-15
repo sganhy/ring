@@ -60,8 +60,11 @@ func main() {
 	fmt.Println(meta.IsFieldNotNull())
 	fmt.Println(elemf00.GetSize())
 
+	var elemf100 *schema.Field = nil
+
 	elemf := schema.Field{}
 	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+
 	var lang = schema.Language{}
 	lang.Init("FR")
 	fmt.Println(meta.IsEntityBaseline())

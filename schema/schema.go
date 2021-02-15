@@ -58,6 +58,10 @@ func (schema *Schema) IsActive() bool {
 	return schema.active
 }
 
+func (schema *Schema) GetLanguage() *Language {
+	return &schema.language
+}
+
 //******************************
 // public methods
 //******************************

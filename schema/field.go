@@ -9,7 +9,6 @@ import (
 	"ring/schema/tabletype"
 	"strconv"
 	"strings"
-	"time"
 	"unicode"
 
 	"golang.org/x/text/runes"
@@ -22,6 +21,9 @@ var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
 var defaultNumberValue = "0"
 var defaultBooleanValue = "false"
+var defaultDateTimeValue = "0001-01-01T00:00:00.000"
+var defaultShortDateTimeValue = "0001-01-01"
+var defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
 var maxint08 string = "127"
 var maxint16 string = "32767"
 var maxint32 string = "2147483647"
@@ -55,6 +57,7 @@ const longTextDefaultSize = 0
 const postgreVarcharMaxSize = 65535
 const mySqlVarcharMaxSize = 65535
 const sqliteVarcharMaxSize = 1000000000
+const fieldToStringFormat = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
 
 type Field struct {
 	id            int32
@@ -104,7 +107,6 @@ func (field *Field) Init(id int32, name string, description string, fieldType fi
 	} else {
 		field.size = uint16(size)
 	}
-
 	field.baseline = baseline
 	field.notNull = notNull
 	field.active = active
@@ -133,8 +135,8 @@ func (field *Field) GetType() fieldtype.FieldType {
 	return field.fieldType
 }
 
-func (field *Field) GetSize() uint16 {
-	return field.size
+func (field *Field) GetSize() uint32 {
+	return uint32(field.size)
 }
 
 func (field *Field) GetDefaultValue() string {
@@ -243,6 +245,10 @@ func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableT
 }
 
 func (field *Field) IsValueValid(value string) bool {
+	// nullable field?
+	if field.notNull == false && value == "" {
+		return true
+	}
 	switch field.fieldType {
 	case fieldtype.Long, fieldtype.Int, fieldtype.Short, fieldtype.Byte:
 		return isValidInteger(value, field.fieldType)
@@ -255,8 +261,7 @@ func (field *Field) IsValueValid(value string) bool {
 	case fieldtype.String:
 		return true
 	case fieldtype.DateTime, fieldtype.LongDateTime, fieldtype.ShortDateTime:
-		_, err := time.Parse("2006-01-02 15:04", "2011-01-19 22:15")
-		return err == nil
+		return isValidDateTime(value, field.fieldType)
 	case fieldtype.Boolean:
 		return strings.ToLower(value) == "true" || strings.ToLower(value) == "false"
 	}
@@ -272,6 +277,28 @@ func (field *Field) Clone() *Field {
 	newField.Init(field.id, field.name, field.description, field.fieldType, uint32(field.size), field.defaultValue, field.baseline,
 		field.notNull, field.caseSensitive, field.multilingual, field.active)
 	return newField
+}
+
+func (field *Field) ToString() string {
+	var fieldTyp = field.fieldType.ToString()
+	if field.fieldType == fieldtype.String && field.size > 0 {
+		fieldTyp += fmt.Sprintf("(%d)", field.size)
+	}
+	return fmt.Sprintf(fieldToStringFormat, field.name, field.description, fieldTyp, field.defaultValue, field.baseline,
+		field.notNull, field.caseSensitive, field.active)
+}
+
+func (fieldA *Field) Equals(fieldB *Field) bool {
+	if fieldA == nil && fieldB == nil {
+		return true
+	}
+	if (fieldA == nil && fieldB != nil) || (fieldA != nil && fieldB == nil) {
+		return false
+	}
+	if fieldA.ToString() == fieldB.ToString() {
+		return true
+	}
+	return false
 }
 
 //******************************
@@ -304,6 +331,10 @@ func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
 	return false
 }
 
+func isValidDateTime(value string, fieldtyp fieldtype.FieldType) bool {
+	return true
+}
+
 func int08Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 3) ||
 		(size == 3 && value <= maxint08 && sign > 0) ||
@@ -331,15 +362,29 @@ func int64Condition(value string, size int, sign int) bool {
 }
 
 func getDefaultValue(defaultValue string, field *Field) string {
-	if defaultValue == "" {
-		if field.IsNumeric() && field.notNull {
-			return defaultNumberValue
-		}
-		if field.fieldType == fieldtype.Boolean && field.notNull {
-			return defaultBooleanValue
+	var newDefaultValue = ""
+	if field.IsValueValid(defaultValue) == true {
+		newDefaultValue = defaultValue
+	}
+	if newDefaultValue == "" {
+		if field.notNull {
+
+			if field.IsNumeric() {
+				return defaultNumberValue
+			}
+			switch field.fieldType {
+			case fieldtype.Boolean:
+				return defaultBooleanValue
+			case fieldtype.DateTime:
+				return defaultDateTimeValue
+			case fieldtype.ShortDateTime:
+				return defaultShortDateTimeValue
+			case fieldtype.LongDateTime:
+				return defaultLongDateTimeValue
+			}
 		}
 	}
-	return defaultValue
+	return newDefaultValue
 }
 
 func getDefaultPrimaryKey(fldtype fieldtype.FieldType) *Field {

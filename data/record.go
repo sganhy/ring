@@ -6,6 +6,7 @@ import (
 	"ring/schema"
 	"ring/schema/fieldtype"
 	"strconv"
+	"time"
 )
 
 const unknowFieldDataType string = ""
@@ -14,7 +15,9 @@ const emptyField string = ""
 const errorInvalidObjectType = "Object type '%s' is not valid."
 const errorUnknownRecordType = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
 const errorUnknownFieldName = "Field name '%s' does not exist for object type '%s'."
-const errorInvalidNumber = "Invalid %s value %s."
+const errorInvalidNumber = "Invalid '%s' value %s."
+const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
+const defaultShortTimeFormat = "2006-01-02"         // rfc3339
 
 type Record struct {
 	data       []string
@@ -65,6 +68,10 @@ func (record *Record) SetField(name string, value interface{}) error {
 			case string:
 				val = value.(string)
 				break
+			case float32:
+				// conversion issues
+				val = fmt.Sprintf("%g", value.(float32))
+				break
 			case float64:
 				val = strconv.FormatFloat(value.(float64), 'f', -1, 64)
 				break
@@ -74,12 +81,46 @@ func (record *Record) SetField(name string, value interface{}) error {
 			case bool:
 				val = strconv.FormatBool(value.(bool))
 				break
+			case int8:
+				val = strconv.Itoa(int(value.(int8)))
+				break
+			case int16:
+				val = strconv.Itoa(int(value.(int16)))
+				break
+			case int32:
+				val = strconv.Itoa(int(value.(int32)))
+				break
+			case int64:
+				val = strconv.FormatInt(value.(int64), 10)
+				break
+			case uint8:
+				val = strconv.FormatUint(uint64(value.(uint8)), 10)
+				break
+			case uint16:
+				val = strconv.FormatUint(uint64(value.(uint16)), 10)
+				break
+			case uint32:
+				val = strconv.FormatUint(uint64(value.(uint32)), 10)
+				break
+			case uint64:
+				val = strconv.FormatUint(value.(uint64), 10)
+				break
+			case time.Time:
+				val = getDateTimeString(value.(time.Time), field.GetType())
+				if field.IsDateTime() {
+					// avoid dateTime revalidation
+					record.data[fieldId] = val
+					return nil
+				}
+				break
 			default:
+				return errors.New("Unsupported type")
 			}
 			if field.IsValueValid(val) {
 				record.data[fieldId] = val
 			} else {
-				return errors.New(getMsgInvalidValue(val, field.GetType()))
+				var fieltyp = field.GetType()
+				return errors.New(fmt.Sprintf(errorInvalidNumber, fieltyp.ToString(), val))
 			}
 			return nil
 		}
@@ -109,24 +150,16 @@ func (record *Record) Copy() *Record {
 // private methods
 //******************************
 
-func getMsgInvalidValue(value string, fieldtyp fieldtype.FieldType) string {
-	var msg = "Invalid value"
-	switch fieldtyp {
-	case fieldtype.Long:
-		msg = fmt.Sprintf(errorInvalidNumber, "Long", value)
-		break
-	case fieldtype.Int:
-		msg = fmt.Sprintf(errorInvalidNumber, "Int", value)
-		break
-	case fieldtype.Short:
-		msg = fmt.Sprintf(errorInvalidNumber, "Short", value)
-		break
-	case fieldtype.Byte:
-		msg = fmt.Sprintf(errorInvalidNumber, "Byte", value)
-		break
-	case fieldtype.Boolean:
-		msg = fmt.Sprintf(errorInvalidNumber, "Boolean", value)
-		break
+func getDateTimeString(t time.Time, fieldTyp fieldtype.FieldType) string {
+	switch fieldTyp {
+	case fieldtype.DateTime:
+		return t.UTC().Format(defaultTimeFormat)
+	case fieldtype.ShortDateTime:
+		return t.Format(defaultShortTimeFormat)
+	case fieldtype.LongDateTime:
+		return t.Format(time.RFC3339Nano)
+	case fieldtype.String:
+		return t.UTC().Format(defaultTimeFormat)
 	}
-	return msg
+	return ""
 }

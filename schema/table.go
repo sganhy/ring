@@ -581,7 +581,7 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	flags.Init(1039, "flags", "", fieldtype.Long, 0, "", true, true, true, false, true)
 	name.Init(1061, "name", "", fieldtype.String, 30, "", true, true, true, false, true)
 	description.Init(1069, "description", "", fieldtype.String, 0, "", true, false, true, false, true)
-	value.Init(1087, metaValue, "", fieldtype.Double, 0, "", true, false, true, false, true)
+	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
 	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
