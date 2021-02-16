@@ -32,3 +32,13 @@ func (tablespace *Tablespace) GetName() string {
 func (tablespace *Tablespace) GetDescription() string {
 	return tablespace.description
 }
+
+//******************************
+// public methods
+//******************************
+func (tablespace *Tablespace) Clone() *Tablespace {
+	newTablespace := new(Tablespace)
+	newTablespace.Init(tablespace.id, tablespace.name, tablespace.description,
+		tablespace.tableName, tablespace.table, tablespace.index)
+	return newTablespace
+}

@@ -7,12 +7,13 @@ import (
 )
 
 type BulkRetrieve struct {
-	data            []*bulkRetrieveQuery
+	data            *[]*bulkRetrieveQuery
 	currentSchema   *schema.Schema
 	currentLanguage *schema.Language
 }
 
-const errorInvalidIndex = "This BulkRetrieve does not have a level #{0} to retrieve results for."
+const errorInvalidIndex = "This BulkRetrieve does not have a level #%d to retrieve results for."
+const initialSliceCount = 4
 
 func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
 	bulkRetrieve.currentSchema = schema
@@ -37,5 +38,14 @@ func (bulkRetrieve *BulkRetrieve) setLanguage(language *schema.Language) {
 }
 
 func (bulkRetrieve *BulkRetrieve) SimpleQuery(entryIndex uint16, objectName string) error {
+	if bulkRetrieve.data == nil {
+		data := make([]*bulkRetrieveQuery, 0, initialSliceCount)
+		bulkRetrieve.data = &data
+	}
+	var index = int(entryIndex)
+	if index > len(*bulkRetrieve.data) {
+		return errors.New(fmt.Sprintf(errorInvalidIndex, len(*bulkRetrieve.data)))
+	}
+
 	return nil
 }

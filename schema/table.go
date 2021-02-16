@@ -602,7 +602,7 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 
 	indexes = append(indexes, uk)
 
-	table.Init(int32(tabletype.MetaId), metaTableName, "", fields, relations, indexes, getPhysicalName(provider, metaTableName),
+	table.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes, getPhysicalName(provider, metaTableName),
 		physicaltype.Table, 0, tabletype.MetaId, "", true, false, true, true)
 
 	return table
@@ -648,7 +648,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider) *Table {
 	fields = append(fields, schemaId)  //8
 	fields = append(fields, message)   //9
 
-	table.Init(int32(tabletype.MetaId), "@log", "", fields, relations, indexes, "", physicaltype.Table, 0, tabletype.MetaId, "",
+	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, "", physicaltype.Table, 0, tabletype.MetaId, "",
 		false, false, true, true)
 	return table
 }

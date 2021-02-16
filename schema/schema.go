@@ -77,6 +77,31 @@ func (schema *Schema) GetTableById(id int32) *Table {
 	}
 	return nil
 }
+func (schema *Schema) GetTableCount() int {
+	if schema != nil {
+		return len(schema.tables)
+	} else {
+		return 0
+	}
+}
+
+func (schema *Schema) Clone() *Schema {
+	newSchema := new(Schema)
+	var tables = []Table{}
+	var tablespaces = []Tablespace{}
+
+	for _, v := range schema.tables {
+		var table = (*v).Clone()
+		tables = append(tables, *table)
+	}
+	for i := 0; i < len(schema.tablespaces); i++ {
+		var tablespace = *schema.tablespaces[i]
+		tablespaces = append(tablespaces, *tablespace.Clone())
+	}
+	newSchema.Init(schema.id, schema.name, schema.description, schema.connectionString, schema.language, tables, tablespaces,
+		schema.provider, schema.baseline, schema.active)
+	return newSchema
+}
 
 //******************************
 // private methods
@@ -106,7 +131,12 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 	}
 }
 
-func GetMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string) *Schema {
+//TODO remove this function
+func GetMetaSchema() *Schema {
+	return getMetaSchema(databaseprovider.Influx, "test")
+}
+
+func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string) *Schema {
 	var tables = []Table{}
 	var tablespaces = []Tablespace{}
 	var schema = Schema{}

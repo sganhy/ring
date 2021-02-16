@@ -22,6 +22,11 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+	var schemTest = schema.GetMetaSchema()
+	fmt.Println("schemTest.GetTableCount()")
+	fmt.Println(schemTest.GetTableCount())
+	var schemTest2 = schemTest.Clone()
+	fmt.Println(schemTest2.GetTableCount())
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		"localhost", 5432, "postgres", "sa", "postgres")
@@ -60,8 +65,6 @@ func main() {
 	fmt.Println(meta.IsFieldNotNull())
 	fmt.Println(elemf00.GetSize())
 
-	var elemf100 *schema.Field = nil
-
 	elemf := schema.Field{}
 	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
 
@@ -91,6 +94,7 @@ func main() {
 	// RELATIONS **********
 	elemt := new(schema.Table)
 	elemr := schema.Relation{}
+
 	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
 	elemr0 := schema.Relation{}
 	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
@@ -100,7 +104,6 @@ func main() {
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
 	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
 	fmt.Println(elemr.GetName())
-
 	var fields = []schema.Field{}
 	//var prim = schema.GetDefaultPrimaryKey()
 	fields = append(fields, elemf)

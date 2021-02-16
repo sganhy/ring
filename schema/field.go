@@ -187,8 +187,7 @@ func (field *Field) IsNumeric() bool {
 }
 
 func (field *Field) IsDateTime() bool {
-	return field.fieldType == fieldtype.DateTime || field.fieldType == fieldtype.LongDateTime ||
-		field.fieldType == fieldtype.ShortDateTime
+	return field.fieldType == fieldtype.DateTime || field.fieldType == fieldtype.LongDateTime || field.fieldType == fieldtype.ShortDateTime
 }
 
 ///

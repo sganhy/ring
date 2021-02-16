@@ -2,47 +2,42 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
+	"sort"
 	"strings"
 )
 
-//******************************
-// getters
-//******************************
+// sorted by id
+var schemaById *[]*Schema          // assign firstly --> sorted by Id
+var schemaIndexByName *[]*database // assign secondly  --> sorted by name
+var metaSchemaName string
+var defaultSchemaName string
+
+const schemaSeparator = "."
+const initialSliceCount = 16
+const schemaNotFound = 16
+
+type database struct {
+	name  string
+	index int
+}
+
+func init() {
+	lstById := make([]*Schema, 0, initialSliceCount)
+	schemaById = &lstById
+	lstByName := make([]*database, 0, initialSliceCount)
+	schemaIndexByName = &lstByName
+}
 
 //******************************
 // public methods
 //******************************
 
-//******************************
-// private methods
-//******************************
-
-// sorted by id
-var schemaCollection *[]*Schema // assign firstly --> not sorted
-//TODO replace by slice
-var schemaNameCollection *map[string]int // assign secondly structure -->
-var metaSchemaName string
-var defaultSchemaName string
-
-const schemaSeparator = "."
-
-func init() {
-	schemaCollection = &([]*Schema{})
-	var schemasByName = make(map[string]int)
-	schemaNameCollection = &schemasByName
-}
-
 func Init(provider databaseprovider.DatabaseProvider, connectionstring string) {
-	var schemas = []*Schema{}
-	var metaschema = GetMetaSchema(provider, connectionstring)
-	var schemasByName = make(map[string]int)
+	var metaschema = getMetaSchema(provider, connectionstring)
 	metaSchemaName = metaschema.name
-
-	schemas = append(schemas, metaschema)
-	schemaCollection = &schemas
-	schemasByName[strings.ToUpper(metaSchemaName)] = 0
-	schemaNameCollection = &schemasByName
 	defaultSchemaName = metaschema.name
+	//
+	addSchema(metaschema)
 }
 
 func GetMetaSchemaName() string {
@@ -53,49 +48,90 @@ func GetDefaultSchema() *Schema {
 	return GetSchemaByName(metaSchemaName)
 }
 
-func SetDefaultSchema(name string) {
-	var currentSchemaCollection = schemaCollection
-	var currentSchemaNameCollection = schemaNameCollection
-
+func setDefaultSchema(name string) {
+	var schema = GetSchemaByName(name)
 	// thread safe?
-	// check if schema name exist
-	if schemaId, ok := (*currentSchemaNameCollection)[name]; ok {
-		currSchema := (*currentSchemaCollection)[schemaId]
-		defaultSchemaName = currSchema.name
+	if schema != nil {
+		defaultSchemaName = schema.name
 	}
 }
 
 func GetTableBySchemaName(recordType string) *Table {
 	var index = strings.Index(recordType, schemaSeparator)
+	var schemaName = defaultSchemaName
+	var tableName = recordType
 	if index >= 0 {
-		var schemaName = strings.ToUpper(recordType[:index])
-		var tableName = recordType[index+1:]
-		var currentSchemaCollection = schemaCollection
-		var currentSchemaNameCollection = schemaNameCollection
-
-		// find schema id
-		if schemaId, ok := (*currentSchemaNameCollection)[schemaName]; ok {
-			currSchema := (*currentSchemaCollection)[schemaId]
-			return currSchema.GetTableByName(tableName)
-		}
-		//TODO Init launched before ??
-		return nil
+		schemaName = strings.ToUpper(recordType[:index])
+		tableName = recordType[index+1:]
 	}
-	var currentSchemaCollection = schemaCollection
-	var currentSchemaNameCollection = schemaNameCollection
-	// no schema separator, use default schema
-	if schemaId, ok := (*currentSchemaNameCollection)[strings.ToUpper(defaultSchemaName)]; ok {
-		currSchema := (*currentSchemaCollection)[schemaId]
-		return currSchema.GetTableByName(recordType)
+	var schema = GetSchemaByName(schemaName)
+	if schema != nil {
+		return schema.GetTableByName(tableName)
 	}
 	return nil
 }
 
 func GetSchemaByName(name string) *Schema {
-	var currentSchemaCollection = schemaCollection
-	var currentSchemaNameCollection = schemaNameCollection
-	if schemaId, ok := (*currentSchemaNameCollection)[name]; ok {
-		return (*currentSchemaCollection)[schemaId]
+	var currentSchemaById = schemaById
+	var schemaName = strings.ToUpper(name)
+	var currentSchemaByName = schemaIndexByName
+	var index = -1
+	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(*currentSchemaByName) - 1, 0, 0
+
+	for indexerLeft <= indexerRigth {
+		indexerMiddle = indexerLeft + indexerRigth
+		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
+		indexerCompare = strings.Compare(schemaName, (*currentSchemaByName)[indexerMiddle].name)
+		if indexerCompare == 0 {
+			index = indexerMiddle
+			break
+		} else if indexerCompare > 0 {
+			indexerLeft = indexerMiddle + 1
+		} else {
+			indexerRigth = indexerMiddle - 1
+		}
+	}
+	if index >= 0 && index < len(*currentSchemaById) {
+		return (*currentSchemaById)[index]
 	}
 	return nil
 }
+
+func GetSchemaById(id int32) *Schema {
+	var currentSchemaById = schemaById
+	var indexerLeft, indexerRigth, indexerMiddle int = 0, len(*currentSchemaById) - 1, 0
+	var indexerCompare int32 = 0
+	for indexerLeft <= indexerRigth {
+		indexerMiddle = indexerLeft + indexerRigth
+		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
+		indexerCompare = id - (*currentSchemaById)[indexerMiddle].id
+		if indexerCompare == 0 {
+			return (*currentSchemaById)[indexerMiddle]
+		} else if indexerCompare > 0 {
+			indexerLeft = indexerMiddle + 1
+		} else {
+			indexerRigth = indexerMiddle - 1
+		}
+	}
+	return nil
+}
+
+// not thread safe !! very slow
+func addSchema(schema *Schema) {
+	metaDb := new(database)
+	metaDb.index = len(*schemaById)
+	metaDb.name = strings.ToUpper(schema.name)
+	*schemaIndexByName = append(*schemaIndexByName, metaDb)
+	*schemaById = append(*schemaById, schema)
+	// sort
+	sort.Slice(*schemaIndexByName, func(i, j int) bool {
+		return (*schemaIndexByName)[i].name < (*schemaIndexByName)[j].name
+	})
+	sort.Slice(*schemaById, func(i, j int) bool {
+		return (*schemaById)[i].id < (*schemaById)[j].id
+	})
+}
+
+//******************************
+// private methods
+//******************************
