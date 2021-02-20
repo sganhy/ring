@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"ring/data"
+	"ring/data/operationtype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
@@ -22,6 +23,17 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+	schema.Init(databaseprovider.MySql, "zorba")
+
+	var br = new(data.BulkRetrieve)
+	br.SimpleQuery(0, "@meta")
+	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
+	br.SimpleQuery(1, "@log")
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
+	br.RetrieveRecords()
+
 	var schemTest = schema.GetMetaSchema()
 	fmt.Println("schemTest.GetTableCount()")
 	fmt.Println(schemTest.GetTableCount())
@@ -32,7 +44,6 @@ func main() {
 		"localhost", 5432, "postgres", "sa", "postgres")
 	recordType := ".@meta2"
 	var index = strings.Index(recordType, ".")
-	schema.Init(databaseprovider.MySql, "zorba")
 	fmt.Println(recordType[:index])
 	fmt.Println(recordType[index+1:])
 	var rcd = new(data.Record)

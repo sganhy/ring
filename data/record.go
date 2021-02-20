@@ -35,14 +35,6 @@ func (record *Record) SetRecordType(recordType string) error {
 	return nil
 }
 
-func (record *Record) setRecordType(recordType *schema.Table) {
-	record.recordType = recordType
-	capacity := recordType.GetFieldCount()
-	if capacity > 0 {
-		record.data = make([]string, capacity, capacity)
-	}
-}
-
 func (record *Record) GetField(name string) string {
 	if record.recordType != nil {
 		var fieldId = record.recordType.GetFieldIndexByName(name)
@@ -162,4 +154,26 @@ func getDateTimeString(t time.Time, fieldTyp fieldtype.FieldType) string {
 		return t.UTC().Format(defaultTimeFormat)
 	}
 	return ""
+}
+
+func (record *Record) setRecordType(recordType *schema.Table) {
+	// is it the same ?
+	if recordType != nil {
+		capacity := recordType.GetFieldCount()
+		if capacity > 0 {
+			// maye ba we can avoid to allocate if the capacity is smaller
+			if capacity != len(record.data) {
+				record.data = make([]string, capacity, capacity)
+			} else {
+				// reset all values if recordType changed?? is there
+				// good idea may be
+				//if record.recordType != recordType {
+				for i := 0; i < len(record.data); i++ {
+					record.data[i] = emptyField
+				}
+				//}
+			}
+		}
+	}
+	record.recordType = recordType
 }
