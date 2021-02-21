@@ -2,7 +2,6 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
-	"sort"
 	"strings"
 )
 
@@ -11,10 +10,10 @@ var schemaById *[]*Schema          // assign firstly --> sorted by Id
 var schemaIndexByName *[]*database // assign secondly  --> sorted by name
 var metaSchemaName string
 var defaultSchemaName string
+var databaseInitialized = false
 
 const schemaSeparator = "."
 const initialSliceCount = 16
-const schemaNotFound = 16
 
 type database struct {
 	name  string
@@ -32,28 +31,25 @@ func init() {
 // public methods
 //******************************
 
-func Init(provider databaseprovider.DatabaseProvider, connectionstring string) {
-	var metaschema = getMetaSchema(provider, connectionstring)
-	metaSchemaName = metaschema.name
-	defaultSchemaName = metaschema.name
-	//
-	addSchema(metaschema)
-}
-
-func GetMetaSchemaName() string {
-	return metaSchemaName
+func Init(provider databaseprovider.DatabaseProvider, connectionString string, minConnection uint16, maxConnection uint16) {
+	// perform just once
+	if databaseInitialized == false {
+		var disableConnectionPool = false
+		// disable connection pool for unit testing ??
+		if minConnection == 0 && maxConnection == 0 && connectionString == "" {
+			disableConnectionPool = true
+		}
+		var metaSchema = getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
+		metaSchemaName = metaSchema.name
+		defaultSchemaName = metaSchema.name
+		//
+		addSchema(metaSchema)
+		databaseInitialized = true
+	}
 }
 
 func GetDefaultSchema() *Schema {
 	return GetSchemaByName(metaSchemaName)
-}
-
-func setDefaultSchema(name string) {
-	var schema = GetSchemaByName(name)
-	// thread safe?
-	if schema != nil {
-		defaultSchemaName = schema.name
-	}
 }
 
 func GetTableBySchemaName(recordType string) *Table {
@@ -76,10 +72,10 @@ func GetSchemaByName(name string) *Schema {
 	var schemaName = strings.ToUpper(name)
 	var currentSchemaByName = schemaIndexByName
 	var index = -1
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(*currentSchemaByName) - 1, 0, 0
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(*currentSchemaByName) - 1, 0, 0
 
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(schemaName, (*currentSchemaByName)[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -88,7 +84,7 @@ func GetSchemaByName(name string) *Schema {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	if index >= 0 && index < len(*currentSchemaById) {
@@ -99,10 +95,10 @@ func GetSchemaByName(name string) *Schema {
 
 func GetSchemaById(id int32) *Schema {
 	var currentSchemaById = schemaById
-	var indexerLeft, indexerRigth, indexerMiddle int = 0, len(*currentSchemaById) - 1, 0
+	var indexerLeft, indexerRight, indexerMiddle = 0, len(*currentSchemaById) - 1, 0
 	var indexerCompare int32 = 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = id - (*currentSchemaById)[indexerMiddle].id
 		if indexerCompare == 0 {
@@ -110,26 +106,42 @@ func GetSchemaById(id int32) *Schema {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
 }
 
-// not thread safe !! very slow
+// not thread safe !! slow!! Used only during initialization
 func addSchema(schema *Schema) {
 	metaDb := new(database)
 	metaDb.index = len(*schemaById)
 	metaDb.name = strings.ToUpper(schema.name)
 	*schemaIndexByName = append(*schemaIndexByName, metaDb)
 	*schemaById = append(*schemaById, schema)
-	// sort
-	sort.Slice(*schemaIndexByName, func(i, j int) bool {
-		return (*schemaIndexByName)[i].name < (*schemaIndexByName)[j].name
-	})
-	sort.Slice(*schemaById, func(i, j int) bool {
-		return (*schemaById)[i].id < (*schemaById)[j].id
-	})
+	var currentDb *database
+	var currentSch *Schema
+	// insert to the right place
+	for i := len(*schemaIndexByName) - 1; i > 0; i-- {
+		currentDb = (*schemaIndexByName)[i]
+		if currentDb.name < (*schemaIndexByName)[i-1].name {
+			// then swap
+			(*schemaIndexByName)[i] = (*schemaIndexByName)[i-1]
+			(*schemaIndexByName)[i-1] = currentDb
+		} else {
+			break
+		}
+	}
+	for i := len(*schemaById) - 1; i > 0; i-- {
+		currentSch = (*schemaById)[i]
+		if currentSch.id < (*schemaById)[i-1].id {
+			// then swap
+			(*schemaById)[i] = (*schemaById)[i-1]
+			(*schemaById)[i-1] = currentSch
+		} else {
+			break
+		}
+	}
 }
 
 //******************************

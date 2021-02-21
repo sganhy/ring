@@ -15,7 +15,7 @@ func Test__Schema__Init(t *testing.T) {
 	var tablespaces = []Tablespace{}
 	var schema = Schema{}
 
-	schema.Init(212, "test name", "test desc", "test connectionString", language, tables, tablespaces, databaseprovider.Influx, true, true)
+	schema.Init(212, "test name", "test desc", "test connectionString", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
 
 	if schema.GetName() != "test name" {
 		t.Errorf("Schema.Init() ==> name <> GetName()")
@@ -74,7 +74,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		id int32, name string, description string, connectionString string, language Language, tables []Table,
 		tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, baseline bool, active bool
 	*/
-	schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
+	schema.Init(212, "test", "test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
 	// GetTableByName()
 	for i := 0; i < len(tables); i++ {
 		tableName := tables[i].name

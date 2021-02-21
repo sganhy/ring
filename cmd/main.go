@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"ring/data"
 	"ring/data/operationtype"
@@ -12,6 +11,7 @@ import (
 	"ring/schema/relationtype"
 	"ring/schema/tabletype"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -23,8 +23,9 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
-	schema.Init(databaseprovider.MySql, "zorba")
+	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 
+	// Create an empty user and make the sql query (using $1 for the parameter)
 	var br = new(data.BulkRetrieve)
 	br.SimpleQuery(0, "@meta")
 	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
@@ -34,14 +35,6 @@ func main() {
 	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
 	br.RetrieveRecords()
 
-	var schemTest = schema.GetMetaSchema()
-	fmt.Println("schemTest.GetTableCount()")
-	fmt.Println(schemTest.GetTableCount())
-	var schemTest2 = schemTest.Clone()
-	fmt.Println(schemTest2.GetTableCount())
-
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		"localhost", 5432, "postgres", "sa", "postgres")
 	recordType := ".@meta2"
 	var index = strings.Index(recordType, ".")
 	fmt.Println(recordType[:index])
@@ -52,17 +45,6 @@ func main() {
 	rcd.SetField("value", 40.4)
 	fmt.Println(rcd.GetField("description"))
 	fmt.Println(rcd.GetField("reference_id"))
-	db, err := sql.Open("postgres", psqlInfo)
-	if err != nil {
-		panic(err)
-	} else {
-		fmt.Println("connection to database")
-	}
-	defer db.Close()
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
 
 	fmt.Println("Successfully connected!")
 
@@ -147,4 +129,6 @@ func main() {
 
 	reg := []string{"a", "b", "c"}
 	fmt.Println(strings.Join(reg, ","))
+	time.Sleep(20 * time.Second)
+	fmt.Println("Finished!")
 }

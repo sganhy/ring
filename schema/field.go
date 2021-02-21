@@ -24,14 +24,14 @@ var defaultBooleanValue = "false"
 var defaultDateTimeValue = "0001-01-01T00:00:00.000"
 var defaultShortDateTimeValue = "0001-01-01"
 var defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
-var maxint08 string = "127"
-var maxint16 string = "32767"
-var maxint32 string = "2147483647"
-var maxint64 string = "9223372036854775807"
-var minint08 string = "-128"
-var minint16 string = "-32768"
-var minint32 string = "-2147483648"
-var minint64 string = "-9223372036854775808"
+var maxInt08  = "127"
+var maxInt16  = "32767"
+var maxInt32  = "2147483647"
+var maxInt64  = "9223372036854775807"
+var minInt08  = "-128"
+var minInt16  = "-32768"
+var minInt32  = "-2147483648"
+var minInt64  = "-9223372036854775808"
 
 const unknowFieldDataType string = ""
 
@@ -48,12 +48,10 @@ var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.DateTime:      "timestamp without time zone",
 	fieldtype.LongDateTime:  "timestamp with time zone"}
 
-const primaryKeyFielName = "id"
+const primaryKeyFieldName = "id"
 const primaryKeyDesc = "Internal record number"
-const fieldFlags = "id"
 
 // max lenght for a varchar
-const longTextDefaultSize = 0
 const postgreVarcharMaxSize = 65535
 const mySqlVarcharMaxSize = 65535
 const sqliteVarcharMaxSize = 1000000000
@@ -85,13 +83,13 @@ func init() {
 
 	//64
 	defaultPrimaryKeyInt64 = new(Field)
-	defaultPrimaryKeyInt64.Init(0, primaryKeyFielName, primaryKeyDesc, fieldtype.Long, 0, "", false, true, true, false, true)
+	defaultPrimaryKeyInt64.Init(0, primaryKeyFieldName, primaryKeyDesc, fieldtype.Long, 0, "", false, true, true, false, true)
 	//32
 	defaultPrimaryKeyInt32 = new(Field)
-	defaultPrimaryKeyInt32.Init(0, primaryKeyFielName, primaryKeyDesc, fieldtype.Int, 0, "", false, true, true, false, true)
+	defaultPrimaryKeyInt32.Init(0, primaryKeyFieldName, primaryKeyDesc, fieldtype.Int, 0, "", false, true, true, false, true)
 	//16
 	defaultPrimaryKeyInt16 = new(Field)
-	defaultPrimaryKeyInt16.Init(0, primaryKeyFielName, primaryKeyDesc, fieldtype.Short, 0, "", false, true, true, false, true)
+	defaultPrimaryKeyInt16.Init(0, primaryKeyFieldName, primaryKeyDesc, fieldtype.Short, 0, "", false, true, true, false, true)
 
 }
 
@@ -237,7 +235,7 @@ func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableT
 	datatype := field.getSqlDataType(provider)
 	if datatype == unknowFieldDataType {
 		return unknowFieldDataType, errors.New(fmt.Sprintf("Unknow datatype {provider: %s, dataTypeId: %d, fieldName: %s}",
-			provider, field.fieldType, field.name))
+			provider.ToString(), field.fieldType, field.name))
 	}
 	return strings.TrimSpace(field.getSqlFieldName(provider) + " " + field.getSqlDataType(provider) + " " +
 		field.getSqlConstraint(provider, tableType)), nil
@@ -287,14 +285,14 @@ func (field *Field) ToString() string {
 		field.notNull, field.caseSensitive, field.active)
 }
 
-func (fieldA *Field) Equals(fieldB *Field) bool {
-	if fieldA == nil && fieldB == nil {
+func (field *Field) Equals(fieldB *Field) bool {
+	if field == nil && fieldB == nil {
 		return true
 	}
-	if (fieldA == nil && fieldB != nil) || (fieldA != nil && fieldB == nil) {
+	if (field == nil && fieldB != nil) || (field != nil && fieldB == nil) {
 		return false
 	}
-	if fieldA.ToString() == fieldB.ToString() {
+	if field.ToString() == fieldB.ToString() {
 		return true
 	}
 	return false
@@ -304,7 +302,7 @@ func (fieldA *Field) Equals(fieldB *Field) bool {
 // private methods
 //******************************
 func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
-	var sign, size int = 0, len(value)
+	var sign, size = 0, len(value)
 	for _, v := range value {
 		if v >= '0' && v <= '9' {
 			sign++
@@ -336,28 +334,28 @@ func isValidDateTime(value string, fieldtyp fieldtype.FieldType) bool {
 
 func int08Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 3) ||
-		(size == 3 && value <= maxint08 && sign > 0) ||
+		(size == 3 && value <= maxInt08 && sign > 0) ||
 		(size == 3 && sign == -1) ||
-		(size == 4 && value <= minint08 && sign == -1)
+		(size == 4 && value <= minInt08 && sign == -1)
 }
 
 func int16Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 5) ||
-		(size == 5 && value <= maxint16 && sign > 0) ||
+		(size == 5 && value <= maxInt16 && sign > 0) ||
 		(size == 5 && sign == -1) ||
-		(size == 6 && value <= minint16 && sign == -1)
+		(size == 6 && value <= minInt16 && sign == -1)
 }
 func int32Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 10) ||
-		(size == 10 && value <= maxint32 && sign > 0) ||
+		(size == 10 && value <= maxInt32 && sign > 0) ||
 		(size == 10 && sign == -1) ||
-		(size == 11 && value <= minint32 && sign == -1)
+		(size == 11 && value <= minInt32 && sign == -1)
 }
 func int64Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 19) ||
-		(size == 19 && value <= maxint64 && sign > 0) ||
+		(size == 19 && value <= maxInt64 && sign > 0) ||
 		(size == 19 && sign == -1) ||
-		(size == 20 && value <= minint64 && sign == -1)
+		(size == 20 && value <= minInt64 && sign == -1)
 }
 
 func getDefaultValue(defaultValue string, field *Field) string {
@@ -405,7 +403,7 @@ func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) s
 		if val, ok := postgreDataType[field.fieldType]; ok {
 			result = val
 		}
-	case databaseprovider.Oracle:
+		break
 	case databaseprovider.PostgreSql:
 		if val, ok := postgreDataType[field.fieldType]; ok {
 			result = val
@@ -418,8 +416,7 @@ func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) s
 				}
 			}
 		}
-	case databaseprovider.Sqlite3:
-	case databaseprovider.Influx:
+		break
 	}
 	return result
 }

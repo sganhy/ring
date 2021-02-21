@@ -11,7 +11,6 @@ import (
 	"strings"
 )
 
-// call exemple elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
 type Table struct {
 	id           int32
 	name         string
@@ -52,7 +51,6 @@ const metaLogJobId string = "job_id"
 const metaLogMethod string = "method"
 const metaLogMessage string = "message"
 
-// // call exemple elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, "schema.t_site", physicaltype.Table, 64, tabletype.Business, "subject test", true, false, true, false)
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index, physicalName string,
 	physicalType physicaltype.PhysicalType, schemaId int32, tableType tabletype.TableType, subject string,
 	cached bool, readonly bool, baseline bool, active bool) {
@@ -141,9 +139,9 @@ func (table *Table) GetFieldCount() int {
 // public methods
 //******************************
 func (table *Table) GetFieldByName(name string) *Field {
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.fields) - 1, 0, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.fields) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(name, table.fields[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -151,7 +149,7 @@ func (table *Table) GetFieldByName(name string) *Field {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
@@ -169,9 +167,9 @@ func (table *Table) GetFieldByNameI(name string) *Field {
 }
 
 func (table *Table) GetFieldById(id int32) *Field {
-	var indexerLeft, indexerRigth, indexerMiddle int = 0, len(table.fieldsById) - 1, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle = 0, len(table.fieldsById) - 1, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 
 		if id == table.fieldsById[indexerMiddle].id {
@@ -179,7 +177,7 @@ func (table *Table) GetFieldById(id int32) *Field {
 		} else if id > table.fieldsById[indexerMiddle].id {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
@@ -187,9 +185,9 @@ func (table *Table) GetFieldById(id int32) *Field {
 
 //return -1 if not found
 func (table *Table) GetFieldIndexByName(name string) int {
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.fields) - 1, 0, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.fields) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(name, table.fields[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -197,7 +195,7 @@ func (table *Table) GetFieldIndexByName(name string) int {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return fieldNotFound
@@ -211,9 +209,9 @@ func (table *Table) GetFieldByIndex(index int) *Field {
 }
 
 func (table *Table) GetRelationByName(name string) *Relation {
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.relations) - 1, 0, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.relations) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(name, table.relations[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -221,16 +219,16 @@ func (table *Table) GetRelationByName(name string) *Relation {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
 }
 
 func (table *Table) GetIndexByName(name string) *Index {
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.indexes) - 1, 0, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.indexes) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(name, table.indexes[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -238,7 +236,7 @@ func (table *Table) GetIndexByName(name string) *Index {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
@@ -246,9 +244,9 @@ func (table *Table) GetIndexByName(name string) *Index {
 
 //return -1 if not found
 func (table *Table) GetRelationIndexByName(name string) int {
-	var indexerLeft, indexerRigth, indexerMiddle, indexerCompare int = 0, len(table.relations) - 1, 0, 0
-	for indexerLeft <= indexerRigth {
-		indexerMiddle = indexerLeft + indexerRigth
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.relations) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
 		indexerCompare = strings.Compare(name, table.relations[indexerMiddle].name)
 		if indexerCompare == 0 {
@@ -256,7 +254,7 @@ func (table *Table) GetRelationIndexByName(name string) int {
 		} else if indexerCompare > 0 {
 			indexerLeft = indexerMiddle + 1
 		} else {
-			indexerRigth = indexerMiddle - 1
+			indexerRight = indexerMiddle - 1
 		}
 	}
 	return relationNotFound
@@ -270,7 +268,7 @@ func (table *Table) GetPrimaryKey() *Field {
 }
 
 func (table *Table) GetDdlSql(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) (string, error) {
-	var fields = []string{}
+	var fields []string
 	for i := 0; i < len(table.fields); i++ {
 		fieldSql, err := table.fields[i].GetDdlSql(provider, table.tableType)
 		if err == nil {
@@ -296,14 +294,10 @@ func (table *Table) GetDdlSql(provider databaseprovider.DatabaseProvider, tables
 
 func (table *Table) Clone() *Table {
 	newTable := new(Table)
-	var fields = []Field{}
-	var relations = []Relation{}
-	var indexes = []Index{}
-	/*
-		id int32, name string, description string, fields []Field, relations []Relation, indexes []Index, physicalName string,
-		physicalType physicaltype.PhysicalType, schemaId int32, tableType tabletype.TableType, subject string,
-		cached bool, readonly bool, baseline bool, active bool
-	*/
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+
 	// don't clone ToTable for reflexive relationship (recursive call)
 	for i := 0; i < len(table.fields); i++ {
 		fields = append(fields, *table.fields[i].Clone())
@@ -333,7 +327,7 @@ func (table *Table) ToMeta() []*Meta {
 
 	// others
 	metaTable.dataType = 0
-	metaTable.name = table.name // max lenght 30 !! must be valided before
+	metaTable.name = table.name // max length 30 !! must be validated before
 	metaTable.description = table.description
 	metaTable.value = table.subject
 
@@ -367,13 +361,13 @@ func (table *Table) ToMeta() []*Meta {
 
 // return -1 if not found
 func findPrimaryKey(fields []Field) (int, *Field) {
-	var invalidFieldCount int = 0
+	var invalidFieldCount = 0
 	for i := 0; i < len(fields); i++ {
 		if fields[i].IsValid() == false {
 			invalidFieldCount++
 			continue
 		}
-		if strings.EqualFold(fields[i].name, primaryKeyFielName) {
+		if strings.EqualFold(fields[i].name, primaryKeyFieldName) {
 			return i - invalidFieldCount, &fields[i]
 		}
 	}
@@ -457,9 +451,9 @@ func (table *Table) sortIndexes() {
 func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 	// copy slice -- func make([]T, len, cap) []T
 	if fields != nil {
-		var capacity int = len(fields)
+		var capacity = len(fields)
 		var primaryKey *Field = nil
-		var primaryKeyIndex int = -1
+		var primaryKeyIndex = -1
 
 		// missing primaryKey ? for business tables
 		if tableType == tabletype.Business {
@@ -503,7 +497,6 @@ func (table *Table) loadRelations(relations []Relation) {
 	table.sortRelations()
 }
 
-//!!! Must be ran aftet loadFields() method
 // check if each fields exist
 func (table *Table) loadIndexes(indexes []Index) {
 	table.indexes = make([]*Index, 0, len(indexes))
@@ -517,22 +510,20 @@ func getMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
 	var indexes = make([]Index, 0, 16)
 	var table = new(Table)
 
-	// physical_name is builded later
+	// physical_name is built later
 	//  == metaId table
-	var id Field = Field{}
-	var schemaId Field = Field{}
-	var objectType Field = Field{}
-	var value Field = Field{}
-	var uk Index = Index{}
+	var id = Field{}
+	var schemaId = Field{}
+	var objectType = Field{}
+	var value  = Field{}
+	var uk = Index{}
 
-	// elemf.Init(21, "field ", "hellkzae", fieldtype.Double, 5, "", true, false, true, true, true)
 	// !!!! id field must be greater than 0 !!!!
 	id.Init(1103, metaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(1117, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	objectType.Init(1151, metaObjectType, "", fieldtype.Byte, 0, "", true, true, true, false, true)
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
-	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
 	uk.Init(1, "pk_@meta_id", "", indexedFields, false, true, true, true)
 
@@ -550,27 +541,26 @@ func getMetaIdTable(provider databaseprovider.DatabaseProvider) *Table {
 }
 
 func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
-	var fields = []Field{}
-	var relations = []Relation{}
-	var indexes = []Index{}
+	var fields  []Field
+	var relations  []Relation
+	var indexes  []Index
 	var table = new(Table)
-	var uk Index = Index{}
+	var uk  Index
 
-	// physical_name is builded later
+	// physical_name is built later
 	//  == metaId table
-	var id Field = Field{}
-	var schemaId Field = Field{}
-	var objectType Field = Field{}
-	var referenceId Field = Field{}
-	var dataType Field = Field{}
+	var id  = Field{}
+	var schemaId  = Field{}
+	var objectType  = Field{}
+	var referenceId  = Field{}
+	var dataType  = Field{}
 
-	var flags Field = Field{}
-	var value Field = Field{}
-	var name Field = Field{}
-	var description Field = Field{}
-	var active Field = Field{}
+	var flags  = Field{}
+	var value  = Field{}
+	var name  = Field{}
+	var description  = Field{}
+	var active  = Field{}
 
-	// elemf.Init(21, "field ", "hellkzae", fieldtype.Double, 5, "", true, false, true, true, true)
 	// !!!! id field must be greater than 0 !!!!
 	id.Init(1009, metaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(1013, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
@@ -584,7 +574,6 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
 	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
-	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
 	uk.Init(1, "pk_@meta", "", indexedFields, false, true, true, true)
@@ -609,24 +598,23 @@ func getMetaTable(provider databaseprovider.DatabaseProvider) *Table {
 }
 
 func getLogTable(provider databaseprovider.DatabaseProvider) *Table {
-	var fields = []Field{}
-	var relations = []Relation{}
-	var indexes = []Index{}
+	var fields []Field
+	var relations []Relation
+	var indexes  []Index
 	var table = new(Table)
 
-	// physical_name is builded later
+	// physical_name is built later
 	//  == metaId table
-	var id Field = Field{}
-	var entryTime Field = Field{}
-	var levelId Field = Field{}
-	var schemaId Field = Field{}
-	var threadId Field = Field{}
-	var callSite Field = Field{}
-	var jobId Field = Field{}
-	var method Field = Field{}
-	var message Field = Field{}
+	var id  = Field{}
+	var entryTime  = Field{}
+	var levelId  = Field{}
+	var schemaId  = Field{}
+	var threadId  = Field{}
+	var callSite  = Field{}
+	var jobId  = Field{}
+	var method  = Field{}
+	var message  = Field{}
 
-	// elemf.Init(21, "field ", "hellkzae", fieldtype.Double, 5, "", true, false, true, true, true)
 	// "id","entry_time","level_id","thread_id","call_site","message","description","machine_name"
 	id.Init(2111, metaLogId, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	entryTime.Init(2129, metaLogEntryTime, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
@@ -648,7 +636,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider) *Table {
 	fields = append(fields, schemaId)  //8
 	fields = append(fields, message)   //9
 
-	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, "", physicaltype.Table, 0, tabletype.MetaId, "",
+	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, getPhysicalName(provider, "@log"), physicaltype.Table, 0, tabletype.MetaId, "",
 		false, false, true, true)
 	return table
 }
@@ -659,12 +647,13 @@ func getPhysicalName(provider databaseprovider.DatabaseProvider, name string) st
 	switch provider {
 	case databaseprovider.PostgreSql:
 		physicalName = postgreSqlSchema + ".\"" + name + "\""
+		break
 	case databaseprovider.MySql:
 		physicalName = "MySql"
+		break
 	case databaseprovider.Oracle:
 		physicalName = "Oracle"
-	case databaseprovider.Sqlite3:
-		physicalName = "Sqlite"
+		break
 	}
 	return physicalName
 }
@@ -674,12 +663,13 @@ func getDdlTableSpace(provider databaseprovider.DatabaseProvider, tablespace *Ta
 	switch provider {
 	case databaseprovider.PostgreSql:
 		sql = "TABLESPACE " + tablespace.name
+		break
 	case databaseprovider.MySql:
 		sql = ""
+		break
 	case databaseprovider.Oracle:
 		sql = ""
-	case databaseprovider.Sqlite3:
-		sql = ""
+		break
 	}
 	return sql
 }

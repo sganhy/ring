@@ -2,7 +2,7 @@ package fieldtype
 
 type FieldType int8
 
-//!!! reserved value for unitesting {4, 5, 6} !!!
+//!!! reserved value for unit testing {4, 5, 6} !!!
 
 const (
 	strLong          string = "Long"

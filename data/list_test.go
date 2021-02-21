@@ -9,7 +9,8 @@ import (
 func Test__List__AppendItem(t *testing.T) {
 	var rcd = new(Record)
 	var lst = new(List)
-	schema.Init(databaseprovider.MySql, "zorba")
+	// disable connection pool empty connection, string min & max == 0
+	schema.Init(databaseprovider.MySql, "", 0, 0)
 	rcd.SetRecordType("@meta")
 	rcd.SetField("description", "758645454")
 	rcd.SetField("reference_id", "7585454")

@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-const maxInt32 int64 = 2147483647
-const maxInt8 int64 = 127
+const metaMaxInt32 int64 = 2147483647
+const metaMaxInt8 int64 = 127
 const metaIndexSeparator string = ";"
 
 type Meta struct {
@@ -30,7 +30,6 @@ const (
 	bitPositionFieldMultilingual    uint8 = 4
 	bitPositionIndexBitmap          uint8 = 9
 	bitPositionIndexUnique          uint8 = 10
-	bitPositionEntityEnabled        uint8 = 13
 	bitPositionEntityBaseline       uint8 = 14
 	bitPositionFirstPositionSize    uint8 = 17 // max value bit pos for field=16 !!!
 	bitPositionFirstPositionRelType uint8 = 18 // max value bit pos for field=17 !!!
@@ -45,7 +44,7 @@ const (
 // public methods
 //******************************
 func (meta *Meta) GetFieldSize() uint32 {
-	return uint32((meta.flags >> bitPositionFirstPositionSize) & uint64(maxInt32))
+	return uint32((meta.flags >> bitPositionFirstPositionSize) & uint64(metaMaxInt32))
 }
 func (meta *Meta) IsFieldMultilingual() bool {
 	return meta.readFlag(bitPositionFieldMultilingual)
@@ -115,7 +114,6 @@ func (meta *Meta) GetRelationType() relationtype.RelationType {
 func (meta *Meta) ToField() *Field {
 	if entitytype.EntityType(meta.objectType) == entitytype.Field {
 		var field = new(Field)
-		// call exemple elemf.Init(21, "field ", "hellkzae", fieldtype.Double, 5, "", true, false, true, true)
 		field.Init(meta.id, meta.name, meta.description,
 			meta.GetFieldType(), meta.GetFieldSize(), meta.value,
 			meta.IsEntityBaseline(), meta.IsFieldNotNull(), meta.IsFieldCaseSensitive(),
@@ -128,7 +126,6 @@ func (meta *Meta) ToField() *Field {
 func (meta *Meta) ToRelation(table *Table) *Relation {
 	if entitytype.EntityType(meta.objectType) == entitytype.Relation {
 		var relation = new(Relation)
-		// call exemple 	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
 		relation.Init(meta.id, meta.name, meta.description,
 			meta.value, meta.value, table, meta.GetRelationType(),
 			meta.IsRelationNotNull(), meta.IsEntityBaseline(), meta.enabled)
@@ -141,7 +138,6 @@ func (meta *Meta) ToIndex() *Index {
 	if entitytype.EntityType(meta.objectType) == entitytype.Index {
 		var index = new(Index)
 		var arr = strings.Split(meta.value, metaIndexSeparator)
-		// call exemple 	elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 		index.Init(meta.id, meta.name, meta.description, arr, meta.IsIndexBitmap(), meta.IsIndexUnique(),
 			meta.IsEntityBaseline(), meta.enabled)
 		return index
@@ -164,7 +160,7 @@ func (meta *Meta) setFieldCaseSensitive(value bool) {
 	meta.writeFlag(bitPositionFieldCaseSensitive, value)
 }
 func (meta *Meta) setFieldSize(size uint32) {
-	var temp uint64 = uint64(size & uint32(maxInt32))
+	var temp = uint64(size & uint32(metaMaxInt32))
 	// maxInt32 & size << ()
 	// reset flags 16 first bits using  65.535
 	meta.flags &= 65535
@@ -187,7 +183,7 @@ func (meta *Meta) setIndexUnique(value bool) {
 }
 
 func (meta *Meta) setRelationType(relationType relationtype.RelationType) {
-	var temp uint64 = uint64(uint32(relationType) & uint32(maxInt8))
+	var temp = uint64(uint32(relationType) & uint32(metaMaxInt8))
 	// maxInt32 & size << ()
 	// reset flags 16 first bits using  65.535
 	meta.flags &= 65535
@@ -201,7 +197,7 @@ func (meta *Meta) writeFlag(bitPosition uint8, value bool) {
 	var mask uint64 = 0
 	if bitPosition < 64 {
 		mask = 1
-		mask <<= (bitPosition - 1)
+		mask <<= bitPosition - 1
 		if value == true {
 			meta.flags |= mask
 		} else {

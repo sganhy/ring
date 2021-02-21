@@ -16,7 +16,6 @@ type Index struct {
 	active      bool
 }
 
-// call exemple elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 func (index *Index) Init(id int32, name string, description string, fields []string, bitmap bool,
 	unique bool, baseline bool, active bool) {
 	index.id = id
@@ -75,7 +74,7 @@ func (index *Index) ToMeta(tableId int32) *Meta {
 
 	// others
 	result.dataType = 0
-	result.name = index.name // max lenght 30 !! must be valided before
+	result.name = index.name // max length 30 !! must be validated before
 	result.description = index.description
 	result.value = strings.Join(index.fields, metaIndexSeparator)
 
@@ -97,10 +96,10 @@ func (index *Index) Clone() *Index {
 		id int32, name string, description string, fields []string, bitmap bool,
 			unique bool, baseline bool, active bool
 	*/
-	fields := []string{}
+	fields := make([]string, len(index.fields), len(index.fields))
 
 	for i := 0; i < len(index.fields); i++ {
-		fields = append(fields, index.fields[i])
+		fields[i] = index.fields[i]
 	}
 	newIndex.Init(index.id, index.name, index.description,
 		fields, index.bitmap, index.unique, index.baseline, index.active)

@@ -14,14 +14,15 @@ import (
 func Test__Record__SetField(t *testing.T) {
 	var rcd = new(Record)
 
-	schema.Init(databaseprovider.MySql, "zorba")
+	// disable connection pool empty connection, string min & max == 0
+	schema.Init(databaseprovider.MySql, "", 0, 0)
 	rcd.SetRecordType("@meta")
 
 	rcd.SetField("description", "758645454")
 	rcd.SetField("reference_id", 7585454)
 
 	if rcd.GetField("description2") != "" {
-		t.Errorf("Record.GetField() ==> 'description2' is not empty")
+		t.Errorf("Record.GetFiteld() ==> 'description2' is not empty")
 	}
 	if rcd.GetField("description") != "758645454" {
 		t.Errorf("Record.SetField() ==> 'description' is not equal to 758645454")

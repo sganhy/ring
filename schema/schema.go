@@ -5,26 +5,37 @@ import (
 )
 
 type Schema struct {
-	id               int32
-	name             string
-	description      string
-	connectionString string
-	language         Language
-	tables           map[string]*Table
-	tablesById       map[int32]*Table
-	tablespaces      []*Tablespace
-	provider         databaseprovider.DatabaseProvider
-	baseline         bool
-	active           bool
+	id          int32
+	name        string
+	description string
+	language    Language
+	tables      map[string]*Table
+	tablesById  map[int32]*Table
+	tableSpaces []*Tablespace
+	connections *connectionPool
+	baseline    bool
+	active      bool
 }
 
 func (schema *Schema) Init(id int32, name string, description string, connectionString string, language Language, tables []Table,
-	tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, baseline bool, active bool) {
+	tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
+	active bool, disablePool bool) {
 	schema.id = id
 	schema.name = name
 	schema.description = description
-	schema.connectionString = connectionString
-	schema.provider = provider
+	if disablePool == false {
+		connectionPool, err := newConnectionPool(connectionString, provider, minConnection, maxConnection)
+		if connectionPool != nil {
+			schema.connections = connectionPool
+		} else {
+			panic(err)
+		}
+	} else {
+		schema.connections = new(connectionPool)
+		schema.connections.connectionString = connectionString
+		schema.connections.provider = provider
+		schema.connections.poolId = -1 // disable connection pool
+	}
 	schema.loadTables(tables)
 	schema.loadTablespaces(tablespaces)
 	schema.baseline = baseline
@@ -47,7 +58,7 @@ func (schema *Schema) GetDescription() string {
 }
 
 func (schema *Schema) GetConnectionString() string {
-	return schema.connectionString
+	return schema.connections.connectionString
 }
 
 func (schema *Schema) IsBaseline() bool {
@@ -87,19 +98,23 @@ func (schema *Schema) GetTableCount() int {
 
 func (schema *Schema) Clone() *Schema {
 	newSchema := new(Schema)
-	var tables = []Table{}
-	var tablespaces = []Tablespace{}
-
+	var tables []Table
+	var tableSpaces []Tablespace
+	var disabledPool = false
 	for _, v := range schema.tables {
 		var table = (*v).Clone()
 		tables = append(tables, *table)
 	}
-	for i := 0; i < len(schema.tablespaces); i++ {
-		var tablespace = *schema.tablespaces[i]
-		tablespaces = append(tablespaces, *tablespace.Clone())
+	for i := 0; i < len(schema.tableSpaces); i++ {
+		var tablespace = *schema.tableSpaces[i]
+		tableSpaces = append(tableSpaces, *tablespace.Clone())
 	}
-	newSchema.Init(schema.id, schema.name, schema.description, schema.connectionString, schema.language, tables, tablespaces,
-		schema.provider, schema.baseline, schema.active)
+	if schema.connections.poolId == -1 {
+		disabledPool = true
+	}
+	newSchema.Init(schema.id, schema.name, schema.description, schema.GetConnectionString(), schema.language, tables, tableSpaces,
+		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
+		schema.baseline, schema.active, disabledPool)
 	return newSchema
 }
 
@@ -125,20 +140,15 @@ func (schema *Schema) loadTables(tables []Table) {
 }
 
 func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
-	schema.tablespaces = make([]*Tablespace, 0, len(tablespaces))
+	schema.tableSpaces = make([]*Tablespace, 0, len(tablespaces))
 	for i := 0; i < len(tablespaces); i++ {
-		schema.tablespaces = append(schema.tablespaces, &tablespaces[i])
+		schema.tableSpaces = append(schema.tableSpaces, &tablespaces[i])
 	}
 }
 
-//TODO remove this function
-func GetMetaSchema() *Schema {
-	return getMetaSchema(databaseprovider.Influx, "test")
-}
-
-func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string) *Schema {
-	var tables = []Table{}
-	var tablespaces = []Tablespace{}
+func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
+	var tables []Table
+	var tablespaces []Tablespace
 	var schema = Schema{}
 	var language = Language{}
 
@@ -150,6 +160,7 @@ func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring 
 	tables = append(tables, *getLogTable(provider))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	schema.Init(0, metaTable.name, metaTable.description, connectionstring, language, tables, tablespaces, provider, true, true)
+	schema.Init(0, metaTable.name, metaTable.description, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+		disablePool)
 	return &schema
 }

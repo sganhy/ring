@@ -21,7 +21,6 @@ type Relation struct {
 	active              bool
 }
 
-// call exemple elemr.Init(21, "rel test", "hellkzae", "hell1", "52", nil, relationtype.Mto, false, true, false)
 func (relation *Relation) Init(id int32, name string, description string, inverseRelationName string,
 	mtmTable string, toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool) {
 	relation.id = id
@@ -119,12 +118,12 @@ func (relation *Relation) ToMeta(tableId int32) *Meta {
 	}
 	result.flags = 0
 	result.setEntityBaseline(relation.baseline)
-	// add flags for relation tyoe
+	// add flags for relation type
 	result.setRelationNotNull(relation.notNull)
 	result.setRelationType(relation.relationType)
 
 	result.value = relation.inverseRelationName
-	result.name = relation.name // max length 30 !! must be valided before
+	result.name = relation.name // max length 30 !! must be validated before
 	result.description = relation.description
 	result.enabled = relation.active
 	return result
@@ -134,7 +133,7 @@ func (relation *Relation) Clone() *Relation {
 	newRelation := new(Relation)
 	/*
 		id int32, name string, description string, inverseRelationName string,
-			mtmTable string, toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool
+			mtmTable string, toTable *Table, relationType relationType.RelationType, notNull bool, baseline bool, active bool
 	*/
 	// don't clone ToTable for reflexive relationship (recursive call)
 	newRelation.Init(relation.id, relation.name, relation.description,

@@ -9,9 +9,7 @@ import (
 	"time"
 )
 
-const unknowFieldDataType string = ""
 const emptyField string = ""
-
 const errorInvalidObjectType = "Object type '%s' is not valid."
 const errorUnknownRecordType = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
 const errorUnknownFieldName = "Field name '%s' does not exist for object type '%s'."
