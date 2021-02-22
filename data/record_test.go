@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
+const defaultShortTimeFormat = "2006-01-02"         // rfc3339
+
 //test SetField(), GetField()
 func Test__Record__SetField(t *testing.T) {
 	var rcd = new(Record)
@@ -20,9 +23,13 @@ func Test__Record__SetField(t *testing.T) {
 
 	rcd.SetField("description", "758645454")
 	rcd.SetField("reference_id", 7585454)
+	rcd.SetField("name", "1234567890123456789012345678901")
 
+	if len(rcd.GetField("name")) > 30 {
+		t.Errorf("Record.GetField() ==> 'name' must be truncated to 30")
+	}
 	if rcd.GetField("description2") != "" {
-		t.Errorf("Record.GetFiteld() ==> 'description2' is not empty")
+		t.Errorf("Record.GetField() ==> 'description2' is not empty")
 	}
 	if rcd.GetField("description") != "758645454" {
 		t.Errorf("Record.SetField() ==> 'description' is not equal to 758645454")
@@ -106,6 +113,18 @@ func Test__Record__SetField(t *testing.T) {
 	rcd.SetField("entry_time", dt)
 	if rcd.GetField("entry_time") != dt.UTC().Format(defaultTimeFormat) {
 		t.Errorf("Record.SetField() ==> 'entry_time' is not equal to %s", dt.UTC().Format(time.RFC3339))
+	}
+	// a date time stored in string
+	rcd.SetField("method", dt)
+	if rcd.GetField("method") != dt.UTC().Format(defaultTimeFormat) {
+		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
+	}
+
+	// string to date/time
+	rcd.SetField("entry_time", "2014-04-15 21:14:21")
+	t.Errorf(rcd.GetField("entry_time"))
+	if rcd.GetField("entry_time") != dt.UTC().Format(defaultTimeFormat) {
+		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
 	}
 
 	// TEST dateTime

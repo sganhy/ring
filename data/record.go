@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"ring/schema"
-	"ring/schema/fieldtype"
 	"strconv"
 	"time"
 )
@@ -14,8 +13,6 @@ const errorInvalidObjectType = "Object type '%s' is not valid."
 const errorUnknownRecordType = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
 const errorUnknownFieldName = "Field name '%s' does not exist for object type '%s'."
 const errorInvalidNumber = "Invalid '%s' value %s."
-const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
-const defaultShortTimeFormat = "2006-01-02"         // rfc3339
 
 type Record struct {
 	data       []string
@@ -96,7 +93,7 @@ func (record *Record) SetField(name string, value interface{}) error {
 				val = strconv.FormatUint(value.(uint64), 10)
 				break
 			case time.Time:
-				val = getDateTimeString(value.(time.Time), field.GetType())
+				val = field.GetDateTimeString(value.(time.Time))
 				if field.IsDateTime() {
 					// avoid dateTime revalidation
 					record.data[fieldId] = val
@@ -106,7 +103,9 @@ func (record *Record) SetField(name string, value interface{}) error {
 			default:
 				return errors.New("Unsupported type")
 			}
-			if field.IsValueValid(val) {
+			var err error
+			val, err = field.GetValue(val)
+			if err == nil {
 				record.data[fieldId] = val
 			} else {
 				var fieltyp = field.GetType()
@@ -139,20 +138,6 @@ func (record *Record) Copy() *Record {
 //******************************
 // private methods
 //******************************
-
-func getDateTimeString(t time.Time, fieldTyp fieldtype.FieldType) string {
-	switch fieldTyp {
-	case fieldtype.DateTime:
-		return t.UTC().Format(defaultTimeFormat)
-	case fieldtype.ShortDateTime:
-		return t.Format(defaultShortTimeFormat)
-	case fieldtype.LongDateTime:
-		return t.Format(time.RFC3339Nano)
-	case fieldtype.String:
-		return t.UTC().Format(defaultTimeFormat)
-	}
-	return ""
-}
 
 func (record *Record) setRecordType(recordType *schema.Table) {
 	// is it the same ?

@@ -9,6 +9,7 @@ import (
 	"ring/schema/tabletype"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 
 	"golang.org/x/text/runes"
@@ -19,21 +20,23 @@ import (
 var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
-var defaultNumberValue = "0"
-var defaultBooleanValue = "false"
-var defaultDateTimeValue = "0001-01-01T00:00:00.000"
-var defaultShortDateTimeValue = "0001-01-01"
-var defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
-var maxInt08  = "127"
-var maxInt16  = "32767"
-var maxInt32  = "2147483647"
-var maxInt64  = "9223372036854775807"
-var minInt08  = "-128"
-var minInt16  = "-32768"
-var minInt32  = "-2147483648"
-var minInt64  = "-9223372036854775808"
 
-const unknowFieldDataType string = ""
+const defaultNumberValue = "0"
+const defaultBooleanValue = "false"
+const defaultDateTimeValue = "0001-01-01T00:00:00.000"
+const defaultShortDateTimeValue = "0001-01-01"
+const defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
+const maxInt08 = "127"
+const maxInt16 = "32767"
+const maxInt32 = "2147483647"
+const maxInt64 = "9223372036854775807"
+const minInt08 = "-128"
+const minInt16 = "-32768"
+const minInt32 = "-2147483648"
+const minInt64 = "-9223372036854775808"
+const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
+const defaultShortTimeFormat = "2006-01-02"         // rfc3339
+const unknownFieldDataType = ""
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",
@@ -50,8 +53,10 @@ var postgreDataType = map[fieldtype.FieldType]string{
 
 const primaryKeyFieldName = "id"
 const primaryKeyDesc = "Internal record number"
+const errorInvalidValueType = "Invalid value type"
+const errorInvalidDateTimeFormat = "Invalid Date/Time format"
 
-// max lenght for a varchar
+// max length for a varchar
 const postgreVarcharMaxSize = 65535
 const mySqlVarcharMaxSize = 65535
 const sqliteVarcharMaxSize = 1000000000
@@ -192,7 +197,7 @@ func (field *Field) IsDateTime() bool {
 /// Calculate searchable field value (remove diacritic characters and value.ToUpper())
 ///
 func (field *Field) GetSearchableValue(value string, language Language) string {
-	//TODO specific treatmen by language
+	//TODO specific treatment by language
 	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 	output, _, err := transform.String(t, value)
 
@@ -215,7 +220,7 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 
 	// others
 	result.dataType = int32(field.fieldType)
-	result.name = field.name // max lenght 30 !! must be valided before
+	result.name = field.name // max length 30 !! must be validated before
 	result.description = field.description
 	result.value = field.defaultValue
 
@@ -233,12 +238,42 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 
 func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) (string, error) {
 	datatype := field.getSqlDataType(provider)
-	if datatype == unknowFieldDataType {
-		return unknowFieldDataType, errors.New(fmt.Sprintf("Unknow datatype {provider: %s, dataTypeId: %d, fieldName: %s}",
+	if datatype == unknownFieldDataType {
+		return unknownFieldDataType, errors.New(fmt.Sprintf("Unknow datatype {provider: %s, dataTypeId: %d, fieldName: %s}",
 			provider.ToString(), field.fieldType, field.name))
 	}
 	return strings.TrimSpace(field.getSqlFieldName(provider) + " " + field.getSqlDataType(provider) + " " +
 		field.getSqlConstraint(provider, tableType)), nil
+}
+
+// reformat value for records
+func (field *Field) GetValue(value string) (string, error) {
+	switch field.fieldType {
+	case fieldtype.String:
+		if field.size > 0 && len(value) > int(field.size) {
+			//truncate or error
+			return value[0:field.size], nil
+		}
+		return value, nil
+	case fieldtype.Long, fieldtype.Int, fieldtype.Short, fieldtype.Byte:
+		if isValidInteger(value, field.fieldType) == true {
+			return value, nil
+		}
+		break
+	case fieldtype.DateTime, fieldtype.ShortDateTime, fieldtype.LongDateTime:
+		// must support iso-8601
+		t, e := getDateTimeIso8601(value)
+		if e == nil {
+			return field.GetDateTimeString(*t), nil
+		}
+		return value, e
+	default:
+		if field.IsValueValid(value) {
+			return value, nil
+		}
+		break
+	}
+	return value, errors.New(errorInvalidValueType)
 }
 
 func (field *Field) IsValueValid(value string) bool {
@@ -298,10 +333,24 @@ func (field *Field) Equals(fieldB *Field) bool {
 	return false
 }
 
+func (field *Field) GetDateTimeString(t time.Time) string {
+	switch field.fieldType {
+	case fieldtype.DateTime:
+		return t.UTC().Format(defaultTimeFormat)
+	case fieldtype.ShortDateTime:
+		return t.Format(defaultShortTimeFormat)
+	case fieldtype.LongDateTime:
+		return t.Format(time.RFC3339Nano)
+	case fieldtype.String:
+		return t.UTC().Format(defaultTimeFormat)
+	}
+	return ""
+}
+
 //******************************
 // private methods
 //******************************
-func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
+func isValidInteger(value string, fieldType fieldtype.FieldType) bool {
 	var sign, size = 0, len(value)
 	for _, v := range value {
 		if v >= '0' && v <= '9' {
@@ -315,7 +364,7 @@ func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
 		}
 	}
 	// it's a digit
-	switch fieldtyp {
+	switch fieldType {
 	case fieldtype.Byte:
 		return int08Condition(value, size, sign)
 	case fieldtype.Short:
@@ -328,7 +377,7 @@ func isValidInteger(value string, fieldtyp fieldtype.FieldType) bool {
 	return false
 }
 
-func isValidDateTime(value string, fieldtyp fieldtype.FieldType) bool {
+func isValidDateTime(value string, fieldType fieldtype.FieldType) bool {
 	return true
 }
 
@@ -384,8 +433,8 @@ func getDefaultValue(defaultValue string, field *Field) string {
 	return newDefaultValue
 }
 
-func getDefaultPrimaryKey(fldtype fieldtype.FieldType) *Field {
-	switch fldtype {
+func getDefaultPrimaryKey(fieldType fieldtype.FieldType) *Field {
+	switch fieldType {
 	case fieldtype.Int:
 		return defaultPrimaryKeyInt32
 	case fieldtype.Long:
@@ -397,7 +446,7 @@ func getDefaultPrimaryKey(fldtype fieldtype.FieldType) *Field {
 }
 
 func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) string {
-	var result = unknowFieldDataType
+	var result = unknownFieldDataType
 	switch provider {
 	case databaseprovider.MySql:
 		if val, ok := postgreDataType[field.fieldType]; ok {
@@ -432,4 +481,42 @@ func (field *Field) getSqlConstraint(provider databaseprovider.DatabaseProvider,
 		result = "NOT " + result
 	}
 	return result
+}
+
+func getDateTimeIso8601(value string) (*time.Time, error) {
+	var t time.Time
+	var e error
+
+	//short format
+	// YYYY-MM-DD
+	if len(value) >= 10 {
+		//curentTime := time.Now
+		// 2019-10-12T14:20:50.52+07:00
+		// get currentTimeZone
+		t, e = time.Parse(time.RFC3339, value[0:10]+"T00:00:00Z")
+
+		//no information about time zone, take the local one (can be cached)
+		if e != nil{
+			return nil, e
+		}
+		if  strings.Contains(value, "Z") || strings.Contains(value, "-") || strings.Contains(value, "+") {
+			_, offset := time.Now().Zone()
+			t = t.Add(time.Second * time.Duration(offset*-1))
+		}
+
+		if len(value) >= 19 {
+			// where is the timezone?
+			// detect timezone
+			hour, errH := strconv.Atoi(value[11:13])
+			minute, errM := strconv.Atoi(value[14:16])
+			second, errS := strconv.Atoi(value[17:19])
+			if errH == nil && errM == nil && errS == nil {
+				t = t.Add((time.Hour * time.Duration(hour)) + (time.Minute * time.Duration(minute)) +
+					(time.Second * time.Duration(second)))
+			}
+		}
+		return &t, e
+	} else {
+		return nil, errors.New(errorInvalidDateTimeFormat)
+	}
 }

@@ -2,6 +2,7 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
+	"ring/schema/sourcetype"
 )
 
 type Schema struct {
@@ -13,16 +14,18 @@ type Schema struct {
 	tablesById  map[int32]*Table
 	tableSpaces []*Tablespace
 	connections *connectionPool
+	source      sourcetype.SourceType
 	baseline    bool
 	active      bool
 }
 
 func (schema *Schema) Init(id int32, name string, description string, connectionString string, language Language, tables []Table,
-	tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
+	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
 	active bool, disablePool bool) {
 	schema.id = id
 	schema.name = name
 	schema.description = description
+	schema.source = sourcetype.NativeDataBase // default value
 	if disablePool == false {
 		connectionPool, err := newConnectionPool(connectionString, provider, minConnection, maxConnection)
 		if connectionPool != nil {
@@ -37,7 +40,7 @@ func (schema *Schema) Init(id int32, name string, description string, connection
 		schema.connections.poolId = -1 // disable connection pool
 	}
 	schema.loadTables(tables)
-	schema.loadTablespaces(tablespaces)
+	schema.loadTablespaces(tableSpaces)
 	schema.baseline = baseline
 	schema.active = active
 }
@@ -121,6 +124,11 @@ func (schema *Schema) Clone() *Schema {
 //******************************
 // private methods
 //******************************
+
+func (schema *Schema) setSourceType(source sourcetype.SourceType) {
+	schema.source = source
+}
+
 func (schema *Schema) loadTables(tables []Table) {
 	tableCount := len(tables) + 1
 	// reducing collision then *2

@@ -86,7 +86,7 @@ func (relation *Relation) GetDdlSql(provider databaseprovider.DatabaseProvider) 
 		targetPrimaryKey := relation.toTable.GetPrimaryKey()
 		if targetPrimaryKey != nil {
 			datatype := targetPrimaryKey.getSqlDataType(provider)
-			if datatype != unknowFieldDataType {
+			if datatype != unknownFieldDataType {
 				return relation.name + " " + datatype, nil
 			}
 		}

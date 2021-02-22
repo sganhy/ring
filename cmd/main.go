@@ -9,6 +9,7 @@ import (
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
+	"ring/schema/sourcetype"
 	"ring/schema/tabletype"
 	"strings"
 	"time"
@@ -23,7 +24,25 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+	rcd := new(data.Record)
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+
+	location, _ := time.LoadLocation("MST")
+	ttt := time.Now().In(location)
+	zone, offset := ttt.Zone()
+	fmt.Println(offset)
+	fmt.Println(zone)
+
+	rcd.SetRecordType("@log")
+	rcd.SetField("entry_time", "2014-04-15T21:14:55")
+	fmt.Println(rcd.GetField("entry_time"))
+	rcd.SetField("entry_time", time.Now())
+	fmt.Println(rcd.GetField("entry_time"))
+
+	var importFile = schema.Import{}
+	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
+	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
+	//importFile.Load()
 
 	// Create an empty user and make the sql query (using $1 for the parameter)
 	var br = new(data.BulkRetrieve)
@@ -39,7 +58,6 @@ func main() {
 	var index = strings.Index(recordType, ".")
 	fmt.Println(recordType[:index])
 	fmt.Println(recordType[index+1:])
-	var rcd = new(data.Record)
 	rcd.SetRecordType("@meta")
 	rcd.SetField("description", "758645454")
 	rcd.SetField("value", 40.4)

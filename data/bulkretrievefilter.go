@@ -67,7 +67,7 @@ func newQueryFilter(field *schema.Field, operation operationtype.OperationType, 
 		filter.operand = strconv.FormatUint(operand.(uint64), 10)
 		break
 	case time.Time:
-		filter.operand = getDateTimeString(operand.(time.Time), field.GetType())
+		filter.operand = field.GetDateTimeString(operand.(time.Time))
 	}
 	return filter, nil
 }

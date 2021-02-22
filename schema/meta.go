@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
@@ -145,9 +146,31 @@ func (meta *Meta) ToIndex() *Index {
 	return nil
 }
 
+func (meta *Meta) ToString() string {
+	// used for debug only
+	/*
+		id          int32
+		dataType    int32
+		description string
+		flags       uint64
+		lineNumber  int64
+		name        string
+		objectType  int8
+		refId       int32 // ref id to Id
+		value       string
+		enabled     bool
+	*/
+	return fmt.Sprintf(" id: %d \n name: %s \n object_type: %d \n reference_id: %d", meta.id, meta.name, meta.objectType,
+		meta.refId)
+}
+
 //******************************
 // private methods
 //******************************
+
+func (meta *Meta) getMetaTable(id string, name string, description string) {
+	fmt.Sprintf("Size: %d MB.", 85) // s == "Size: 85 MB."
+}
 
 // flags
 func (meta *Meta) setFieldMultilingual(value bool) {

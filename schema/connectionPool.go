@@ -43,7 +43,7 @@ func newConnectionPool(connectionString string, provider databaseprovider.Databa
 		newPool.minConnection = initialMinValue
 	}
 	newPool.pool = make([]*connection, 0, newPool.maxConnection)
-	// is it unitest
+
 	for i := 0; i < newPool.minConnection; i++ {
 		connection, err := newConnection(i+1, connectionString, provider.ToString())
 		if err != nil {
