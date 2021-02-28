@@ -9,7 +9,7 @@ import (
 )
 
 type BulkRetrieve struct {
-	data            *[]*bulkRetrieveQuery
+	data            *[]schema.Query
 	currentSchema   *schema.Schema
 	currentLanguage *schema.Language
 }
@@ -44,7 +44,7 @@ func (bulkRetrieve *BulkRetrieve) setLanguage(language *schema.Language) {
 
 func (bulkRetrieve *BulkRetrieve) SimpleQuery(entryIndex int, objectName string) error {
 	if bulkRetrieve.data == nil {
-		data := make([]*bulkRetrieveQuery, 0, initialSliceCount)
+		data := make([]schema.Query, 0, initialSliceCount)
 		bulkRetrieve.data = &data
 		// get default schema
 		bulkRetrieve.currentSchema = schema.GetDefaultSchema()
@@ -74,14 +74,18 @@ func (bulkRetrieve *BulkRetrieve) AppendFilter(entryIndex int, fieldName string,
 	if entryIndex < 0 || entryIndex >= queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}
-	var field = (*bulkRetrieve.data)[entryIndex].targetObject.GetFieldByName(fieldName)
+
+	// cast interface schema.Query
+	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	var field = query.targetObject.GetFieldByName(fieldName)
+
 	if field == nil {
-		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, (*bulkRetrieve.data)[entryIndex].targetObject.GetName()))
+		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, query.targetObject.GetName()))
 	}
 	//TODO type validations
 	filter, err := newQueryFilter(field, operation, operand)
 	if err == nil {
-		(*bulkRetrieve.data)[entryIndex].addFilter(filter)
+		query.addFilter(filter)
 	}
 	return err
 }
@@ -92,16 +96,20 @@ func (bulkRetrieve *BulkRetrieve) AppendSort(entryIndex int, fieldName string, s
 	if entryIndex < 0 || entryIndex >= queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}
-	var field = (*bulkRetrieve.data)[entryIndex].targetObject.GetFieldByName(fieldName)
-	if field == nil {
-		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, (*bulkRetrieve.data)[entryIndex].targetObject.GetName()))
-	}
 
+	// cast interface schema.Query
+	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	var field = query.targetObject.GetFieldByName(fieldName)
+
+	if field == nil {
+		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, query.targetObject.GetName()))
+	}
+	sort := newQuerySort(field, sortType)
+	query.addSort(sort)
 	// check if field is not already sorted
 	return nil
 }
 
 func (bulkRetrieve *BulkRetrieve) RetrieveRecords() error {
-
-	return nil
+	return bulkRetrieve.currentSchema.Execute(*bulkRetrieve.data)
 }

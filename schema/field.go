@@ -77,15 +77,6 @@ type Field struct {
 }
 
 func init() {
-
-	// elemf3.Init(7, "Gga", "Gga", fieldtype.Double, 5, "", true, false, true, true)
-	// --
-	// id , name , description, fieldType fieldtype.FieldType, size uint32,
-	// 		defaultValue string, baseline bool, notNull bool, multilingual bool, active bool
-	// --
-	// id, name, description, FieldType.Long, 0, null, false, true,true, true, false
-	// --
-
 	//64
 	defaultPrimaryKeyInt64 = new(Field)
 	defaultPrimaryKeyInt64.Init(0, primaryKeyFieldName, primaryKeyDesc, fieldtype.Long, 0, "", false, true, true, false, true)
@@ -98,9 +89,8 @@ func init() {
 
 }
 
-// call exemple elemf.Init(21, "field ", "hellkzae", fieldtype.Double, 5, "", true, false, true, true)
 func (field *Field) Init(id int32, name string, description string, fieldType fieldtype.FieldType, size uint32,
-	defaultValue string, baseline bool, notNull bool, casesensitive bool, multilingual bool, active bool) {
+	defaultValue string, baseline bool, notNull bool, caseSensitive bool, multilingual bool, active bool) {
 	field.id = id
 	field.name = name
 	field.description = description
@@ -114,7 +104,7 @@ func (field *Field) Init(id int32, name string, description string, fieldType fi
 	field.notNull = notNull
 	field.active = active
 	field.multilingual = multilingual
-	field.caseSensitive = casesensitive
+	field.caseSensitive = caseSensitive
 	//!!! at the end only
 	field.defaultValue = getDefaultValue(defaultValue, field)
 }
@@ -293,7 +283,8 @@ func (field *Field) IsValueValid(value string) bool {
 	case fieldtype.String:
 		return true
 	case fieldtype.DateTime, fieldtype.LongDateTime, fieldtype.ShortDateTime:
-		return isValidDateTime(value, field.fieldType)
+		_, err := getDateTimeIso8601(value)
+		return err == nil
 	case fieldtype.Boolean:
 		return strings.ToLower(value) == "true" || strings.ToLower(value) == "false"
 	}
@@ -302,10 +293,6 @@ func (field *Field) IsValueValid(value string) bool {
 
 func (field *Field) Clone() *Field {
 	newField := new(Field)
-	/*
-		id int32, name string, description string, fieldType fieldtype.FieldType, size uint32,
-		defaultValue string, baseline bool, notNull bool, casesensitive bool, multilingual bool, active bool
-	*/
 	newField.Init(field.id, field.name, field.description, field.fieldType, uint32(field.size), field.defaultValue, field.baseline,
 		field.notNull, field.caseSensitive, field.multilingual, field.active)
 	return newField
@@ -320,7 +307,7 @@ func (field *Field) ToString() string {
 		field.notNull, field.caseSensitive, field.active)
 }
 
-func (field *Field) Equals(fieldB *Field) bool {
+func (field *Field) Equal(fieldB *Field) bool {
 	if field == nil && fieldB == nil {
 		return true
 	}
@@ -375,10 +362,6 @@ func isValidInteger(value string, fieldType fieldtype.FieldType) bool {
 		return int64Condition(value, size, sign)
 	}
 	return false
-}
-
-func isValidDateTime(value string, fieldType fieldtype.FieldType) bool {
-	return true
 }
 
 func int08Condition(value string, size int, sign int) bool {
@@ -490,16 +473,16 @@ func getDateTimeIso8601(value string) (*time.Time, error) {
 	//short format
 	// YYYY-MM-DD
 	if len(value) >= 10 {
-		//curentTime := time.Now
+		//currentTime := time.Now
 		// 2019-10-12T14:20:50.52+07:00
 		// get currentTimeZone
 		t, e = time.Parse(time.RFC3339, value[0:10]+"T00:00:00Z")
 
 		//no information about time zone, take the local one (can be cached)
-		if e != nil{
+		if e != nil {
 			return nil, e
 		}
-		if  strings.Contains(value, "Z") || strings.Contains(value, "-") || strings.Contains(value, "+") {
+		if strings.Contains(value, "Z") || strings.Contains(value, "-") || strings.Contains(value, "+") {
 			_, offset := time.Now().Zone()
 			t = t.Add(time.Second * time.Duration(offset*-1))
 		}

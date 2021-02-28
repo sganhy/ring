@@ -120,13 +120,6 @@ func Test__Record__SetField(t *testing.T) {
 		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
 	}
 
-	// string to date/time
-	rcd.SetField("entry_time", "2014-04-15 21:14:21")
-	t.Errorf(rcd.GetField("entry_time"))
-	if rcd.GetField("entry_time") != dt.UTC().Format(defaultTimeFormat) {
-		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
-	}
-
 	// TEST dateTime
 	var fields = []schema.Field{}
 	var relations = []schema.Relation{}

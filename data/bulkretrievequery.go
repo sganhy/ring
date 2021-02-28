@@ -1,6 +1,8 @@
 package data
 
 import (
+	"database/sql"
+	"fmt"
 	"ring/data/bulkquerytype"
 	"ring/schema"
 )
@@ -13,30 +15,34 @@ type bulkRetrieveQuery struct {
 }
 
 //******************************
-// private methods
+// public methods (Interface schema.Query implementations)
 //******************************
 
-func newSimpleQuery(table *schema.Table) *bulkRetrieveQuery {
+func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB) error {
+	fmt.Println("Execute query")
+	return nil
+}
+
+//******************************
+// private methods
+//******************************
+func newSimpleQuery(table *schema.Table) schema.Query {
 	var query = new(bulkRetrieveQuery)
+	var filters = make([]*bulkRetrieveFilter, 0, 2)
+	var sorts = make([]*bulkRetrieveSort, 0, 1)
+
 	query.targetObject = table
 	query.queryType = bulkquerytype.SimpleQuery
-	query.filters = nil
-	query.sorts = nil
-	return query
+	query.filters = &filters
+	query.sorts = &sorts
+
+	return *query
 }
 
 func (query *bulkRetrieveQuery) addFilter(filter *bulkRetrieveFilter) {
-	if query.filters == nil {
-		filters := make([]*bulkRetrieveFilter, 0, 2)
-		query.filters = &filters
-	}
 	*query.filters = append(*query.filters, filter)
 }
 
 func (query *bulkRetrieveQuery) addSort(sort *bulkRetrieveSort) {
-	if query.sorts == nil {
-		sorts := make([]*bulkRetrieveSort, 0, 1)
-		query.sorts = &sorts
-	}
 	*query.sorts = append(*query.sorts, sort)
 }

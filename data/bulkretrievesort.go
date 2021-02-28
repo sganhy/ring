@@ -13,3 +13,10 @@ type bulkRetrieveSort struct {
 //******************************
 // private methods
 //******************************
+
+func newQuerySort(field *schema.Field, sortType sortordertype.SortOrderType) *bulkRetrieveSort {
+	var sort = new(bulkRetrieveSort)
+	sort.field = field
+	sort.orderType = sortType
+	return sort
+}

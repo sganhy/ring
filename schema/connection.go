@@ -32,6 +32,6 @@ func newConnection(id int, connectionString string, provider string) (*connectio
 	return newConnection, nil
 }
 
-func (conn *connection) destroy() {
-	conn.dbConnection.Close()
+func (conn *connection) destroy() error {
+	return conn.dbConnection.Close()
 }

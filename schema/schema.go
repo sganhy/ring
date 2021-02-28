@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/databaseprovider"
 	"ring/schema/sourcetype"
+	"time"
 )
 
 type Schema struct {
@@ -119,6 +120,23 @@ func (schema *Schema) Clone() *Schema {
 		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
 		schema.baseline, schema.active, disabledPool)
 	return newSchema
+}
+
+func (schema *Schema) Execute(queries []Query) error {
+	var connection = schema.connections.get()
+	var err error
+	connection.lastGet = time.Now()
+
+	for i := 0; i < len(queries); i++ {
+		err = queries[i].Execute(connection.dbConnection)
+		if err != nil {
+			schema.connections.put(connection)
+			return err
+		}
+	}
+
+	schema.connections.put(connection)
+	return nil
 }
 
 //******************************

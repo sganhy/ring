@@ -6,12 +6,13 @@ import (
 	"ring/schema/tabletype"
 	"strings"
 	"testing"
+	"time"
 )
 
 // INIT
 func Test__Field__Init(t *testing.T) {
 	elemf0 := Field{}
-	elemf0.Init(11, "aName Test", "AField Test", fieldtype.DateTime, 5, "test default", true, false, false, true, true)
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.String, 5, "test default", true, false, false, true, true)
 
 	if elemf0.GetName() != "aName Test" {
 		t.Errorf("Field.Init() ==> name <> GetName()")
@@ -22,7 +23,7 @@ func Test__Field__Init(t *testing.T) {
 	if elemf0.GetDescription() != "AField Test" {
 		t.Errorf("Field.Init() ==> description <> GetDescription()")
 	}
-	if elemf0.GetType() != fieldtype.DateTime {
+	if elemf0.GetType() != fieldtype.String {
 		t.Errorf("Field.Init() ==> type <> GetType()")
 	}
 	if elemf0.GetSize() != 5 {
@@ -46,7 +47,7 @@ func Test__Field__Init(t *testing.T) {
 	if elemf0.IsActive() != true {
 		t.Errorf("Field.Init() ==> active <> IsActive()")
 	}
-	if elemf0.IsDateTime() != true {
+	if elemf0.IsDateTime() != false {
 		t.Errorf("Field.Init() ==> IsDateTime() <> true")
 	}
 	if elemf0.IsNumeric() != false {
@@ -204,6 +205,7 @@ func Test__Field__ToMeta(t *testing.T) {
 
 }
 
+//Test isValidInteger
 func Test__Field__isValidInteger(t *testing.T) {
 
 	// ========== POSITIVE tests
@@ -309,6 +311,44 @@ func Test__Field__isValidInteger(t *testing.T) {
 	}
 	if isValidInteger("-129", fieldtype.Byte) != false {
 		t.Errorf("Field.isValidInteger() ==> -129 string is not a valid integer (8 bits)")
+	}
+
+}
+
+//Test getDateTimeIso8601, GetDateTimeString
+func Test__Field__getDateTimeIso8601(t *testing.T) {
+
+	elemf0 := new(Field)
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.DateTime, 5, "test default", true, false, false, true, true)
+	var ti *time.Time
+	_, offset := time.Now().Zone()
+
+	// test ==> fieldtype.DateTime
+	// sample #1
+	ti, _ = getDateTimeIso8601("2016-12-12")
+	*ti = ti.Add(time.Second * time.Duration(offset)) // adapt to local time for date time
+	if elemf0.GetDateTimeString(*ti) != "2016-12-12T00:00:00.000" {
+		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-12-12') must return '2016-12-12T00:00:00.000'")
+	}
+	// sample #2
+	ti, _ = getDateTimeIso8601("2016-11-12 12:13:14")
+	*ti = ti.Add(time.Second * time.Duration(offset))
+	if elemf0.GetDateTimeString(*ti) != "2016-11-12T12:13:14.000" {
+		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12T12:13:14.000'")
+	}
+	// sample #3
+	ti, _ = getDateTimeIso8601("2016-11-12T12:13:14")
+	*ti = ti.Add(time.Second * time.Duration(offset))
+	if elemf0.GetDateTimeString(*ti) != "2016-11-12T12:13:14.000" {
+		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12T12:13:14.000'")
+	}
+
+	// test ==> fieldtype.DateTime
+	// sample #1
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.ShortDateTime, 5, "test default", true, false, false, true, true)
+	ti, _ = getDateTimeIso8601("2016-11-12T12:13:14")
+	if elemf0.GetDateTimeString(*ti) != "2016-11-12" {
+		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12'")
 	}
 
 }

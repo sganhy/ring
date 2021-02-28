@@ -40,7 +40,7 @@ func (list *List) AppendItem(item interface{}) error {
 	if list.data == nil {
 		list.data = make([]*Record, 0, 2)
 	}
-	var validItemType bool = false
+	var validItemType = false
 	switch v := item.(type) {
 	case int:
 		break

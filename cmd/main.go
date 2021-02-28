@@ -147,6 +147,6 @@ func main() {
 
 	reg := []string{"a", "b", "c"}
 	fmt.Println(strings.Join(reg, ","))
-	time.Sleep(20 * time.Second)
+	//time.Sleep(20 * time.Second)
 	fmt.Println("Finished!")
 }

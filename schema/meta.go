@@ -168,10 +168,6 @@ func (meta *Meta) ToString() string {
 // private methods
 //******************************
 
-func (meta *Meta) getMetaTable(id string, name string, description string) {
-	fmt.Sprintf("Size: %d MB.", 85) // s == "Size: 85 MB."
-}
-
 // flags
 func (meta *Meta) setFieldMultilingual(value bool) {
 	meta.writeFlag(bitPositionFieldMultilingual, value)

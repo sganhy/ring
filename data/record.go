@@ -101,15 +101,15 @@ func (record *Record) SetField(name string, value interface{}) error {
 				}
 				break
 			default:
-				return errors.New("Unsupported type")
+				return errors.New("Unsupported type.")
 			}
 			var err error
 			val, err = field.GetValue(val)
 			if err == nil {
 				record.data[fieldId] = val
 			} else {
-				var fieltyp = field.GetType()
-				return errors.New(fmt.Sprintf(errorInvalidNumber, fieltyp.ToString(), val))
+				var fieldType = field.GetType()
+				return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.ToString(), val))
 			}
 			return nil
 		}
