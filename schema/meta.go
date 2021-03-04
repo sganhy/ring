@@ -146,7 +146,7 @@ func (meta *Meta) ToIndex() *Index {
 	return nil
 }
 
-func (meta *Meta) ToString() string {
+func (meta *Meta) String() string {
 	// used for debug only
 	/*
 		id          int32

@@ -8,7 +8,6 @@ import (
 // sorted by id
 var schemaById *[]*Schema          // assign firstly --> sorted by Id
 var schemaIndexByName *[]*database // assign secondly  --> sorted by name
-var metaSchemaName string
 var defaultSchemaName string
 var databaseInitialized = false
 
@@ -40,7 +39,6 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 			disableConnectionPool = true
 		}
 		var metaSchema = getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
-		metaSchemaName = metaSchema.name
 		defaultSchemaName = metaSchema.name
 		//
 		addSchema(metaSchema)

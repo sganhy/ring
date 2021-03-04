@@ -5,6 +5,7 @@ type SortOrderType int8
 //!!! reserved value for unit testing {4, 5, 6} !!!
 
 const (
-	Ascending  SortOrderType = 1
-	Descending SortOrderType = -1
+	// check collision with operationType
+	Ascending  SortOrderType = 101
+	Descending SortOrderType = 102
 )

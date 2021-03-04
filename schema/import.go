@@ -82,22 +82,22 @@ func (importFile *Import) loadXml() error {
 				indexId = 0
 				var meta = getXmlMeta(&ty.Attr, entitytype.Table, 0, 0)
 				referenceId = meta.id
-				fmt.Println(meta.ToString())
+				fmt.Println(meta.String())
 			}
 			if strings.ToLower(ty.Name.Local) == importFieldTag {
 				fieldId++
 				var meta = getXmlMeta(&ty.Attr, entitytype.Field, referenceId, fieldId)
-				fmt.Println(meta.ToString())
+				fmt.Println(meta.String())
 			}
 			if strings.ToLower(ty.Name.Local) == importRelationTag {
 				relationId++
 				var meta = getXmlMeta(&ty.Attr, entitytype.Relation, referenceId, relationId)
-				fmt.Println(meta.ToString())
+				fmt.Println(meta.String())
 			}
 			if strings.ToLower(ty.Name.Local) == importIndexTag {
 				indexId++
 				var meta = getXmlMeta(&ty.Attr, entitytype.Relation, referenceId, indexId)
-				fmt.Println(meta.ToString())
+				fmt.Println(meta.String())
 			}
 		default:
 		}

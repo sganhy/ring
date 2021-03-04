@@ -48,11 +48,19 @@ func main() {
 	var br = new(data.BulkRetrieve)
 	br.SimpleQuery(0, "@meta")
 	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
-	br.SimpleQuery(1, "@log")
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
+	/*
+		br.SimpleQuery(1, "@log")
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
+	*/
 	br.RetrieveRecords()
+
+	var lstTest = br.GetRecordList(0)
+	fmt.Println("RECORD =======>")
+	fmt.Println(lstTest.Count())
+	fmt.Println(lstTest.ItemByIndex(0).String())
+	//fmt.Println(lstTest.ItemByIndex(0).ToString())
 
 	recordType := ".@meta2"
 	var index = strings.Index(recordType, ".")
@@ -133,9 +141,8 @@ func main() {
 
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool,  bool
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		"schema.t_site", physicaltype.Table, 64, tabletype.Business, "subject test", true, false, true, false)
-	sql2, _ := elemt.GetDdlSql(databaseprovider.PostgreSql, nil)
-	fmt.Println(sql2)
+		physicaltype.Table, 64, "@meta", tabletype.Business, databaseprovider.PostgreSql, "subject test", true, false, true, false)
+
 	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
 	//fmt.Println(elemt.GetFieldById(4).GetName())
 	//fmt.Println(elemt.GetPrimaryKey().GetName())

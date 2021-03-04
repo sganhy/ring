@@ -15,4 +15,10 @@ const (
 	NotLike        OperationType = 14
 	//SoundsLike = 15, -- one day ...
 	In OperationType = 17
+
+	// WARNING !!!sort operation
+	// sync with sortordertype.Descending & Ascending value
+	//TODO unitesting !!
+	ascendingSort  OperationType = 101
+	descendingSort OperationType = 102
 )

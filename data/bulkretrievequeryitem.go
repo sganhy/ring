@@ -3,12 +3,13 @@ package data
 import (
 	"fmt"
 	"ring/data/operationtype"
+	"ring/data/sortordertype"
 	"ring/schema"
 	"strconv"
 	"time"
 )
 
-type bulkRetrieveFilter struct {
+type bulkRetrieveQueryItem struct {
 	field               *schema.Field
 	operation           operationtype.OperationType
 	operand             string
@@ -20,8 +21,8 @@ type bulkRetrieveFilter struct {
 // private methods
 //******************************
 
-func newQueryFilter(field *schema.Field, operation operationtype.OperationType, operand interface{}) (*bulkRetrieveFilter, error) {
-	var filter = new(bulkRetrieveFilter)
+func newQueryFilter(field *schema.Field, operation operationtype.OperationType, operand interface{}) (*bulkRetrieveQueryItem, error) {
+	var filter = new(bulkRetrieveQueryItem)
 
 	filter.field = field
 	filter.operation = operation
@@ -71,4 +72,11 @@ func newQueryFilter(field *schema.Field, operation operationtype.OperationType, 
 		break
 	}
 	return filter, nil
+}
+
+func newQuerySort(field *schema.Field, sortType sortordertype.SortOrderType) *bulkRetrieveQueryItem {
+	var sort = new(bulkRetrieveQueryItem)
+	sort.field = field
+	sort.operation = operationtype.OperationType(sortType)
+	return sort
 }

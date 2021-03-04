@@ -77,8 +77,9 @@ func Test__Table__Init(t *testing.T) {
 	//id int32, name string, description string, fields []Field, relations []Relation, indexes []Index, physicalName string,
 	//  physicalType physicaltype.PhysicalType, schemaId int32, tableType tabletype.TableType, subject string,
 	//  cached bool, readonly bool, baseline bool, active bool
-	table.Init(int32(tabletype.MetaId), "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.MetaId, "[subject]", true, false, true, false)
+	table.Init(int32(tabletype.MetaId), "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, getPhysicalName(databaseprovider.PostgreSql, "@meta"), tabletype.MetaId, databaseprovider.PostgreSql,
+		"[subject]", true, false, true, false)
 
 	if table.GetName() != "@meta" {
 		t.Errorf("Table.Init() ==> name <> GetName()")
@@ -89,7 +90,7 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetDescription() != "ATable Test" {
 		t.Errorf("Table.Init() ==> description <> GetDescription()")
 	}
-	if table.GetPhysicalName() != "schema.@meta" {
+	if table.GetPhysicalName() != getPhysicalName(databaseprovider.PostgreSql, metaSchemaName)+".\"@meta\"" {
 		t.Errorf("Table.Init() ==> physical <> GetPhysicalName()")
 	}
 	if table.GetType() != tabletype.MetaId {
@@ -141,8 +142,8 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	}
 
 	//t.Errorf("fields.Count ==> %d ", len(fields))
-	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.Business, "", true, false, true, true)
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, "@meta", tabletype.Business, databaseprovider.NotDefined, "", true, false, true, true)
 
 	//t.Errorf("Table.fields.Count ==> %d /%d", len(table.fields), cap(table.fields))
 	//t.Errorf("Table.fieldsById.Count ==> %d /%d", len(table.fieldsById), cap(table.fieldsById))
@@ -217,7 +218,7 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	if position != fieldNotFound {
 		t.Errorf("Table.GetFieldIndexByName() ==> field '111' index cannot be found!!")
 	}
-	table = getMetaTable(databaseprovider.MySql)
+	table = getMetaTable(databaseprovider.MySql, metaSchemaName)
 	position = table.GetFieldIndexByName("description")
 	if position != 2 {
 		t.Errorf("Table.GetFieldIndexByName() ==> field '%s' index should be equal to 2", field.name)
@@ -243,8 +244,8 @@ func Test__Table__GetRelationByName(t *testing.T) {
 	}
 
 	//t.Errorf("fields.Count ==> %d ", len(fields))
-	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.Mtm, "", true, false, true, true)
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, metaSchemaName, tabletype.Mtm, databaseprovider.NotDefined, "", true, false, true, true)
 
 	for i := 0; i < len(relations); i++ {
 		// test valid field only
@@ -312,8 +313,8 @@ func Test__Table__GetIndexByName(t *testing.T) {
 		indexes = append(indexes, *index)
 	}
 
-	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.Fake, "", true, false, true, true)
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
 
 	//t.Errorf("indexes.Count ==> %d ", len(table.indexes))
 
@@ -338,6 +339,50 @@ func Test__Table__GetIndexByName(t *testing.T) {
 		t.Errorf("Table.GetIndexByName() ==> index '22222' cannot be found!!")
 	}
 
+}
+
+func Test__Table__Clone(t *testing.T) {
+	var fields = []Field{}
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var t1 = new(Table)
+
+	// creating fields
+	field0 := Field{}
+	field0.Init(1, "Gga", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field0)
+	field1 := Field{}
+	field1.Init(2, "Zorba", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field1)
+
+	t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
+
+	t2 := t1.Clone()
+
+	// TODO add more test
+	if t1.GetName() != t2.GetName() {
+		t.Errorf("Table.Clone() ==> t1.GetName() <> t2.GetName()")
+	}
+	if t1.GetId() != t2.GetId() {
+		t.Errorf("Table.Clone() ==> t1.GetId() <> t2.GetId()")
+	}
+	if t1.GetDescription() != t2.GetDescription() {
+		t.Errorf("Table.Clone() ==> t1.GetDescription() <> t2.GetDescription()")
+	}
+	if t1.GetFieldCount() != t2.GetFieldCount() {
+		t.Errorf("Table.Clone() ==> t1.GetFieldCount() <> t2.GetFieldCount()")
+	}
+	if t1.GetPhysicalName() != t2.GetPhysicalName() {
+		t.Errorf("Table.Clone() ==> t1.GetPhysicalName() <> t2.GetPhysicalName()")
+	}
+	// no reference copy
+	if t1.GetPrimaryKey() != t2.GetPrimaryKey() {
+		t.Errorf("Table.Clone() ==> t1.GetPrimaryKey() reference <> t2.GetPrimaryKey() reference")
+	}
+	if t1.GetDdl(databaseprovider.PostgreSql, nil) != t2.GetDdl(databaseprovider.PostgreSql, nil) {
+		t.Errorf("Table.Init() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
+	}
 }
 
 func abs(value int) int {

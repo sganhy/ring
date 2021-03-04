@@ -13,7 +13,7 @@ import (
 // INIT
 func Test__Relation__Init(t *testing.T) {
 	elemr0 := Relation{}
-	elemt := getMetaTable(databaseprovider.PostgreSql)
+	elemt := getMetaTable(databaseprovider.PostgreSql, metaSchemaName)
 	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
 
 	if elemr0.GetName() != "arel test" {
@@ -60,8 +60,8 @@ func Test__Relation__ToMeta(t *testing.T) {
 	//var prim = schema.GetDefaultPrimaryKey()
 	fields = append(fields, elemf)
 	elemt := Table{}
-	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		"schema.t_site", physicaltype.Table, 64, tabletype.Business, "subject test", true, false, true, false)
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
@@ -99,7 +99,7 @@ func Test__Relation__ToMeta(t *testing.T) {
 		t.Errorf("Relation.ToMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
 	}
 	// test GetDdlSql
-	var sql, _ = elemr0.GetDdlSql(databaseprovider.PostgreSql)
+	var sql = elemr0.GetDdlSql(databaseprovider.PostgreSql)
 	if strings.ToUpper(sql) != "REL TEST INT8" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to REL TEST INT8")
 	}

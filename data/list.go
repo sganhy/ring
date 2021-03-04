@@ -63,6 +63,10 @@ func (list *List) AppendItem(item interface{}) error {
 	}
 }
 
+func (list *List) Clear() {
+	list.data = nil
+}
+
 func (list *List) appendItem(item *Record) {
 	if list.data == nil {
 		list.data = make([]*Record, 0, 2)

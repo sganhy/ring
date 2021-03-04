@@ -7,6 +7,7 @@ const (
 	PostgreSql DatabaseProvider = 2
 	MySql      DatabaseProvider = 3
 	Influx     DatabaseProvider = 4
+	NotDefined DatabaseProvider = 101
 )
 
 /*
@@ -16,7 +17,7 @@ const (
 	Influx     DatabaseProvider = "influx"
 */
 
-func (provider *DatabaseProvider) ToString() string {
+func (provider *DatabaseProvider) String() string {
 	prov := *provider
 	switch prov {
 	case PostgreSql:

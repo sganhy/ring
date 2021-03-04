@@ -36,9 +36,8 @@ const (
 	NotDefined    FieldType = 125
 )
 
-func (fieldTyp *FieldType) ToString() string {
-	type_ := *fieldTyp
-	switch type_ {
+func (fieldType FieldType) String() string {
+	switch fieldType {
 	case Long:
 		return strLong
 	case Int:

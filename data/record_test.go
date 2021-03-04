@@ -136,8 +136,8 @@ func Test__Record__SetField(t *testing.T) {
 	field3.Init(3, "test3", "", fieldtype.DateTime, 0, "", true, true, true, false, true)
 	fields = append(fields, *field3)
 
-	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes, "schema.@meta",
-		physicaltype.Table, -111, tabletype.Business, "", true, false, true, true)
+	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+		physicaltype.Table, -111, "@meta", tabletype.Business, databaseprovider.NotDefined, "", true, false, true, true)
 	rcd.setRecordType(table)
 	dt = time.Now()
 	rcd.SetField("test1", dt)

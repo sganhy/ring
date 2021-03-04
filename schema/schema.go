@@ -20,6 +20,10 @@ type Schema struct {
 	active      bool
 }
 
+const metaSchemaName string = "@meta"
+const metaSchemaDescription string = "@meta"
+const postgreSqlSchema string = "information_schema"
+
 func (schema *Schema) Init(id int32, name string, description string, connectionString string, language Language, tables []Table,
 	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
 	active bool, disablePool bool) {
@@ -128,7 +132,7 @@ func (schema *Schema) Execute(queries []Query) error {
 	connection.lastGet = time.Now()
 
 	for i := 0; i < len(queries); i++ {
-		err = queries[i].Execute(connection.dbConnection)
+		err = queries[i].Execute(schema.connections.provider, connection.dbConnection)
 		if err != nil {
 			schema.connections.put(connection)
 			return err
@@ -172,6 +176,14 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 	}
 }
 
+func getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
+	//
+	if name == metaSchemaName {
+		return postgreSqlSchema
+	}
+	return name
+}
+
 func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
 	var tables []Table
 	var tablespaces []Tablespace
@@ -179,14 +191,13 @@ func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring 
 	var language = Language{}
 
 	language.Init("EN")
-	metaTable := getMetaTable(provider)
 
-	tables = append(tables, *metaTable)
-	tables = append(tables, *getMetaIdTable(provider))
-	tables = append(tables, *getLogTable(provider))
+	tables = append(tables, *getMetaTable(provider, getPhysicalName(provider, metaSchemaName)))
+	tables = append(tables, *getMetaIdTable(provider, getPhysicalName(provider, metaSchemaName)))
+	tables = append(tables, *getLogTable(provider, getPhysicalName(provider, metaSchemaName)))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	schema.Init(0, metaTable.name, metaTable.description, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+	schema.Init(0, metaSchemaName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
 		disablePool)
 	return &schema
 }

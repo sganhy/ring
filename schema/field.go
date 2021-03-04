@@ -226,14 +226,13 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	return result
 }
 
-func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) (string, error) {
+func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
 	datatype := field.getSqlDataType(provider)
 	if datatype == unknownFieldDataType {
-		return unknownFieldDataType, errors.New(fmt.Sprintf("Unknow datatype {provider: %s, dataTypeId: %d, fieldName: %s}",
-			provider.ToString(), field.fieldType, field.name))
+		return unknownFieldDataType
 	}
-	return strings.TrimSpace(field.getSqlFieldName(provider) + " " + field.getSqlDataType(provider) + " " +
-		field.getSqlConstraint(provider, tableType)), nil
+	return strings.TrimSpace(field.getPhysicalName(provider) + " " + field.getSqlDataType(provider) + " " +
+		field.getSqlConstraint(provider, tableType))
 }
 
 // reformat value for records
@@ -298,8 +297,8 @@ func (field *Field) Clone() *Field {
 	return newField
 }
 
-func (field *Field) ToString() string {
-	var fieldTyp = field.fieldType.ToString()
+func (field *Field) String() string {
+	var fieldTyp = field.fieldType.String()
 	if field.fieldType == fieldtype.String && field.size > 0 {
 		fieldTyp += fmt.Sprintf("(%d)", field.size)
 	}
@@ -314,7 +313,7 @@ func (field *Field) Equal(fieldB *Field) bool {
 	if (field == nil && fieldB != nil) || (field != nil && fieldB == nil) {
 		return false
 	}
-	if field.ToString() == fieldB.ToString() {
+	if field.String() == fieldB.String() {
 		return true
 	}
 	return false
@@ -453,7 +452,7 @@ func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) s
 	return result
 }
 
-func (field *Field) getSqlFieldName(provider databaseprovider.DatabaseProvider) string {
+func (field *Field) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
 	return field.name
 }
 

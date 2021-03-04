@@ -83,9 +83,9 @@ func (bulkRetrieve *BulkRetrieve) AppendFilter(entryIndex int, fieldName string,
 		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, query.targetObject.GetName()))
 	}
 	//TODO type validations
-	filter, err := newQueryFilter(field, operation, operand)
+	item, err := newQueryFilter(field, operation, operand)
 	if err == nil {
-		query.addFilter(filter)
+		query.addItem(item)
 	}
 	return err
 }
@@ -105,11 +105,21 @@ func (bulkRetrieve *BulkRetrieve) AppendSort(entryIndex int, fieldName string, s
 		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, query.targetObject.GetName()))
 	}
 	sort := newQuerySort(field, sortType)
-	query.addSort(sort)
+	query.addItem(sort)
 	// check if field is not already sorted
 	return nil
 }
 
 func (bulkRetrieve *BulkRetrieve) RetrieveRecords() error {
 	return bulkRetrieve.currentSchema.Execute(*bulkRetrieve.data)
+}
+
+func (bulkRetrieve *BulkRetrieve) GetRecordList(entryIndex int) List {
+	queryCount := len(*bulkRetrieve.data)
+	if entryIndex >= queryCount {
+		var emptyResult = List{}
+		return emptyResult
+	}
+	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	return *query.result
 }

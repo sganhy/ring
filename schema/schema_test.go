@@ -60,7 +60,8 @@ func Test__Schema__GetTableByName(t *testing.T) {
 
 	elemt := Table{}
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		"schema.t_site", physicaltype.Table, 64, tabletype.Lexicon, "subject test", true, false, true, false)
+		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined,
+		"subject test", true, false, true, false)
 	for i := -100; i <= TABLE_COUNT; i++ {
 		table := elemt.Clone()
 		table.id = int32(i)

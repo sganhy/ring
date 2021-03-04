@@ -45,7 +45,7 @@ func newConnectionPool(connectionString string, provider databaseprovider.Databa
 	newPool.pool = make([]*connection, 0, newPool.maxConnection)
 
 	for i := 0; i < newPool.minConnection; i++ {
-		connection, err := newConnection(i+1, connectionString, provider.ToString())
+		connection, err := newConnection(i+1, connectionString, provider.String())
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +66,7 @@ func (pool *connectionPool) get() *connection {
 		return result
 	}
 	pool.syncRoot.Unlock()
-	var newConn, _ = newConnection(-1, pool.connectionString, pool.provider.ToString())
+	var newConn, _ = newConnection(-1, pool.connectionString, pool.provider.String())
 	//TODO add login
 	return newConn
 }

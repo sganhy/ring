@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"ring/schema"
+	"ring/schema/fieldtype"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -109,18 +111,13 @@ func (record *Record) SetField(name string, value interface{}) error {
 				record.data[fieldId] = val
 			} else {
 				var fieldType = field.GetType()
-				return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.ToString(), val))
+				return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), val))
 			}
 			return nil
 		}
 		return errors.New(fmt.Sprintf(errorUnknownFieldName, name, record.recordType.GetName()))
 	}
 	return errors.New(errorUnknownRecordType)
-}
-
-// set field without validation
-func (record *Record) setField(name string, value string) {
-	record.data[record.recordType.GetFieldIndexByName(name)] = value
 }
 
 func (record *Record) Copy() *Record {
@@ -133,6 +130,33 @@ func (record *Record) Copy() *Record {
 		}
 	}
 	return result
+}
+
+func (record *Record) String() string {
+	if record.recordType == nil {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString(record.recordType.GetName())
+	sb.WriteString(" object:\n")
+	for i := 0; i < record.recordType.GetFieldCount(); i++ {
+		var index = record.recordType.GetFieldMapIndex(i)
+		var currentField = record.recordType.GetFieldByIndex(index)
+		// field indent
+		sb.WriteString("   ")
+		sb.WriteString(currentField.GetName())
+		sb.WriteString(" ")
+		// display by type
+		if currentField.GetType() == fieldtype.String {
+			sb.WriteString("'")
+			sb.WriteString(record.GetField(currentField.GetName()))
+			sb.WriteString("'")
+		} else {
+			sb.WriteString(record.GetField(currentField.GetName()))
+		}
+		sb.WriteString("\n")
+	}
+	return sb.String()
 }
 
 //******************************

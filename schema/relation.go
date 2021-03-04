@@ -1,8 +1,6 @@
 package schema
 
 import (
-	"errors"
-	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/relationtype"
@@ -81,17 +79,17 @@ func (relation *Relation) IsActive() bool {
 //******************************
 // public methods
 //******************************
-func (relation *Relation) GetDdlSql(provider databaseprovider.DatabaseProvider) (string, error) {
+func (relation *Relation) GetDdlSql(provider databaseprovider.DatabaseProvider) string {
 	if relation.toTable != nil {
 		targetPrimaryKey := relation.toTable.GetPrimaryKey()
 		if targetPrimaryKey != nil {
 			datatype := targetPrimaryKey.getSqlDataType(provider)
 			if datatype != unknownFieldDataType {
-				return relation.name + " " + datatype, nil
+				return relation.name + " " + datatype
 			}
 		}
 	}
-	return "", errors.New(fmt.Sprintf("Invalid relation {name: %s}", relation.name))
+	return ""
 }
 
 func (relation *Relation) GetInverseRelation() *Relation {
