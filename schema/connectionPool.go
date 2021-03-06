@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
+	"strings"
 	"sync"
 )
 
@@ -23,13 +25,16 @@ var currentPoolId = 0
 
 const initialMinValue = 1
 const initialMaxValue = 2
+const connStringApplicationName = " application_name"
 
 func newConnectionPool(connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) (*connectionPool, error) {
 	var newPool = new(connectionPool)
 	currentPoolId++
-	newPool.connectionString = connectionString
+	newPool.connectionString = newPool.getConnectionString(connectionString)
 	newPool.provider = provider
 	newPool.poolId = currentPoolId
+
+	fmt.Println(newPool.connectionString)
 
 	// add login
 	if maxConnection > initialMaxValue {
@@ -45,7 +50,7 @@ func newConnectionPool(connectionString string, provider databaseprovider.Databa
 	newPool.pool = make([]*connection, 0, newPool.maxConnection)
 
 	for i := 0; i < newPool.minConnection; i++ {
-		connection, err := newConnection(i+1, connectionString, provider.String())
+		connection, err := newConnection(i+1, newPool.connectionString, provider.String())
 		if err != nil {
 			return nil, err
 		}
@@ -61,6 +66,7 @@ func (pool *connectionPool) get() *connection {
 	pool.syncRoot.Lock()
 	if pool.cursor >= 0 {
 		var result = pool.pool[pool.cursor]
+		pool.pool[pool.cursor] = nil
 		pool.cursor--
 		pool.syncRoot.Unlock()
 		return result
@@ -83,5 +89,12 @@ func (pool *connectionPool) put(conn *connection) {
 		return
 	}
 	pool.syncRoot.Unlock()
-	conn.destroy()
+	conn.close()
+}
+
+func (pool *connectionPool) getConnectionString(connectionString string) string {
+	if !strings.Contains(strings.ToLower(connectionString), connStringApplicationName) {
+		return connectionString + connStringApplicationName + "=Ring"
+	}
+	return connectionString
 }

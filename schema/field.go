@@ -231,7 +231,7 @@ func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableT
 	if datatype == unknownFieldDataType {
 		return unknownFieldDataType
 	}
-	return strings.TrimSpace(field.getPhysicalName(provider) + " " + field.getSqlDataType(provider) + " " +
+	return strings.TrimSpace(field.GetPhysicalName(provider) + " " + field.getSqlDataType(provider) + " " +
 		field.getSqlConstraint(provider, tableType))
 }
 
@@ -452,7 +452,7 @@ func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) s
 	return result
 }
 
-func (field *Field) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
+func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
 	return field.name
 }
 

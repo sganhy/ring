@@ -11,6 +11,7 @@ import (
 	"ring/schema/relationtype"
 	"ring/schema/sourcetype"
 	"ring/schema/tabletype"
+	"runtime"
 	"strings"
 	"time"
 
@@ -48,15 +49,18 @@ func main() {
 	var br = new(data.BulkRetrieve)
 	br.SimpleQuery(0, "@meta")
 	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
-	/*
-		br.SimpleQuery(1, "@log")
-		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
-		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
-		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
-	*/
+	br.SimpleQuery(1, "@meta_id")
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
+	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
 	br.RetrieveRecords()
 
-	var lstTest = br.GetRecordList(0)
+	time.Sleep(time.Second)
+	runtime.GC()
+
+	time.Sleep(time.Second * 10)
+
+	var lstTest = br.GetRecordList(1)
 	fmt.Println("RECORD =======>")
 	fmt.Println(lstTest.Count())
 	fmt.Println(lstTest.ItemByIndex(0).String())
@@ -142,7 +146,6 @@ func main() {
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool,  bool
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
 		physicaltype.Table, 64, "@meta", tabletype.Business, databaseprovider.PostgreSql, "subject test", true, false, true, false)
-
 	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
 	//fmt.Println(elemt.GetFieldById(4).GetName())
 	//fmt.Println(elemt.GetPrimaryKey().GetName())

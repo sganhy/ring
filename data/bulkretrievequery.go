@@ -6,7 +6,12 @@ import (
 	"ring/data/bulkquerytype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
+	"strconv"
+	"strings"
 )
+
+const defaultParameterName = "B"
+const defaultParameterPrefix = ":"
 
 type bulkRetrieveQuery struct {
 	targetObject *schema.Table
@@ -20,19 +25,20 @@ type bulkRetrieveQuery struct {
 //******************************
 
 func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvider, dbConnection *sql.DB) error {
-	fmt.Println("Execute query")
-	fmt.Println(query.targetObject.GetDql(provider))
-	rows, err := dbConnection.Query(query.targetObject.GetDql(provider))
+	var whereClause, parameters = query.getWhereClause(provider)
+	var sql = query.targetObject.GetDql(provider, whereClause)
+
+	rows, err := dbConnection.Query(sql, parameters)
+	fmt.Println(sql)
 	cols, _ := rows.Columns()
+
 	if err != nil {
 		return err
 	}
-	var rowIndex = 0
 
+	var rowIndex = 0
 	count := query.targetObject.GetFieldCount()
 	query.result.data = make([]*Record, 0, 10)
-	fmt.Println(count)
-	fmt.Println(query.targetObject.GetName())
 
 	columns := make([]interface{}, count)
 	columnPointers := make([]interface{}, count)
@@ -43,23 +49,45 @@ func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvide
 		for i, _ := range columns {
 			columnPointers[i] = &columns[i]
 		}
+
 		if err := rows.Scan(columnPointers...); err != nil {
 			fmt.Println(err)
 			rows.Close()
 			return err
 		}
+
 		for i, colName := range cols {
 			val := columnPointers[i].(*interface{})
 			record.SetField(colName, *val)
 		}
 		query.result.appendItem(record)
-		fmt.Println(query.result.Count())
 		rowIndex++
 	}
-	fmt.Println("query.result.Count()==")
-	fmt.Println(query.result.Count())
 	rows.Close()
 	return nil
+}
+
+func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.DatabaseProvider) (string, []interface{}) {
+	var sql strings.Builder
+	var operator string
+	var item *bulkRetrieveQueryItem
+	var parameterId = 0
+	var parameters []interface{}
+
+	// may be two pass to reduce allocations
+	for i := 0; i < len(*query.items); i++ {
+		item = (*query.items)[i]
+		operator = item.operation.ToSql(provider, item.operand)
+		if operator != "" {
+			sql.WriteString(item.field.GetPhysicalName(provider))
+			sql.WriteString(operator)
+			sql.WriteString(defaultParameterPrefix)
+			sql.WriteString(defaultParameterName)
+			sql.WriteString(strconv.Itoa(parameterId))
+			parameterId++
+		}
+	}
+	return sql.String(), parameters
 }
 
 //******************************

@@ -53,6 +53,7 @@ const metaLogMessage string = "message"
 const fieldListSeparator string = ","
 const dqlSelect = "SELECT "
 const dqlFrom = " FROM "
+const dqlWhere = " WHERE "
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
@@ -299,19 +300,30 @@ func (table *Table) GetDdl(provider databaseprovider.DatabaseProvider, tablespac
 }
 
 func (table *Table) GetDml(provider databaseprovider.DatabaseProvider) string {
-
 	return ""
 }
 
 // SELECT
-func (table *Table) GetDql(provider databaseprovider.DatabaseProvider) string {
+func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClause string) string {
 	capacity := len(dqlSelect) + len(dqlFrom) + len(table.fieldList) + len(table.physicalName)
+
+	if whereClause != "" {
+		capacity += len(dqlWhere)
+		capacity += len(whereClause)
+	}
+
 	var sql strings.Builder
 	sql.Grow(capacity)
 	sql.WriteString(dqlSelect)
 	sql.WriteString(table.fieldList)
 	sql.WriteString(dqlFrom)
 	sql.WriteString(table.physicalName)
+
+	if whereClause != "" {
+		sql.WriteString(dqlWhere)
+		sql.WriteString(whereClause)
+	}
+
 	return sql.String()
 }
 
@@ -411,7 +423,7 @@ func (table *Table) getFieldList(provider databaseprovider.DatabaseProvider) str
 	// capacity
 	var b strings.Builder
 	for i := 0; i < len(table.fieldsById); i++ {
-		b.WriteString(table.fieldsById[i].getPhysicalName(provider))
+		b.WriteString(table.fieldsById[i].GetPhysicalName(provider))
 		if i < len(table.fieldsById)-1 {
 			b.WriteString(fieldListSeparator)
 		}
@@ -595,7 +607,7 @@ func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalNa
 	indexes = append(indexes, uk)
 
 	table.Init(int32(tabletype.MetaId), metaIdTableName, "", fields, relations, indexes,
-		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, provider, "", true, false, true, true)
 
 	return table
 }
@@ -652,7 +664,7 @@ func getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName
 	indexes = append(indexes, uk)
 
 	table.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes,
-		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, provider, "", true, false, true, true)
 
 	return table
 }
@@ -697,7 +709,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	fields = append(fields, message)   //9
 
 	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
-		tabletype.MetaId, databaseprovider.NotDefined, "", false, false, true, true)
+		tabletype.MetaId, provider, "", false, false, true, true)
 	return table
 }
 
