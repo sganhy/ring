@@ -17,6 +17,8 @@ var strGreaterOrEqual = ">="
 var strLess = "<"
 var strLessOrEqual = "<="
 var strLike = " LIKE "
+var strNotLike = " NOT LIKE "
+var strIn = " IN "
 
 const (
 	Equal          OperationType = 1
@@ -59,6 +61,10 @@ func (operation OperationType) ToSql(provider databaseprovider.DatabaseProvider,
 		return strLessOrEqual
 	case Like:
 		return strLike
+	case NotLike:
+		return strNotLike
+	case In:
+		return strIn
 	}
 	return ""
 

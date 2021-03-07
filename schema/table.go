@@ -54,6 +54,7 @@ const fieldListSeparator string = ","
 const dqlSelect = "SELECT "
 const dqlFrom = " FROM "
 const dqlWhere = " WHERE "
+const dqlOrderBy = " ORDER BY "
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
@@ -304,7 +305,7 @@ func (table *Table) GetDml(provider databaseprovider.DatabaseProvider) string {
 }
 
 // SELECT
-func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClause string) string {
+func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClause string, orderClause string) string {
 	capacity := len(dqlSelect) + len(dqlFrom) + len(table.fieldList) + len(table.physicalName)
 
 	if whereClause != "" {
@@ -322,6 +323,11 @@ func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClau
 	if whereClause != "" {
 		sql.WriteString(dqlWhere)
 		sql.WriteString(whereClause)
+	}
+
+	if orderClause != "" {
+		sql.WriteString(dqlOrderBy)
+		sql.WriteString(orderClause)
 	}
 
 	return sql.String()

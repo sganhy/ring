@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/sourcetype"
 	"time"
@@ -129,6 +130,7 @@ func (schema *Schema) Clone() *Schema {
 func (schema *Schema) Execute(queries []Query) error {
 	var connection = schema.connections.get()
 	var err error
+
 	connection.lastGet = time.Now()
 
 	for i := 0; i < len(queries); i++ {
@@ -138,8 +140,10 @@ func (schema *Schema) Execute(queries []Query) error {
 			return err
 		}
 	}
-
 	schema.connections.put(connection)
+	duration := time.Now().Sub(connection.lastGet)
+	fmt.Println("Execution Time:")
+	fmt.Println(duration.Milliseconds())
 	return nil
 }
 

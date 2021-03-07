@@ -333,6 +333,24 @@ func (field *Field) GetDateTimeString(t time.Time) string {
 	return ""
 }
 
+// calculate
+func (field *Field) GetParameterValue(value string) interface{} {
+	switch field.fieldType {
+	case fieldtype.Long, fieldtype.Int, fieldtype.Byte, fieldtype.Short:
+		val, _ := strconv.ParseInt(value, 10, 64)
+		return val
+	case fieldtype.Double, fieldtype.Float:
+		val, _ := strconv.ParseFloat(value, 64)
+		return val
+	case fieldtype.Boolean:
+		if value == "true" {
+			return true
+		}
+		return false
+	}
+	return value
+}
+
 //******************************
 // private methods
 //******************************

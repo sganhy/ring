@@ -85,7 +85,7 @@ func (bulkRetrieve *BulkRetrieve) AppendFilter(entryIndex int, fieldName string,
 	//TODO type validations
 	item, err := newQueryFilter(field, operation, operand)
 	if err == nil {
-		query.addItem(item)
+		query.addFilter(item)
 	}
 	return err
 }
@@ -105,7 +105,7 @@ func (bulkRetrieve *BulkRetrieve) AppendSort(entryIndex int, fieldName string, s
 		return errors.New(fmt.Sprintf(errorUnknownFieldName, fieldName, query.targetObject.GetName()))
 	}
 	sort := newQuerySort(field, sortType)
-	query.addItem(sort)
+	query.addSort(sort)
 	// check if field is not already sorted
 	return nil
 }

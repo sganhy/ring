@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ring/data"
 	"ring/data/operationtype"
+	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
@@ -48,19 +49,26 @@ func main() {
 	// Create an empty user and make the sql query (using $1 for the parameter)
 	var br = new(data.BulkRetrieve)
 	br.SimpleQuery(0, "@meta")
-	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
+	br.AppendFilter(0, "schema_id", operationtype.Equal, 1)
+	br.AppendFilter(0, "object_type", operationtype.Equal, 0)
+	br.AppendSort(0, "id", sortordertype.Descending)
+	br.AppendSort(0, "schema_id", sortordertype.Ascending)
+	br.AppendSort(0, "name", sortordertype.Descending)
+	//br.AppendFilter(0, "name", operationtype.Like, "al%")
 	br.SimpleQuery(1, "@meta_id")
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
-	br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
+	/*
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)
+		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
+	*/
 	br.RetrieveRecords()
 
 	time.Sleep(time.Second)
 	runtime.GC()
 
-	time.Sleep(time.Second * 10)
+	//time.Sleep(time.Second * 10)
 
-	var lstTest = br.GetRecordList(1)
+	var lstTest = br.GetRecordList(0)
 	fmt.Println("RECORD =======>")
 	fmt.Println(lstTest.Count())
 	fmt.Println(lstTest.ItemByIndex(0).String())
