@@ -39,33 +39,40 @@ const (
 	descendingSort OperationType = 102
 )
 
-func (operation OperationType) ToSql(provider databaseprovider.DatabaseProvider, value string) string {
+//return operator string, has bind variable yes/no
+func (operation OperationType) ToSql(provider databaseprovider.DatabaseProvider, value string) (string, bool) {
 	switch operation {
 	case Equal:
 		if value == "" {
-			return isNull
+			return isNull, false
 		}
-		return strEqual
+		return strEqual, true
 	case NotEqual:
 		if value == "" {
-			return isNotNull
+			return isNotNull, false
 		}
-		return strNotEqual
+		return strNotEqual, true
 	case Greater:
-		return strGreater
+		return strGreater, true
 	case GreaterOrEqual:
-		return strGreaterOrEqual
+		return strGreaterOrEqual, true
 	case Less:
-		return strLess
+		return strLess, true
 	case LessOrEqual:
-		return strLessOrEqual
+		return strLessOrEqual, true
 	case Like:
-		return strLike
+		if value == "" {
+			return isNull, false
+		}
+		return strLike, true
 	case NotLike:
-		return strNotLike
+		if value == "" {
+			return isNull, false
+		}
+		return strNotLike, true
 	case In:
-		return strIn
+		return strIn, true
 	}
-	return ""
+	return "", false
 
 }

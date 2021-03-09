@@ -80,7 +80,9 @@ func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvide
 func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.DatabaseProvider) (string, []interface{}) {
 	var sql strings.Builder
 	var operator string
+	var hasVariable bool
 	var item *bulkRetrieveQueryItem
+	var variableId = 0
 	var parameterId = 0
 	var parameters []interface{}
 
@@ -88,14 +90,18 @@ func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.Databas
 	//TODO may be two pass to reduce allocations
 	for i := 0; i < len(*query.items); i++ {
 		item = (*query.items)[i]
-		operator = item.operation.ToSql(provider, item.operand)
+		operator, hasVariable = item.operation.ToSql(provider, item.operand)
 		if operator != "" {
 			sql.WriteString(item.field.GetPhysicalName(provider))
 			sql.WriteString(operator)
-			// get parameter
-			query.getParameterName(provider, &sql, parameterId)
-			if item.operand != "" {
-				parameters = append(parameters, item.field.GetParameterValue(item.operand))
+
+			if hasVariable == true {
+				// get parameter
+				query.getParameterName(provider, &sql, variableId)
+				if item.operand != "" {
+					parameters = append(parameters, item.field.GetParameterValue(item.operand))
+				}
+				variableId++
 			}
 			if parameterId+1 < *query.filterCount {
 				sql.WriteString(filterSeparator)
@@ -103,6 +109,7 @@ func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.Databas
 			parameterId++
 		}
 	}
+	//fmt.Printf("Parameters(%d)\n", len(parameters))
 	return sql.String(), parameters
 }
 
@@ -120,11 +127,11 @@ func (query *bulkRetrieveQuery) getOrderClause(provider databaseprovider.Databas
 			item = (*query.items)[i]
 			if int8(item.operation) == descId || int8(item.operation) == ascId {
 				sql.WriteString(item.field.GetPhysicalName(provider))
-				sql.WriteString(" ")
 				if int8(item.operation) == descId {
 					sql.WriteString(" DESC")
 				}
-				sql.WriteString(item.operation.ToSql(provider, item.operand))
+				operator, _ := item.operation.ToSql(provider, item.operand)
+				sql.WriteString(operator)
 				if parameterId < capacity-1 {
 					sql.WriteString(",")
 				}

@@ -10,6 +10,7 @@ import (
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
+	"ring/schema/searchabletype"
 	"ring/schema/sourcetype"
 	"ring/schema/tabletype"
 	"runtime"
@@ -54,7 +55,7 @@ func main() {
 	br.AppendSort(0, "id", sortordertype.Descending)
 	br.AppendSort(0, "schema_id", sortordertype.Ascending)
 	br.AppendSort(0, "name", sortordertype.Descending)
-	//br.AppendFilter(0, "name", operationtype.Like, "al%")
+	br.AppendFilter(0, "name", operationtype.NotEqual, nil)
 	br.SimpleQuery(1, "@meta_id")
 	/*
 		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
@@ -104,11 +105,13 @@ func main() {
 	fmt.Println(meta.IsEntityBaseline())
 	fmt.Println(elemf00.GetDefaultValue())
 	fmt.Println(elemf.IsNumeric())
-	fmt.Println(elemf.GetSearchableValue("žůžo", lang))
-	fmt.Println(elemf.GetSearchableValue("zuzo", lang))
-	fmt.Println(elemf.GetSearchableValue("Français", lang))
-	fmt.Println(elemf.GetSearchableValue("", lang))
-	fmt.Println(elemf.GetSearchableValue("a", lang))
+	var sss = elemf.GetSearchableValue("a", searchabletype.None)
+	var sss2 = "A"
+	fmt.Println(sss)
+	fmt.Println(sss2)
+	fmt.Println(elemf.GetSearchableValue("Français", searchabletype.None))
+	fmt.Println(elemf.GetSearchableValue("", searchabletype.None))
+	fmt.Println(elemf.GetSearchableValue("a", searchabletype.None))
 
 	elemf2 := schema.Field{}
 	elemf2.Init(4, "Zorba", "Zorba", fieldtype.Double, 5, "", true, false, false, true, true)

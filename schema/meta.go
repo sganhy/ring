@@ -35,6 +35,8 @@ const (
 	bitPositionFirstPositionSize    uint8 = 17 // max value bit pos for field=16 !!!
 	bitPositionFirstPositionRelType uint8 = 18 // max value bit pos for field=17 !!!
 	bitPositionRelationNotNull      uint8 = 4  // max value bit pos for relation =17 !!!
+	bitPositionTableCached          uint8 = 9
+	bitPositionTableReadonly        uint8 = 10
 )
 
 //******************************
@@ -199,6 +201,12 @@ func (meta *Meta) setIndexBitmap(value bool) {
 }
 func (meta *Meta) setIndexUnique(value bool) {
 	meta.writeFlag(bitPositionIndexUnique, value)
+}
+func (meta *Meta) setTableCached(value bool) {
+	meta.writeFlag(bitPositionTableCached, value)
+}
+func (meta *Meta) setTableReadonly(value bool) {
+	meta.writeFlag(bitPositionTableReadonly, value)
 }
 
 func (meta *Meta) setRelationType(relationType relationtype.RelationType) {

@@ -6,6 +6,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
+	"ring/schema/searchabletype"
 	"ring/schema/tabletype"
 	"strconv"
 	"strings"
@@ -186,11 +187,11 @@ func (field *Field) IsDateTime() bool {
 ///
 /// Calculate searchable field value (remove diacritic characters and value.ToUpper())
 ///
-func (field *Field) GetSearchableValue(value string, language Language) string {
+func (field *Field) GetSearchableValue(value string, searchableType searchabletype.SearchableType) string {
 	//TODO specific treatment by language
 	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
 	output, _, err := transform.String(t, value)
-
+	//output = fmt.Sprint(output)
 	// log here
 	if err != nil {
 		return strings.ToUpper(value)
@@ -347,6 +348,9 @@ func (field *Field) GetParameterValue(value string) interface{} {
 			return true
 		}
 		return false
+	case fieldtype.DateTime:
+		val, _ := time.Parse(defaultTimeFormat, value)
+		return val
 	}
 	return value
 }
@@ -369,14 +373,14 @@ func isValidInteger(value string, fieldType fieldtype.FieldType) bool {
 	}
 	// it's a digit
 	switch fieldType {
-	case fieldtype.Byte:
-		return int08Condition(value, size, sign)
-	case fieldtype.Short:
-		return int16Condition(value, size, sign)
-	case fieldtype.Int:
-		return int32Condition(value, size, sign)
 	case fieldtype.Long:
 		return int64Condition(value, size, sign)
+	case fieldtype.Int:
+		return int32Condition(value, size, sign)
+	case fieldtype.Short:
+		return int16Condition(value, size, sign)
+	case fieldtype.Byte:
+		return int08Condition(value, size, sign)
 	}
 	return false
 }

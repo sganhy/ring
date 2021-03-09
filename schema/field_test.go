@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
+	"ring/schema/searchabletype"
 	"ring/schema/tabletype"
 	"strings"
 	"testing"
@@ -144,20 +145,18 @@ func Test__Field__GetSearchableValue(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 5, "test default", true, false, false, true, true)
 
-	if elemf0.GetSearchableValue("žůžo", lang) == "ZUZO" {
-		//t.Errorf("elemf0.GetSearchableValue(\"\") should be equal to \"\" instead of '"+elemf0.GetSearchableValue("")) + "'"
-		//t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
+	if strings.Compare(elemf0.GetSearchableValue("žůžo", searchabletype.None), "ZUZO") != 0 {
+		t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
 	}
-
-	/*
-		if len(elemf0.GetSearchableValue("")) == 0 {
-			t.Errorf("len(elemf0.GetSearchableValue(\"\")) should be equal to 0")
-		}
-
-		if elemf0.GetSearchableValue("a") == "A" {
-			t.Errorf("elemf0.GetSearchableValue(\"a\") should be equal to \"A\"")
-		}
-	*/
+	if elemf0.GetSearchableValue("žůžo", searchabletype.None) != "ZUZO" {
+		t.Errorf("Field.GetSearchableValue(\"žůžo\") ==> should be equal to ZUZO")
+	}
+	if len(elemf0.GetSearchableValue("", searchabletype.None)) != 0 {
+		t.Errorf("len(elemf0.GetSearchableValue(\"\")) should be equal to 0")
+	}
+	if elemf0.GetSearchableValue("a", searchabletype.None) != "A" {
+		t.Errorf("elemf0.GetSearchableValue(\"a\") should be equal to \"A\"")
+	}
 }
 
 // ToMeta - test mapping - ToMeta(), ToField
@@ -312,6 +311,10 @@ func Test__Field__isValidInteger(t *testing.T) {
 	if isValidInteger("-129", fieldtype.Byte) != false {
 		t.Errorf("Field.isValidInteger() ==> -129 string is not a valid integer (8 bits)")
 	}
+	// force false last return ... test
+	if isValidInteger("11111", fieldtype.Boolean) != false {
+		t.Errorf("Field.isValidInteger() ==> 11111 string is not a valid Boolean")
+	}
 
 }
 
@@ -343,12 +346,57 @@ func Test__Field__getDateTimeIso8601(t *testing.T) {
 		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12T12:13:14.000'")
 	}
 
-	// test ==> fieldtype.DateTime
+	// test ==> fieldtype.ShortDateTime
 	// sample #1
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.ShortDateTime, 5, "test default", true, false, false, true, true)
 	ti, _ = getDateTimeIso8601("2016-11-12T12:13:14")
 	if elemf0.GetDateTimeString(*ti) != "2016-11-12" {
 		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12'")
+	}
+
+	// test ==> fieldtype.ShortDateTime
+
+}
+
+func Test__Field__GetParameterValue(t *testing.T) {
+	elemf0 := new(Field)
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Boolean, 5, "test default", true, false, false, true, true)
+
+	// boolean
+	if elemf0.GetParameterValue("true") != true {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('true') must be equal to true")
+	}
+	if elemf0.GetParameterValue("false") != false {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('false') must be equal to false")
+	}
+	// integer
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Short, 5, "test default", true, false, false, true, true)
+	elemf0.GetParameterValue("444")
+	var valueInt = elemf0.GetParameterValue("444").(int64)
+	if valueInt != 444 {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('444') must be equal to 444")
+	}
+	valueInt = elemf0.GetParameterValue("-32000").(int64)
+	if valueInt != -32000 {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('-32000') must be equal to -32000")
+	}
+	// float
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Float, 5, "test default", true, false, false, true, true)
+	var valueFloat = elemf0.GetParameterValue("-32.10001").(float64)
+	if valueFloat != -32.10001 {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('-32.10001') must be equal to -32.10001")
+	}
+	// string
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.String, 5, "test default", true, false, false, true, true)
+	var valueStr = elemf0.GetParameterValue("Hello world").(string)
+	if valueStr != "Hello world" {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('Hello world') must be equal to 'Hello world'")
+	}
+	// dateTime
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.DateTime, 5, "", true, false, false, true, true)
+	var valueDt = elemf0.GetParameterValue("2016-11-12T12:13:14.071").(time.Time)
+	if valueDt.String() != "2016-11-12 12:13:14.071 +0000 UTC" {
+		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('2016-11-12T12:13:14.071') must be equal to '2016-11-12 12:13:14.071 +0000 UTC'")
 	}
 
 }

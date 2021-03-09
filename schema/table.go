@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -300,7 +301,7 @@ func (table *Table) GetDdl(provider databaseprovider.DatabaseProvider, tablespac
 	return sql
 }
 
-func (table *Table) GetDml(provider databaseprovider.DatabaseProvider) string {
+func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, provider databaseprovider.DatabaseProvider) string {
 	return ""
 }
 
@@ -311,6 +312,11 @@ func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClau
 	if whereClause != "" {
 		capacity += len(dqlWhere)
 		capacity += len(whereClause)
+	}
+
+	if orderClause != "" {
+		capacity += len(dqlOrderBy)
+		capacity += len(orderClause)
 	}
 
 	var sql strings.Builder
@@ -329,7 +335,8 @@ func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClau
 		sql.WriteString(dqlOrderBy)
 		sql.WriteString(orderClause)
 	}
-
+	// check capacity
+	//fmt.Printf("GetDql() capacity/len(str)/sql.Cap() %d /%d /%d\n", capacity, len(sql.String()), sql.Cap())
 	return sql.String()
 }
 
@@ -377,14 +384,11 @@ func (table *Table) ToMeta() []*Meta {
 
 	// flags
 	metaTable.flags = 0
-	/*
-		metaTable.setFieldNotNull(field.notNull)
-		metaTable.setFieldCaseSensitive(field.caseSensitive)
-		metaTable.setFieldMultilingual(field.multilingual)
-		metaTable.setEntityBaseline(field.baseline)
-		metaTable.setEntityEnabled(field.active)
-		metaTable.setFieldSize(field.size)
-	*/
+
+	metaTable.setEntityBaseline(table.baseline)
+	metaTable.setTableCached(table.cached)
+	metaTable.setTableReadonly(table.readonly)
+
 	result = append(result, metaTable)
 
 	for i := 0; i < len(table.fields); i++ {
