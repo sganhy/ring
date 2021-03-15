@@ -3,17 +3,8 @@
   <component name="ChangeListManager">
     <list default="true" id="b921a7a4-b7c3-4492-9b61-f4d4d5535c9e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/bulkretrieve.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/bulkretrieve.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/bulkretrievefilter.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.scannerwork/report-task.txt" beforeDir="false" afterPath="$PROJECT_DIR$/.scannerwork/report-task.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data/bulkretrievequery.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/bulkretrievequery.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/bulkretrievesort.go" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/list.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/list.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/operationtype/operationtype.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/operationtype/operationtype.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/record.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/record.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/sortordertype/sortordertype.go" beforeDir="false" afterPath="$PROJECT_DIR$/data/sortordertype/sortordertype.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schema/fieldtype/fieldtype.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/fieldtype/fieldtype.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/schema/table.go" beforeDir="false" afterPath="$PROJECT_DIR$/schema/table.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

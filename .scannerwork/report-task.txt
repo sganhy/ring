@@ -2,5 +2,5 @@ projectKey=ring
 serverUrl=http://localhost:9000
 serverVersion=8.6.0.39681
 dashboardUrl=http://localhost:9000/dashboard?id=ring
-ceTaskId=AXgZS8mpRSxSbPDqFjnX
-ceTaskUrl=http://localhost:9000/api/ce/task?id=AXgZS8mpRSxSbPDqFjnX
+ceTaskId=AXgsxJmNYDhEnHOKNkIB
+ceTaskUrl=http://localhost:9000/api/ce/task?id=AXgsxJmNYDhEnHOKNkIB

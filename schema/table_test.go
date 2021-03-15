@@ -381,7 +381,7 @@ func Test__Table__Clone(t *testing.T) {
 		t.Errorf("Table.Clone() ==> t1.GetPrimaryKey() reference <> t2.GetPrimaryKey() reference")
 	}
 	if t1.GetDdl(databaseprovider.PostgreSql, nil) != t2.GetDdl(databaseprovider.PostgreSql, nil) {
-		t.Errorf("Table.Init() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
+		t.Errorf("Table.Clone() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
 	}
 }
 

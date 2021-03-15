@@ -140,8 +140,8 @@ func (record *Record) String() string {
 	sb.WriteString(record.recordType.GetName())
 	sb.WriteString(" object:\n")
 	for i := 0; i < record.recordType.GetFieldCount(); i++ {
-		var index = record.recordType.GetFieldMapIndex(i)
-		var currentField = record.recordType.GetFieldByIndex(index)
+		var currentField = record.recordType.GetFieldIdByIndex(i)
+
 		// field indent
 		sb.WriteString("   ")
 		sb.WriteString(currentField.GetName())

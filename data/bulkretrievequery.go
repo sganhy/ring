@@ -31,17 +31,16 @@ type bulkRetrieveQuery struct {
 func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvider, dbConnection *sql.DB) error {
 	var whereClause, parameters = query.getWhereClause(provider)
 	var orderClause = query.getOrderClause(provider)
-	var sql = query.targetObject.GetDql(provider, whereClause, orderClause)
+	var sqlQuery = query.targetObject.GetDql(provider, whereClause, orderClause)
 
-	rows, err := query.executeQuery(dbConnection, sql, parameters)
-	fmt.Println(sql)
+	rows, err := query.executeQuery(dbConnection, sqlQuery, parameters)
+	fmt.Println(sqlQuery)
 
 	if err != nil {
 		//fmt.Println("ERROR ==> ")
 		//fmt.Println(err)
 		return err
 	}
-	cols, _ := rows.Columns()
 	var rowIndex = 0
 	count := query.targetObject.GetFieldCount()
 	query.result.data = make([]*Record, 0, 10)
@@ -50,22 +49,16 @@ func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvide
 	columnPointers := make([]interface{}, count)
 	for rows.Next() {
 		var record = new(Record)
-		record.setRecordType(query.targetObject)
-
-		for i, _ := range columns {
+		record.recordType = query.targetObject
+		for i := range columns {
 			columnPointers[i] = &columns[i]
 		}
-
 		if err := rows.Scan(columnPointers...); err != nil {
 			fmt.Println(err)
 			rows.Close()
 			return err
 		}
-
-		for i, colName := range cols {
-			val := columnPointers[i].(*interface{})
-			record.SetField(colName, *val)
-		}
+		record.data = query.targetObject.GetQueryResult(columnPointers)
 		query.result.appendItem(record)
 		rowIndex++
 	}
@@ -78,7 +71,7 @@ func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvide
 //******************************
 
 func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.DatabaseProvider) (string, []interface{}) {
-	var sql strings.Builder
+	var result strings.Builder
 	var operator string
 	var hasVariable bool
 	var item *bulkRetrieveQueryItem
@@ -86,35 +79,35 @@ func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.Databas
 	var parameterId = 0
 	var parameters []interface{}
 
-	sql.Grow((*query.filterCount) * 30)
+	result.Grow((*query.filterCount) * 30)
 	//TODO may be two pass to reduce allocations
 	for i := 0; i < len(*query.items); i++ {
 		item = (*query.items)[i]
 		operator, hasVariable = item.operation.ToSql(provider, item.operand)
 		if operator != "" {
-			sql.WriteString(item.field.GetPhysicalName(provider))
-			sql.WriteString(operator)
+			result.WriteString(item.field.GetPhysicalName(provider))
+			result.WriteString(operator)
 
 			if hasVariable == true {
 				// get parameter
-				query.getParameterName(provider, &sql, variableId)
+				query.getParameterName(provider, &result, variableId)
 				if item.operand != "" {
 					parameters = append(parameters, item.field.GetParameterValue(item.operand))
 				}
 				variableId++
 			}
 			if parameterId+1 < *query.filterCount {
-				sql.WriteString(filterSeparator)
+				result.WriteString(filterSeparator)
 			}
 			parameterId++
 		}
 	}
 	//fmt.Printf("Parameters(%d)\n", len(parameters))
-	return sql.String(), parameters
+	return result.String(), parameters
 }
 
 func (query *bulkRetrieveQuery) getOrderClause(provider databaseprovider.DatabaseProvider) string {
-	var sql strings.Builder
+	var result strings.Builder
 	var capacity = len(*query.items) - *query.filterCount
 	var descId = int8(sortordertype.Descending)
 	var ascId = int8(sortordertype.Ascending)
@@ -122,24 +115,24 @@ func (query *bulkRetrieveQuery) getOrderClause(provider databaseprovider.Databas
 	var parameterId = 0
 
 	if capacity > 0 {
-		sql.Grow(capacity * 30)
+		result.Grow(capacity * 30)
 		for i := 0; i < len(*query.items); i++ {
 			item = (*query.items)[i]
 			if int8(item.operation) == descId || int8(item.operation) == ascId {
-				sql.WriteString(item.field.GetPhysicalName(provider))
+				result.WriteString(item.field.GetPhysicalName(provider))
 				if int8(item.operation) == descId {
-					sql.WriteString(" DESC")
+					result.WriteString(" DESC")
 				}
 				operator, _ := item.operation.ToSql(provider, item.operand)
-				sql.WriteString(operator)
+				result.WriteString(operator)
 				if parameterId < capacity-1 {
-					sql.WriteString(",")
+					result.WriteString(",")
 				}
 				parameterId++
 			}
 		}
 	}
-	return sql.String()
+	return result.String()
 }
 
 func (query *bulkRetrieveQuery) getParameterName(provider databaseprovider.DatabaseProvider, params *strings.Builder, index int) {

@@ -9,7 +9,9 @@ import (
 	"ring/schema/physicaltype"
 	"ring/schema/tabletype"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type Table struct {
@@ -26,7 +28,7 @@ type Table struct {
 	tableType    tabletype.TableType
 	fieldList    string
 	subject      string
-	cacheId      CacheId
+	cacheId      *CacheId
 	cached       bool
 	readonly     bool
 	baseline     bool
@@ -67,6 +69,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadRelations(relations)
 	table.loadIndexes(indexes) // run at the end only
 	// initialize cacheId
+	table.cacheId = new(CacheId)
 	table.cacheId.CurrentId = 0
 	table.cacheId.MaxId = 0
 	table.cacheId.ReservedRange = 0
@@ -101,7 +104,7 @@ func (table *Table) GetDescription() string {
 }
 
 func (table *Table) GetCacheId() *CacheId {
-	return &table.cacheId
+	return table.cacheId
 }
 
 func (table *Table) GetPhysicalName() string {
@@ -210,19 +213,14 @@ func (table *Table) GetFieldIndexByName(name string) int {
 	return fieldNotFound
 }
 
+//
 func (table *Table) GetFieldByIndex(index int) *Field {
-	if index >= 0 && index < len(table.fields) {
-		return table.fields[index]
-	}
-	return nil
+	return table.fields[index]
 }
 
-// retrieve position field index Name from position in fieldsById
-func (table *Table) GetFieldMapIndex(index int) int {
-	if index >= 0 && index < len(table.fieldsById) {
-		return table.GetFieldIndexByName(table.fieldsById[index].name)
-	}
-	return -1
+//
+func (table *Table) GetFieldIdByIndex(index int) *Field {
+	return table.fieldsById[index]
 }
 
 func (table *Table) GetRelationByName(name string) *Relation {
@@ -399,6 +397,75 @@ func (table *Table) ToMeta() []*Meta {
 	}
 	for i := 0; i < len(table.indexes); i++ {
 		result = append(result, table.indexes[i].ToMeta(table.id))
+	}
+	return result
+}
+
+func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
+	var capacity = len(table.fields)
+	var result = make([]string, capacity, capacity)
+	var currentField *Field
+	var value interface{}
+	var strValue string
+	var index int
+
+	// manage fields first
+	for i := 0; i < capacity; i++ {
+		value = *columnPointer[i].(*interface{})
+		currentField = table.fieldsById[i]
+		// use a mapper may be
+		index = table.GetFieldIndexByName(currentField.name)
+		if value == nil {
+			strValue = ""
+		} else {
+			switch value.(type) {
+			case string:
+				strValue = value.(string)
+				break
+			case float32:
+				// conversion issues
+				strValue = fmt.Sprintf("%g", value.(float32))
+				break
+			case float64:
+				strValue = strconv.FormatFloat(value.(float64), 'f', -1, 64)
+				break
+			case int:
+				strValue = strconv.Itoa(value.(int))
+				break
+			case bool:
+				strValue = strconv.FormatBool(value.(bool))
+				break
+			case int8:
+				strValue = strconv.Itoa(int(value.(int8)))
+				break
+			case int16:
+				strValue = strconv.Itoa(int(value.(int16)))
+				break
+			case int32:
+				strValue = strconv.Itoa(int(value.(int32)))
+				break
+			case int64:
+				strValue = strconv.FormatInt(value.(int64), 10)
+				break
+			case uint8:
+				strValue = strconv.FormatUint(uint64(value.(uint8)), 10)
+				break
+			case uint16:
+				strValue = strconv.FormatUint(uint64(value.(uint16)), 10)
+				break
+			case uint32:
+				strValue = strconv.FormatUint(uint64(value.(uint32)), 10)
+				break
+			case uint64:
+				strValue = strconv.FormatUint(value.(uint64), 10)
+				break
+			case time.Time:
+				strValue = currentField.GetDateTimeString(value.(time.Time))
+			default:
+				strValue = value.(string)
+			}
+		}
+		result[index] = strValue
 	}
 	return result
 }
