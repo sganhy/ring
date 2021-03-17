@@ -9,9 +9,9 @@ import (
 )
 
 type BulkRetrieve struct {
-	data            *[]schema.Query
-	currentSchema   *schema.Schema
-	currentLanguage *schema.Language
+	data          *[]schema.Query
+	currentSchema *schema.Schema
+	language      *schema.Language
 }
 
 const errorInvalidIndex = "This BulkRetrieve does not have a level #%d to retrieve results for."
@@ -23,7 +23,7 @@ const initialSliceCount = 4
 func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
 	bulkRetrieve.currentSchema = schema
 	if schema != nil {
-		bulkRetrieve.currentLanguage = schema.GetLanguage()
+		bulkRetrieve.language = schema.GetLanguage()
 	}
 }
 
@@ -38,7 +38,7 @@ func (bulkRetrieve *BulkRetrieve) SetSchema(schemaName string) error {
 
 func (bulkRetrieve *BulkRetrieve) setLanguage(language *schema.Language) {
 	if language != nil {
-		bulkRetrieve.currentLanguage = language
+		bulkRetrieve.language = language
 	}
 }
 

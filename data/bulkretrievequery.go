@@ -3,7 +3,7 @@ package data
 import (
 	"database/sql"
 	"fmt"
-	"ring/data/bulkquerytype"
+	"ring/data/bulkretrievetype"
 	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
@@ -18,7 +18,7 @@ const filterSeparator = " AND "
 // all this structure is readonly
 type bulkRetrieveQuery struct {
 	targetObject *schema.Table
-	queryType    bulkquerytype.BulkQueryType
+	queryType    bulkretrievetype.BulkRetrieveType
 	filterCount  *int
 	items        *[]*bulkRetrieveQueryItem
 	result       *List // pointer is mandatory
@@ -31,7 +31,7 @@ type bulkRetrieveQuery struct {
 func (query bulkRetrieveQuery) Execute(provider databaseprovider.DatabaseProvider, dbConnection *sql.DB) error {
 	var whereClause, parameters = query.getWhereClause(provider)
 	var orderClause = query.getOrderClause(provider)
-	var sqlQuery = query.targetObject.GetDql(provider, whereClause, orderClause)
+	var sqlQuery = query.targetObject.GetDql(whereClause, orderClause)
 
 	rows, err := query.executeQuery(dbConnection, sqlQuery, parameters)
 	fmt.Println(sqlQuery)
@@ -149,7 +149,7 @@ func newSimpleQuery(table *schema.Table) schema.Query {
 	var items = make([]*bulkRetrieveQueryItem, 0, 2)
 
 	query.targetObject = table
-	query.queryType = bulkquerytype.SimpleQuery
+	query.queryType = bulkretrievetype.SimpleQuery
 	query.filterCount = new(int)
 	*query.filterCount = 0
 	query.items = &items

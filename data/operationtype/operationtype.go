@@ -10,8 +10,8 @@ type OperationType int8
 
 var strEqual = "="
 var strNotEqual = "<>"
-var isNotNull = " IS NOT NULL "
-var isNull = " IS NULL "
+var isNotNull = " IS NOT NULL"
+var isNull = " IS NULL"
 var strGreater = ">"
 var strGreaterOrEqual = ">="
 var strLess = "<"

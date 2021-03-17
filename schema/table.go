@@ -22,12 +22,14 @@ type Table struct {
 	fieldsById   []*Field    // sorted by id
 	relations    []*Relation // sorted by name
 	indexes      []*Index    // sorted by name
+	mapper       []uint16    // mapping from .fieldsById to .fields ==> max number of column 65535!!
 	physicalName string
 	physicalType physicaltype.PhysicalType
 	schemaId     int32
 	tableType    tabletype.TableType
 	fieldList    string
 	subject      string
+	provider     databaseprovider.DatabaseProvider
 	cacheId      *CacheId
 	cached       bool
 	readonly     bool
@@ -54,10 +56,26 @@ const metaLogJobId string = "job_id"
 const metaLogMethod string = "method"
 const metaLogMessage string = "message"
 const fieldListSeparator string = ","
+const dmlInsert = "INSERT INTO "
+const dmlInsertValues = ") VALUES ("
+const dmlInsertStart = " ("
+const dmlInsertEnd = ")"
 const dqlSelect = "SELECT "
 const dqlFrom = " FROM "
 const dqlWhere = " WHERE "
 const dqlOrderBy = " ORDER BY "
+const maxNumberOfColumn = 65535
+const postGreParameterName = "$"
+
+var tableColumnVariables map[databaseprovider.DatabaseProvider][]*string
+
+func init() {
+	tableColumnVariables = make(map[databaseprovider.DatabaseProvider][]*string, 64)
+	tableColumnVariables[databaseprovider.PostgreSql] = make([]*string, maxNumberOfColumn, maxNumberOfColumn)
+	tableColumnVariables[databaseprovider.MySql] = make([]*string, maxNumberOfColumn, maxNumberOfColumn)
+	tableColumnVariables[databaseprovider.Oracle] = make([]*string, maxNumberOfColumn, maxNumberOfColumn)
+	tableColumnVariables[databaseprovider.Influx] = make([]*string, maxNumberOfColumn, maxNumberOfColumn)
+}
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
@@ -67,7 +85,9 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.description = description
 	table.loadFields(fields, tableType)
 	table.loadRelations(relations)
-	table.loadIndexes(indexes) // run at the end only
+	table.loadMapper() // !!!load after loadFields
+	table.loadColumnVariable(provider)
+	table.loadIndexes(indexes) //!!!! run at the end only
 	// initialize cacheId
 	table.cacheId = new(CacheId)
 	table.cacheId.CurrentId = 0
@@ -77,6 +97,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.schemaId = schemaId
 	table.tableType = tableType
 	table.subject = subject
+	table.provider = provider
 	table.physicalType = physicalType
 	table.cached = cached
 	table.readonly = readonly
@@ -125,6 +146,10 @@ func (table *Table) GetSubject() string {
 
 func (table *Table) GetPhysicalType() physicaltype.PhysicalType {
 	return table.physicalType
+}
+
+func (table *Table) GetDatabaseProvider() databaseprovider.DatabaseProvider {
+	return table.provider
 }
 
 func (table *Table) IsCached() bool {
@@ -282,29 +307,50 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
-func (table *Table) GetDdl(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) string {
+func (table *Table) GetDdl(tablespace *Tablespace) string {
 	var fields []string
 	for i := 0; i < len(table.fields); i++ {
-		fieldSql := table.fields[i].GetDdlSql(provider, table.tableType)
+		fieldSql := table.fields[i].GetDdlSql(table.provider, table.tableType)
 		fields = append(fields, fieldSql)
 	}
 	for i := 0; i < len(table.relations); i++ {
-		relationSql := table.relations[i].GetDdlSql(provider)
+		relationSql := table.relations[i].GetDdlSql(table.provider)
 		fields = append(fields, relationSql)
 	}
 	sql := fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
 	if tablespace != nil {
-		sql = sql + " " + getDdlTableSpace(provider, tablespace)
+		sql = sql + " " + getDdlTableSpace(table.provider, tablespace)
 	}
 	return sql
 }
 
-func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, provider databaseprovider.DatabaseProvider) string {
-	return ""
+func (table *Table) GetDml(dmlType dmlstatement.DmlStatement) string {
+	var result strings.Builder
+	var capacity = 0
+	switch dmlType {
+	case dmlstatement.Insert:
+		capacity = len(dmlInsert) + len(table.physicalName) + len(dmlInsertStart) + len(table.fieldList) + len(dmlInsertValues)
+		capacity += len(*tableColumnVariables[table.provider][len(table.fields)-1]) + len(dmlInsertEnd)
+		result.Grow(capacity)
+		result.WriteString(dmlInsert)
+		result.WriteString(table.physicalName)
+		result.WriteString(dmlInsertStart)
+		result.WriteString(table.fieldList)
+		result.WriteString(dmlInsertValues)
+		result.WriteString(*tableColumnVariables[table.provider][len(table.fields)-1])
+		result.WriteString(dmlInsertEnd)
+		//fmt.Printf("GetDml() capacity/len(str)/sql.Cap() %d /%d /%d\n", capacity, len(result.String()), result.Cap())
+		break
+	case dmlstatement.Update:
+		break
+	case dmlstatement.Delete:
+		break
+	}
+	return result.String()
 }
 
 // SELECT
-func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClause string, orderClause string) string {
+func (table *Table) GetDql(whereClause string, orderClause string) string {
 	capacity := len(dqlSelect) + len(dqlFrom) + len(table.fieldList) + len(table.physicalName)
 
 	if whereClause != "" {
@@ -317,25 +363,25 @@ func (table *Table) GetDql(provider databaseprovider.DatabaseProvider, whereClau
 		capacity += len(orderClause)
 	}
 
-	var sql strings.Builder
-	sql.Grow(capacity)
-	sql.WriteString(dqlSelect)
-	sql.WriteString(table.fieldList)
-	sql.WriteString(dqlFrom)
-	sql.WriteString(table.physicalName)
+	var result strings.Builder
+	result.Grow(capacity)
+	result.WriteString(dqlSelect)
+	result.WriteString(table.fieldList)
+	result.WriteString(dqlFrom)
+	result.WriteString(table.physicalName)
 
 	if whereClause != "" {
-		sql.WriteString(dqlWhere)
-		sql.WriteString(whereClause)
+		result.WriteString(dqlWhere)
+		result.WriteString(whereClause)
 	}
 
 	if orderClause != "" {
-		sql.WriteString(dqlOrderBy)
-		sql.WriteString(orderClause)
+		result.WriteString(dqlOrderBy)
+		result.WriteString(orderClause)
 	}
 	// check capacity
 	//fmt.Printf("GetDql() capacity/len(str)/sql.Cap() %d /%d /%d\n", capacity, len(sql.String()), sql.Cap())
-	return sql.String()
+	return result.String()
 }
 
 func (table *Table) Clone() *Table {
@@ -355,7 +401,7 @@ func (table *Table) Clone() *Table {
 		indexes = append(indexes, *table.indexes[i].Clone())
 	}
 	newTable.Init(table.id, table.name, table.description, fields, relations, indexes,
-		table.physicalType, table.schemaId, "", table.tableType, databaseprovider.NotDefined, table.subject,
+		table.physicalType, table.schemaId, "", table.tableType, table.provider, table.subject,
 		table.cached, table.readonly, table.baseline, table.active)
 
 	newTable.fieldList = table.fieldList
@@ -413,8 +459,9 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	for i := 0; i < capacity; i++ {
 		value = *columnPointer[i].(*interface{})
 		currentField = table.fieldsById[i]
-		// use a mapper may be
-		index = table.GetFieldIndexByName(currentField.name)
+		// use a mapper instead
+		//index = table.GetFieldIndexByName(currentField.name)
+		index = int(table.mapper[i])
 		if value == nil {
 			strValue = ""
 		} else {
@@ -468,6 +515,11 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 		result[index] = strValue
 	}
 	return result
+}
+
+//4debug
+func GetTable() *Table {
+	return getLogTable(databaseprovider.PostgreSql, "information_schema")
 }
 
 //******************************
@@ -651,6 +703,35 @@ func (table *Table) loadIndexes(indexes []Index) {
 	table.indexes = make([]*Index, 0, len(indexes))
 	table.copyIndexes(indexes)
 	table.sortIndexes()
+}
+
+func (table *Table) loadMapper() {
+	table.mapper = make([]uint16, len(table.fieldsById), len(table.fieldsById))
+	for i := 0; i < len(table.fieldsById); i++ {
+		table.mapper[i] = uint16(table.GetFieldIndexByName(table.fieldsById[i].name))
+	}
+}
+
+func (table *Table) loadColumnVariable(provider databaseprovider.DatabaseProvider) {
+	if provider != databaseprovider.NotDefined && len(table.fields) <= maxNumberOfColumn && len(table.fields) > 0 &&
+		tableColumnVariables[provider][len(table.fields)-1] == nil {
+
+		var variables strings.Builder
+		for i := 0; i < len(table.fields); i++ {
+			switch provider {
+			case databaseprovider.PostgreSql:
+				variables.WriteString(postGreParameterName)
+				variables.WriteString(strconv.Itoa(i + 1))
+				break
+			}
+			// check last element
+			if i < len(table.fields)-1 {
+				variables.WriteString(",")
+			}
+		}
+		var result = variables.String()
+		tableColumnVariables[provider][len(table.fields)-1] = &result
+	}
 }
 
 func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {

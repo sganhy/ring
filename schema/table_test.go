@@ -3,6 +3,7 @@ package schema
 import (
 	"math/rand"
 	"ring/schema/databaseprovider"
+	"ring/schema/dmlstatement"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -380,8 +381,16 @@ func Test__Table__Clone(t *testing.T) {
 	if t1.GetPrimaryKey() != t2.GetPrimaryKey() {
 		t.Errorf("Table.Clone() ==> t1.GetPrimaryKey() reference <> t2.GetPrimaryKey() reference")
 	}
-	if t1.GetDdl(databaseprovider.PostgreSql, nil) != t2.GetDdl(databaseprovider.PostgreSql, nil) {
+	if t1.GetDdl(nil) != t2.GetDdl(nil) {
 		t.Errorf("Table.Clone() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
+	}
+}
+
+func Test__Table__GetDml(t *testing.T) {
+	table := getLogTable(databaseprovider.PostgreSql, "information_schema")
+	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,method,message) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be " + exepectedSQl)
 	}
 }
 

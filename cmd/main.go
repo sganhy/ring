@@ -7,6 +7,7 @@ import (
 	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
+	"ring/schema/dmlstatement"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -35,6 +36,10 @@ func main() {
 	zone, offset := ttt.Zone()
 	fmt.Println(offset)
 	fmt.Println(zone)
+
+	ttttt := schema.GetTable()
+	fmt.Println(ttttt.GetName())
+	fmt.Println(ttttt.GetDml(dmlstatement.Insert))
 
 	rcd.SetRecordType("@log")
 	rcd.SetField("entry_time", "2014-04-15T21:14:55")
