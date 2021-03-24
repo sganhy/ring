@@ -1,5 +1,7 @@
 package entitytype
 
+import "strconv"
+
 type EntityType int8
 
 //!!! reserved value for unit testing {4, 5, 6} !!!
@@ -13,3 +15,8 @@ const (
 	Sequence   EntityType = 15
 	NotDefined EntityType = 127
 )
+
+func (entityType EntityType) String() string {
+	var entity = int(entityType)
+	return strconv.Itoa(entity)
+}

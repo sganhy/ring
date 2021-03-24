@@ -134,7 +134,7 @@ func (schema *Schema) Execute(queries []Query) error {
 	connection.lastGet = time.Now()
 
 	for i := 0; i < len(queries); i++ {
-		err = queries[i].Execute(schema.connections.provider, connection.dbConnection)
+		err = queries[i].Execute(connection.dbConnection)
 		if err != nil {
 			schema.connections.put(connection)
 			return err

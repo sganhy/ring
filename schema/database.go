@@ -1,7 +1,9 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/entitytype"
 	"strings"
 )
 
@@ -43,6 +45,8 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		//
 		addSchema(metaSchema)
 		databaseInitialized = true
+		var schemas = getSchemaIdList()
+		fmt.Println(len(schemas))
 	}
 }
 
@@ -145,3 +149,23 @@ func addSchema(schema *Schema) {
 //******************************
 // private methods
 //******************************
+
+// get schema list from @meta table
+func getSchemaIdList() []int32 {
+
+	var query = metaQuery{}
+	// generate meta query
+	query.setTable(metaTableName)
+	query.addFilter(metaObjectType, "=", entitytype.Schema.String())
+	fmt.Println("database.getSchemaIdList().query.getQuery()==")
+	fmt.Println(query.getQuery())
+	fmt.Println(len(query.filters))
+	query.run()
+
+	return nil
+}
+
+// load schema from @meta table
+func loadSchemaById(schemaId int32) {
+
+}
