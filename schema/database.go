@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
+	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -45,8 +47,17 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		//
 		addSchema(metaSchema)
 		databaseInitialized = true
-		var schemas = getSchemaIdList()
-		fmt.Println(len(schemas))
+
+		// unitests context ?
+		if disableConnectionPool == false {
+			var schemas = getSchemaIdList()
+			fmt.Println("schema id ==> ")
+			for i := 0; i < len(schemas); i++ {
+				loadSchemaById(schemas[i])
+			}
+			// call garbage collector
+		}
+		runtime.GC()
 	}
 }
 
@@ -151,21 +162,54 @@ func addSchema(schema *Schema) {
 //******************************
 
 // get schema list from @meta table
-func getSchemaIdList() []int32 {
-
+func getSchemaIdList() []Schema {
 	var query = metaQuery{}
+	var result []Schema
+
 	// generate meta query
 	query.setTable(metaTableName)
 	query.addFilter(metaObjectType, "=", entitytype.Schema.String())
-	fmt.Println("database.getSchemaIdList().query.getQuery()==")
-	fmt.Println(query.getQuery())
-	fmt.Println(len(query.filters))
-	query.run()
+	err := query.run()
 
-	return nil
+	if err != nil {
+		panic(err)
+	}
+	var metaList = query.getMetaList()
+	var count = len(metaList)
+	result = make([]Schema, count, count)
+
+	// O(log n)
+	for i := 0; i < count; i++ {
+		result[i] = *metaList[i].ToSchema()
+	}
+	return result
 }
 
 // load schema from @meta table
-func loadSchemaById(schemaId int32) {
+func loadSchemaById(schema Schema) {
+	var metaList = getMetaList(schema.id)
 
+	for i := 0; i < len(metaList); i++ {
+		fmt.Println(metaList[i].String())
+	}
+
+	var tables = getTables(schema.id, metaList) //from: meta.go
+	//var schema = new(Schema)
+
+	//schema.Init(212, "test", "test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
+	fmt.Println(len(metaList))
+	fmt.Println(len(tables))
+}
+
+// load meta from db @meta table
+func getMetaList(schemaId int32) []Meta {
+	var query = metaQuery{}
+
+	query.setTable(metaTableName)
+	query.addFilter(metaSchemaId, "=", strconv.Itoa(int(schemaId)))
+	err := query.run()
+	if err != nil {
+		panic(err)
+	}
+	return query.getMetaList()
 }

@@ -2,9 +2,12 @@ package schema
 
 import (
 	"fmt"
+	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
+	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
+	"ring/schema/tabletype"
 	"strings"
 )
 
@@ -15,10 +18,10 @@ const metaIndexSeparator string = ";"
 type Meta struct {
 	id          int32
 	dataType    int32
+	name        string
 	description string
 	flags       uint64
 	lineNumber  int64
-	name        string
 	objectType  int8
 	refId       int32 // ref id to Id
 	value       string
@@ -148,6 +151,33 @@ func (meta *Meta) ToIndex() *Index {
 	return nil
 }
 
+func (meta *Meta) ToTable(fields []Field, relations []Relation, indexes []Index) *Table {
+	if entitytype.EntityType(meta.objectType) == entitytype.Table {
+		var table = new(Table)
+		/*
+			t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
+			physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
+		*/
+		table.Init(meta.id, meta.name, meta.name, fields, relations, indexes,
+			physicaltype.Table, 0, metaSchemaName, tabletype.Business,
+			databaseprovider.NotDefined, "", true, false, true, true)
+		return table
+	}
+	return nil
+}
+
+// Build partial schema object
+func (meta *Meta) ToSchema() *Schema {
+	if entitytype.EntityType(meta.objectType) == entitytype.Schema {
+		var schema = new(Schema)
+		schema.id = meta.id
+		schema.name = meta.name
+		schema.description = meta.description
+		return schema
+	}
+	return nil
+}
+
 func (meta *Meta) String() string {
 	// used for debug only
 	/*
@@ -162,8 +192,8 @@ func (meta *Meta) String() string {
 		value       string
 		enabled     bool
 	*/
-	return fmt.Sprintf(" id: %d \n name: %s \n object_type: %d \n reference_id: %d", meta.id, meta.name, meta.objectType,
-		meta.refId)
+	return fmt.Sprintf(" id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; description: %s",
+		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.description)
 }
 
 //******************************
@@ -235,4 +265,58 @@ func (meta *Meta) writeFlag(bitPosition uint8, value bool) {
 
 func (meta *Meta) readFlag(bitPosition uint8) bool {
 	return ((meta.flags >> (bitPosition - 1)) & 1) > 0
+}
+
+func initTableMappers(metaList []Meta) (map[int32][]Field, map[int32][]Relation, map[int32][]Index) {
+	var objectType entitytype.EntityType
+	fieldsMap := make(map[int32][]Field)
+	relationsMap := make(map[int32][]Relation)
+	indexesMap := make(map[int32][]Index)
+
+	// pass 1
+	for i := 0; i < len(metaList); i++ {
+		objectType = entitytype.EntityType(metaList[i].objectType)
+		if objectType == entitytype.Table {
+			tableId := metaList[i].id
+			fieldsMap[tableId] = make([]Field, 0, 4)
+			relationsMap[tableId] = make([]Relation, 0, 4)
+			indexesMap[tableId] = make([]Index, 0, 2)
+		}
+	}
+
+	// pass 2
+	for i := 0; i < len(metaList); i++ {
+		objectType = entitytype.EntityType(metaList[i].objectType)
+		switch objectType {
+		case entitytype.Field:
+			fieldsMap[metaList[i].refId] = append(fieldsMap[metaList[i].refId], *metaList[i].ToField())
+			break
+		case entitytype.Relation:
+			relationsMap[metaList[i].refId] = append(relationsMap[metaList[i].refId], *metaList[i].ToRelation(nil))
+			break
+		case entitytype.Index:
+			indexesMap[metaList[i].refId] = append(indexesMap[metaList[i].refId], *metaList[i].ToIndex())
+			break
+		}
+	}
+	return fieldsMap, relationsMap, indexesMap
+}
+
+func getTables(schemaId int32, metaList []Meta) []Table {
+	var objectType entitytype.EntityType
+	fieldsMap, relationsMap, IndexesMap := initTableMappers(metaList)
+	result := []Table{}
+
+	for i := 0; i < len(metaList); i++ {
+		objectType = entitytype.EntityType(metaList[i].objectType)
+		if objectType == entitytype.Table {
+			var tableId = metaList[i].id
+			var table = *metaList[i].ToTable(fieldsMap[tableId], relationsMap[tableId], IndexesMap[tableId])
+			// define
+			table.schemaId = schemaId
+			//table.provider = schemaId
+			result = append(result, table)
+		}
+	}
+	return result
 }

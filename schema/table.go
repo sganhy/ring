@@ -45,7 +45,12 @@ const relationNotFound int = -1
 const metaSchemaId string = "schema_id"
 const metaId string = "id"
 const metaObjectType string = "object_type"
+const metaDataType string = "data_type"
+const metaDescription string = "description"
 const metaValue string = "value"
+const metaReferenceId string = "reference_id"
+const metaName string = "name"
+const metaFlags string = "flags"
 const metaIdTableName string = "@meta_id"
 const metaTableName string = "@meta"
 const metaLogId string = "id"
@@ -802,12 +807,12 @@ func getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName
 	id.Init(1009, metaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(1013, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	objectType.Init(1019, metaObjectType, "", fieldtype.Byte, 0, "", true, true, true, false, true)
-	referenceId.Init(1021, "reference_id", "", fieldtype.Int, 0, "", true, true, true, false, true)
-	dataType.Init(1031, "data_type", "", fieldtype.Int, 0, "", true, false, true, false, true)
+	referenceId.Init(1021, metaReferenceId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	dataType.Init(1031, metaDataType, "", fieldtype.Int, 0, "", true, false, true, false, true)
 
-	flags.Init(1039, "flags", "", fieldtype.Long, 0, "", true, true, true, false, true)
-	name.Init(1061, "name", "", fieldtype.String, 30, "", true, true, true, false, true)
-	description.Init(1069, "description", "", fieldtype.String, 0, "", true, false, true, false, true)
+	flags.Init(1039, metaFlags, "", fieldtype.Long, 0, "", true, true, true, false, true)
+	name.Init(1061, metaName, "", fieldtype.String, 30, "", true, true, true, false, true)
+	description.Init(1069, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
 	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
 	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
