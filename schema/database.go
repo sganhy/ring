@@ -168,7 +168,7 @@ func getSchemaIdList() []Schema {
 
 	// generate meta query
 	query.setTable(metaTableName)
-	query.addFilter(metaObjectType, "=", entitytype.Schema.String())
+	query.addFilter(metaObjectType, "=", entitytype.Schema.GetId())
 	err := query.run()
 
 	if err != nil {
@@ -193,7 +193,7 @@ func loadSchemaById(schema Schema) {
 		fmt.Println(metaList[i].String())
 	}
 
-	var tables = getTables(schema.id, metaList) //from: meta.go
+	var tables = getTables(schema, metaList) //from: meta.go
 	//var schema = new(Schema)
 
 	//schema.Init(212, "test", "test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)

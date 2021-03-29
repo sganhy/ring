@@ -8,6 +8,7 @@ import (
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/tabletype"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -79,7 +80,7 @@ func Test__Table__Init(t *testing.T) {
 	//  physicalType physicaltype.PhysicalType, schemaId int32, tableType tabletype.TableType, subject string,
 	//  cached bool, readonly bool, baseline bool, active bool
 	table.Init(int32(tabletype.MetaId), "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, getPhysicalName(databaseprovider.PostgreSql, "@meta"), tabletype.MetaId, databaseprovider.PostgreSql,
+		physicaltype.Table, -111, "information_schema", tabletype.MetaId, databaseprovider.PostgreSql,
 		"[subject]", true, false, true, false)
 
 	if table.GetName() != "@meta" {
@@ -91,8 +92,8 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetDescription() != "ATable Test" {
 		t.Errorf("Table.Init() ==> description <> GetDescription()")
 	}
-	if table.GetPhysicalName() != getPhysicalName(databaseprovider.PostgreSql, metaSchemaName)+".\"@meta\"" {
-		t.Errorf("Table.Init() ==> physical <> GetPhysicalName()")
+	if table.GetPhysicalName() != "information_schema.\"@meta\"" {
+		t.Errorf("Table.Init() ==> physical <> information_schema.\"@meta\"")
 	}
 	if table.GetType() != tabletype.MetaId {
 		t.Errorf("Table.Init() ==> description <> GetDescription()")
@@ -106,6 +107,12 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetSchemaId() != -111 {
 		t.Errorf("Table.Init() ==> GetSchemaId() <> -111")
 	}
+	if table.GetDatabaseProvider() != databaseprovider.PostgreSql {
+		t.Errorf("Table.Init() ==> GetDatabaseProvider() <> databaseprovider.Oracle")
+	}
+	if table.GetCacheId() == nil {
+		t.Errorf("Table.Init() ==> GetCacheId() cannot be null")
+	}
 	if table.IsCached() != true {
 		t.Errorf("Table.Init() ==> IsCached() <> true")
 	}
@@ -118,7 +125,6 @@ func Test__Table__Init(t *testing.T) {
 	if table.IsActive() != false {
 		t.Errorf("Table.Init() ==> IsActive() <> false")
 	}
-
 }
 
 //test: GetFieldByName, GetFieldByNameI, GetFieldById, and GetFieldIndexByName
@@ -386,11 +392,99 @@ func Test__Table__Clone(t *testing.T) {
 	}
 }
 
+// test mapper
+func Test__Table__ToMeta(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+
+	elemf00 := Field{}
+	elemf00.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+	fields = append(fields, elemf00)
+
+	elemf01 := Field{}
+	elemf01.Init(22, "Field Test2", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+	fields = append(fields, elemf01)
+
+	elemt := Table{}
+	elemt.Init(2222, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Influx, "subject test",
+		true, true, true, true)
+
+	elemr0 := Relation{}
+	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+
+	meta := elemt.ToMeta()
+	newTable := meta.ToTable(fields, relations, indexes)
+
+	if elemt.GetId() != newTable.GetId() {
+		t.Errorf("Table.ToMeta() ==> t0.GetId() must be equal to t1.GetId()")
+	}
+	if elemt.GetName() != newTable.GetName() {
+		t.Errorf("Table.ToMeta() ==> t0.GetName() must be equal to t1.GetName()")
+	}
+	if elemt.GetDescription() != newTable.GetDescription() {
+		t.Errorf("Table.ToMeta() ==> t0.GetDescription() must be equal to t1.GetDescription()")
+	}
+	if elemt.GetPhysicalType() != newTable.GetPhysicalType() {
+		t.Errorf("Table.ToMeta() ==> t0.GetPhysicalType() must be equal to t1.GetPhysicalType()")
+	}
+	if elemt.GetSubject() != newTable.GetSubject() {
+		t.Errorf("Table.ToMeta() ==> t0.GetSubject() must be equal to t1.GetSubject()")
+	}
+	if elemt.IsCached() != newTable.IsCached() {
+		t.Errorf("Table.ToMeta() ==> t0.IsCached() must be equal to t1.IsCached()")
+	}
+	if elemt.IsBaseline() != newTable.IsBaseline() {
+		t.Errorf("Table.ToMeta() ==> t0.IsBaseline() must be equal to t1.IsBaseline()")
+	}
+	if elemt.IsReadonly() != newTable.IsReadonly() {
+		t.Errorf("Table.ToMeta() ==> t0.IsReadonly() must be equal to t1.IsReadonly()")
+	}
+	if elemt.IsActive() != newTable.IsActive() {
+		t.Errorf("Table.ToMeta() ==> t0.IsActive() must be equal to t1.IsActive()")
+	}
+}
+
 func Test__Table__GetDml(t *testing.T) {
 	table := getLogTable(databaseprovider.PostgreSql, "information_schema")
 	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,method,message) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
 	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be " + exepectedSQl)
+	}
+}
+
+func Test__Table__GetQueryResult(t *testing.T) {
+	table := getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
+	var result []interface{}
+	var resultPtr []interface{}
+	var id int32 = 5
+	//var schemaId int32 = 1
+	var objectType int16 = 15
+	var value int64 = 2222222
+
+	// id
+	result = append(result, id)
+	result = append(result, nil)
+	result = append(result, objectType)
+	result = append(result, value)
+
+	for i := 0; i < len(result); i++ {
+		resultPtr = append(resultPtr, &result[i])
+	}
+	arr := table.GetQueryResult(resultPtr)
+
+	if arr[table.GetFieldIndexByName("id")] != strconv.Itoa(int(id)) {
+		t.Errorf("Table.GetQueryResult() ==> id must be equal to '%s'", strconv.Itoa(int(id)))
+	}
+	if arr[table.GetFieldIndexByName("object_type")] != strconv.Itoa(int(objectType)) {
+		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(objectType)))
+	}
+	if arr[table.GetFieldIndexByName("schema_id")] != "" {
+		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to null")
+	}
+	if arr[table.GetFieldIndexByName("value")] != strconv.Itoa(int(value)) {
+		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(value)))
 	}
 }
 

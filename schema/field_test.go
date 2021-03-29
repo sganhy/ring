@@ -110,26 +110,26 @@ func Test__Field__GetDdlSql(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 5, "test default", true, true, false, true, true)
 
-	var sql = elemf0.GetDdlSql(databaseprovider.PostgreSql, tabletype.Business)
+	var sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Business)
 	if strings.ToUpper(sql) != "ANAME FLOAT4 NULL" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME FLOAT4 NULL")
 	}
 
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Long, 5, "test default", true, true, false, true, true)
-	sql = elemf0.GetDdlSql(databaseprovider.PostgreSql, tabletype.Meta)
+	sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Meta)
 	if strings.ToUpper(sql) != "ANAME INT8 NOT NULL" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME INT8 NOT NULL")
 	}
 
 	elemf0.Init(11, "aName", "AField Test", fieldtype.String, 5, "test default", true, true, false, true, true)
-	sql = elemf0.GetDdlSql(databaseprovider.PostgreSql, tabletype.Meta)
+	sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Meta)
 	if strings.ToUpper(sql) != "ANAME VARCHAR(5) NOT NULL" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME VARCHAR(5)")
 	}
 
 	// generated long text datatype
 	elemf0.Init(11, "aName", "AField Test", fieldtype.String, 50000000, "test default", true, true, false, true, true)
-	sql = elemf0.GetDdlSql(databaseprovider.PostgreSql, tabletype.Meta)
+	sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Meta)
 	if strings.ToUpper(sql) != "ANAME TEXT NOT NULL" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME TEXT")
 	}
@@ -159,7 +159,7 @@ func Test__Field__GetSearchableValue(t *testing.T) {
 	}
 }
 
-// ToMeta - test mapping - ToMeta(), ToField
+//test mappers Meta to Field, and Index to Meta
 func Test__Field__ToMeta(t *testing.T) {
 
 	elemf0 := Field{}

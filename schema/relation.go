@@ -79,13 +79,13 @@ func (relation *Relation) IsActive() bool {
 //******************************
 // public methods
 //******************************
-func (relation *Relation) GetDdlSql(provider databaseprovider.DatabaseProvider) string {
+func (relation *Relation) GetDdl(provider databaseprovider.DatabaseProvider) string {
 	if relation.toTable != nil {
 		targetPrimaryKey := relation.toTable.GetPrimaryKey()
 		if targetPrimaryKey != nil {
 			datatype := targetPrimaryKey.getSqlDataType(provider)
 			if datatype != unknownFieldDataType {
-				return relation.name + " " + datatype
+				return relation.name + ddlSpace + datatype
 			}
 		}
 	}

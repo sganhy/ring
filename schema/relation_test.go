@@ -48,7 +48,7 @@ func Test__Relation__Init(t *testing.T) {
 	}
 }
 
-// test ToMeta, GetDdlSql
+//test mappers Meta to Relation, and Relation to Meta
 func Test__Relation__ToMeta(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
@@ -99,8 +99,74 @@ func Test__Relation__ToMeta(t *testing.T) {
 		t.Errorf("Relation.ToMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
 	}
 	// test GetDdlSql
-	var sql = elemr0.GetDdlSql(databaseprovider.PostgreSql)
+
+}
+
+func Test__Relation__GetDdl(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+
+	elemf := Field{}
+	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+
+	//var prim = schema.GetDefaultPrimaryKey()
+	fields = append(fields, elemf)
+	elemt := Table{}
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
+
+	elemr0 := Relation{}
+	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+
+	var sql = elemr0.GetDdl(databaseprovider.PostgreSql)
 	if strings.ToUpper(sql) != "REL TEST INT8" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to REL TEST INT8")
+	}
+
+	elemr0.toTable = nil
+	sql = elemr0.GetDdl(databaseprovider.PostgreSql)
+	if sql != "" {
+		t.Errorf("Field.GetSql() ==> (1) sql should be null")
+	}
+}
+
+func Test__Relation__Clone(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+
+	elemf := Field{}
+	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
+
+	//var prim = schema.GetDefaultPrimaryKey()
+	fields = append(fields, elemf)
+	elemt := Table{}
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
+
+	elemr0 := Relation{}
+	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+	elemr1 := elemr0.Clone()
+
+	if elemr0.GetId() != elemr1.GetId() {
+		t.Errorf("Relation.Clone() ==> r0.GetId() must be equal to r1.GetId()")
+	}
+	if elemr0.GetName() != elemr1.GetName() {
+		t.Errorf("Relation.Clone() ==> r0.GetName() must be equal to r1.GetName()")
+	}
+	if elemr0.GetDescription() != elemr1.GetDescription() {
+		t.Errorf("Relation.Clone() ==> r0.GetDescription() must be equal to r1.GetDescription()")
+	}
+	if elemr0.GetType() != elemr1.GetType() {
+		t.Errorf("Relation.Clone() ==> r0.GetType() must be equal to r1.GetType()")
+	}
+	if elemr0.notNull != elemr1.notNull {
+		t.Errorf("Relation.Clone() ==> r0.notNull must be equal to r1.notNull")
+	}
+	if elemr0.IsBaseline() != elemr1.IsBaseline() {
+		t.Errorf("Relation.Clone() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
 	}
 }

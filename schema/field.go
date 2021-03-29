@@ -227,7 +227,7 @@ func (field *Field) ToMeta(tableId int32) *Meta {
 	return result
 }
 
-func (field *Field) GetDdlSql(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+func (field *Field) GetDdl(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
 	datatype := field.getSqlDataType(provider)
 	if datatype == unknownFieldDataType {
 		return unknownFieldDataType

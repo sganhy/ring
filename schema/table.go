@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
@@ -62,10 +63,12 @@ const metaLogJobId string = "job_id"
 const metaLogMethod string = "method"
 const metaLogMessage string = "message"
 const fieldListSeparator string = ","
-const dmlInsert = "INSERT INTO "
 const dmlInsertValues = ") VALUES ("
 const dmlInsertStart = " ("
 const dmlInsertEnd = ")"
+const dqlSpace = " "
+const ddlSpace = " "
+const dmlSpace = " "
 const dqlSelect = "SELECT "
 const dqlFrom = " FROM "
 const dqlWhere = " WHERE "
@@ -307,16 +310,16 @@ func (table *Table) GetPrimaryKey() *Field {
 func (table *Table) GetDdl(tablespace *Tablespace) string {
 	var fields []string
 	for i := 0; i < len(table.fields); i++ {
-		fieldSql := table.fields[i].GetDdlSql(table.provider, table.tableType)
+		fieldSql := table.fields[i].GetDdl(table.provider, table.tableType)
 		fields = append(fields, fieldSql)
 	}
 	for i := 0; i < len(table.relations); i++ {
-		relationSql := table.relations[i].GetDdlSql(table.provider)
+		relationSql := table.relations[i].GetDdl(table.provider)
 		fields = append(fields, relationSql)
 	}
 	sql := fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
 	if tablespace != nil {
-		sql = sql + " " + getDdlTableSpace(table.provider, tablespace)
+		sql = sql + ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
 	}
 	return sql
 }
@@ -326,7 +329,8 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement) string {
 	switch dmlType {
 	case dmlstatement.Insert:
 		result.Grow(int(table.sqlCapacity))
-		result.WriteString(dmlInsert)
+		result.WriteString(dmlType.String())
+		result.WriteString(dmlSpace)
 		result.WriteString(table.physicalName)
 		result.WriteString(dmlInsertStart)
 		result.WriteString(table.fieldList)
@@ -404,9 +408,7 @@ func (table *Table) Clone() *Table {
 	return newTable
 }
 
-func (table *Table) ToMeta() []*Meta {
-	var capacity = 1 + len(table.fields) + len(table.relations) + len(table.indexes)
-	var result = make([]*Meta, 0, capacity)
+func (table *Table) ToMeta() *Meta {
 	var metaTable = new(Meta)
 
 	// key
@@ -426,19 +428,9 @@ func (table *Table) ToMeta() []*Meta {
 	metaTable.setEntityBaseline(table.baseline)
 	metaTable.setTableCached(table.cached)
 	metaTable.setTableReadonly(table.readonly)
+	metaTable.enabled = table.active
 
-	result = append(result, metaTable)
-
-	for i := 0; i < len(table.fields); i++ {
-		result = append(result, table.fields[i].ToMeta(table.id))
-	}
-	for i := 0; i < len(table.relations); i++ {
-		result = append(result, table.relations[i].ToMeta(table.id))
-	}
-	for i := 0; i < len(table.indexes); i++ {
-		result = append(result, table.indexes[i].ToMeta(table.id))
-	}
-	return result
+	return metaTable
 }
 
 func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
@@ -544,21 +536,27 @@ func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, 
 	var physicalName = ""
 	//TODO implement other provider
 	switch provider {
-	case databaseprovider.PostgreSql:
+	case databaseprovider.PostgreSql, databaseprovider.MySql:
 		if table.tableType != tabletype.Business {
 			physicalName = physicalSchemaName + ".\"" + table.name + "\""
 		} else {
-			physicalName = physicalSchemaName + "." + table.name
+			physicalName = physicalSchemaName + ".t_" + table.name
 		}
-		break
-	case databaseprovider.MySql:
-		physicalName = "MySql"
 		break
 	case databaseprovider.Oracle:
 		physicalName = "Oracle"
 		break
 	}
 	return physicalName
+}
+
+// Get physical schema name
+func (table *Table) getSchemaName() string {
+	index := strings.Index(table.physicalName, ".")
+	if index >= 0 {
+		return table.physicalName[:index]
+	}
+	return ""
 }
 
 func (table *Table) getFieldList(provider databaseprovider.DatabaseProvider) string {
@@ -728,7 +726,7 @@ func (table *Table) loadMapper() {
 
 func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) {
 	table.sqlCapacity = 0
-	table.sqlCapacity = uint16(len(dmlInsert) + len(table.physicalName) + len(dmlInsertStart) + len(table.fieldList))
+	table.sqlCapacity = uint16(len(dmlstatement.Insert.String()) + 1 + len(table.physicalName) + len(dmlInsertStart) + len(table.fieldList))
 	table.sqlCapacity += uint16(len(dmlInsertValues) + len(dmlInsertEnd))
 	var capacity uint16 = 0
 	for i := 0; i < len(table.fields); i++ {
@@ -881,20 +879,4 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.MetaId, provider, "", false, false, true, true)
 	return table
-}
-
-func getDdlTableSpace(provider databaseprovider.DatabaseProvider, tablespace *Tablespace) string {
-	var sql string
-	switch provider {
-	case databaseprovider.PostgreSql:
-		sql = "TABLESPACE " + tablespace.name
-		break
-	case databaseprovider.MySql:
-		sql = ""
-		break
-	case databaseprovider.Oracle:
-		sql = ""
-		break
-	}
-	return sql
 }

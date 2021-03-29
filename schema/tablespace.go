@@ -1,5 +1,10 @@
 package schema
 
+import (
+	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
+)
+
 type Tablespace struct {
 	id          int32
 	name        string
@@ -41,4 +46,12 @@ func (tablespace *Tablespace) Clone() *Tablespace {
 	newTablespace.Init(tablespace.id, tablespace.name, tablespace.description,
 		tablespace.tableName, tablespace.table, tablespace.index)
 	return newTablespace
+}
+
+func (tablespace *Tablespace) GetDdl(statement ddlstatement.DdlStatement, provider databaseprovider.DatabaseProvider) string {
+	switch statement {
+	case ddlstatement.NotDefined:
+		return "TABLESPACE " + tablespace.name
+	}
+	return ""
 }

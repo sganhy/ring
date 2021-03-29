@@ -16,7 +16,25 @@ const (
 	NotDefined EntityType = 127
 )
 
-func (entityType EntityType) String() string {
+func (entityType EntityType) GetId() string {
 	var entity = int(entityType)
 	return strconv.Itoa(entity)
+}
+
+func (entityType EntityType) String() string {
+	switch entityType {
+	case Table:
+		return "TABLE"
+	case Field:
+		return "FIELD"
+	case Relation:
+		return "RELATION"
+	case Index:
+		return "INDEX"
+	case Schema:
+		return "SCHEMA"
+	case Sequence:
+		return "SEQUENCE"
+	}
+	return ""
 }

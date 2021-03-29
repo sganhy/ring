@@ -73,6 +73,14 @@ func (meta *Meta) IsIndexUnique() bool {
 func (meta *Meta) IsIndexBitmap() bool {
 	return meta.readFlag(bitPositionIndexBitmap)
 }
+func (meta *Meta) IsTableCached() bool {
+	return meta.readFlag(bitPositionTableCached)
+}
+
+func (meta *Meta) IsTableReadonly() bool {
+	return meta.readFlag(bitPositionTableReadonly)
+}
+
 func (meta *Meta) GetFieldType() fieldtype.FieldType {
 	var result = fieldtype.FieldType(meta.dataType & 127)
 	if result != fieldtype.Array &&
@@ -151,6 +159,7 @@ func (meta *Meta) ToIndex() *Index {
 	return nil
 }
 
+// loosing schemaId and databaseprovider
 func (meta *Meta) ToTable(fields []Field, relations []Relation, indexes []Index) *Table {
 	if entitytype.EntityType(meta.objectType) == entitytype.Table {
 		var table = new(Table)
@@ -158,9 +167,10 @@ func (meta *Meta) ToTable(fields []Field, relations []Relation, indexes []Index)
 			t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
 			physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
 		*/
-		table.Init(meta.id, meta.name, meta.name, fields, relations, indexes,
+		table.Init(meta.id, meta.name, meta.description, fields, relations, indexes,
 			physicaltype.Table, 0, metaSchemaName, tabletype.Business,
-			databaseprovider.NotDefined, "", true, false, true, true)
+			databaseprovider.NotDefined, meta.value, meta.IsTableCached(), meta.IsTableReadonly(), meta.IsEntityBaseline(),
+			meta.enabled)
 		return table
 	}
 	return nil
@@ -302,7 +312,7 @@ func initTableMappers(metaList []Meta) (map[int32][]Field, map[int32][]Relation,
 	return fieldsMap, relationsMap, indexesMap
 }
 
-func getTables(schemaId int32, metaList []Meta) []Table {
+func getTables(schema Schema, metaList []Meta) []Table {
 	var objectType entitytype.EntityType
 	fieldsMap, relationsMap, IndexesMap := initTableMappers(metaList)
 	result := []Table{}
@@ -312,9 +322,9 @@ func getTables(schemaId int32, metaList []Meta) []Table {
 		if objectType == entitytype.Table {
 			var tableId = metaList[i].id
 			var table = *metaList[i].ToTable(fieldsMap[tableId], relationsMap[tableId], IndexesMap[tableId])
-			// define
-			table.schemaId = schemaId
-			//table.provider = schemaId
+			//TO define
+			table.schemaId = schema.id
+			//table.provider = schema.
 			result = append(result, table)
 		}
 	}
