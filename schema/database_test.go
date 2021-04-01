@@ -61,6 +61,9 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	if GetTableBySchemaName(schemaName) == nil {
 		t.Errorf("Database.GetTableBySchemaName() ==> recordtype %s not found", schemaName)
 	}
+	if GetTableBySchemaName("?????.?????") != nil {
+		t.Errorf("Database.GetTableBySchemaName() ==> recordtype %s cannot be found", "?????.?????")
+	}
 	schemaId := schemas[SCHEMA_COUNT>>1].id
 	if GetSchemaById(schemaId) == nil {
 		t.Errorf("Database.GetSchemaById() ==> schema id %d not found", schemaId)

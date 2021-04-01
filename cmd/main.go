@@ -62,6 +62,7 @@ func main() {
 	br.AppendSort(0, "name", sortordertype.Descending)
 	br.AppendFilter(0, "name", operationtype.NotEqual, nil)
 	br.SimpleQuery(1, "@meta_id")
+	br.AppendFilter(1, "schema_id", operationtype.Equal, 1)
 	/*
 		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 2)
 		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 3)

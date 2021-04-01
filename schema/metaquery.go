@@ -179,6 +179,46 @@ func (query *metaQuery) getMetaList() []Meta {
 	return nil
 }
 
+func (query *metaQuery) getMetaIdList() []MetaId {
+	if query.table != nil && query.table.name == metaIdTableName {
+
+		var resultCount = query.resultCount()
+		var fieldCount = len(query.table.fields)
+		var result = make([]MetaId, resultCount, resultCount)
+		var temp int64 = 0
+		var field *Field
+		var j = 0
+		var record []string
+
+		for i := 0; i < resultCount; i++ {
+			record = (*query.result)[i].([]string)
+			for j = 0; j < fieldCount; j++ {
+				field = query.table.fields[j]
+				switch field.name {
+				case metaId:
+					temp, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].id = int32(temp)
+					break
+				case metaSchemaId:
+					temp, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].schemaId = int32(temp)
+					break
+				case metaObjectType:
+					temp, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].objectType = int8(temp)
+					break
+				case metaValue:
+					temp, _ = strconv.ParseInt(record[j], 10, 64)
+					result[i].value = temp
+					break
+				}
+			}
+		}
+		return result
+	}
+	return nil
+}
+
 func (query *metaQuery) run() error {
 	var metaSchema = GetSchemaByName(metaSchemaName) // get meta schema
 	result := make([]interface{}, 0, 4)

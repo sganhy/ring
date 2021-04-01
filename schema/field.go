@@ -38,6 +38,7 @@ const minInt64 = "-9223372036854775808"
 const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
 const defaultShortTimeFormat = "2006-01-02"         // rfc3339
 const unknownFieldDataType = ""
+const invalidValue = ""
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",
@@ -263,7 +264,7 @@ func (field *Field) GetValue(value string) (string, error) {
 		}
 		break
 	}
-	return value, errors.New(errorInvalidValueType)
+	return invalidValue, errors.New(errorInvalidValueType)
 }
 
 func (field *Field) IsValueValid(value string) bool {

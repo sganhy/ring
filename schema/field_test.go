@@ -65,16 +65,21 @@ func Test__Field__Init(t *testing.T) {
 	elemf1 := Field{}
 	elemf1.Init(0, "aName Test", "AField Test", fieldtype.Long, 5, "", true, true, false, true, true)
 	if elemf1.GetDefaultValue() != "0" {
-		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
+		t.Errorf("Field.GetDefaultValue() ==> defaultValue <> GetDefaultValue()")
 	}
 	elemf2 := Field{}
 	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Float, 5, "4154", true, true, false, true, true)
 	if elemf2.GetDefaultValue() != "4154" {
-		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
+		t.Errorf("Field.GetDefaultValue() ==> defaultValue <> GetDefaultValue()")
 	}
 	elemf2.Init(0, "aName Test", "AField Test", fieldtype.Boolean, 5, "", true, true, false, true, true)
 	if strings.ToLower(elemf2.GetDefaultValue()) != "false" {
-		t.Errorf("Field.Init() ==> defaultValue <> GetDefaultValue()")
+		t.Errorf("Field.GetDefaultValue() ==> defaultValue <> GetDefaultValue()")
+	}
+	elemf3 := Field{}
+	elemf3.Init(0, "aName Test", "AField Test", fieldtype.Double, 5, "4154", true, true, false, true, true)
+	if elemf3.GetDefaultValue() != "4154" {
+		t.Errorf("Field.GetDefaultValue() ==> defaultValue <> GetDefaultValue()")
 	}
 
 }
@@ -358,6 +363,7 @@ func Test__Field__getDateTimeIso8601(t *testing.T) {
 
 }
 
+//Test GetParameterValue
 func Test__Field__GetParameterValue(t *testing.T) {
 	elemf0 := new(Field)
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Boolean, 5, "test default", true, false, false, true, true)
@@ -397,6 +403,30 @@ func Test__Field__GetParameterValue(t *testing.T) {
 	var valueDt = elemf0.GetParameterValue("2016-11-12T12:13:14.071").(time.Time)
 	if valueDt.String() != "2016-11-12 12:13:14.071 +0000 UTC" {
 		t.Errorf("Field.GetParameterValue() ==> GetParameterValue('2016-11-12T12:13:14.071') must be equal to '2016-11-12 12:13:14.071 +0000 UTC'")
+	}
+
+}
+
+//Test GetValue
+func Test__Field__GetValue(t *testing.T) {
+	elemf0 := new(Field)
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Int, 5, "test default", true, false, false, true, true)
+
+	// test 1
+	value, err := elemf0.GetValue("2222")
+	if value != "2222" {
+		t.Errorf("Field.GetValue() ==> GetValue('2222') must be equal to '2222'")
+	}
+	if err != nil {
+		t.Errorf("Field.GetValue() ==> GetValue('2222') error must be equal to null")
+	}
+	// test 2
+	value, err = elemf0.GetValue("22222222222222")
+	if value != invalidValue {
+		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') must be equal to '2222' and err==null")
+	}
+	if err.Error() != errorInvalidValueType {
+		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') error must be equal to null to '%s'", errorInvalidValueType)
 	}
 
 }

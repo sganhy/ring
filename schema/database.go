@@ -188,16 +188,14 @@ func getSchemaIdList() []Schema {
 // load schema from @meta table
 func loadSchemaById(schema Schema) {
 	var metaList = getMetaList(schema.id)
-
-	for i := 0; i < len(metaList); i++ {
-		fmt.Println(metaList[i].String())
-	}
-
+	var metaIdList = getMetaIdList(schema.id)
 	var tables = getTables(schema, metaList) //from: meta.go
+
 	//var schema = new(Schema)
 
 	//schema.Init(212, "test", "test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
 	fmt.Println(len(metaList))
+	fmt.Println(len(metaIdList))
 	fmt.Println(len(tables))
 }
 
@@ -212,4 +210,17 @@ func getMetaList(schemaId int32) []Meta {
 		panic(err)
 	}
 	return query.getMetaList()
+}
+
+// load metaI from db @meta_id table
+func getMetaIdList(schemaId int32) []MetaId {
+	var query = metaQuery{}
+
+	query.setTable(metaIdTableName)
+	query.addFilter(metaSchemaId, "=", strconv.Itoa(int(schemaId)))
+	err := query.run()
+	if err != nil {
+		panic(err)
+	}
+	return query.getMetaIdList()
 }
