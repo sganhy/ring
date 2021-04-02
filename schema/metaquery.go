@@ -130,7 +130,7 @@ func (query *metaQuery) getMetaList() []Meta {
 		var resultCount = query.resultCount()
 		var fieldCount = len(query.table.fields)
 		var result = make([]Meta, resultCount, resultCount)
-		var temp int64 = 0
+		var tempMeta int64 = 0
 		var field *Field
 		var j = 0
 		var record []string
@@ -141,12 +141,12 @@ func (query *metaQuery) getMetaList() []Meta {
 				field = query.table.fields[j]
 				switch field.name {
 				case metaId:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].id = int32(temp)
+					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].id = int32(tempMeta)
 					break
 				case metaDataType:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].dataType = int32(temp)
+					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].dataType = int32(tempMeta)
 					break
 				case metaName:
 					result[i].name = record[j]
@@ -155,16 +155,16 @@ func (query *metaQuery) getMetaList() []Meta {
 					result[i].description = record[j]
 					break
 				case metaFlags:
-					temp, _ = strconv.ParseInt(record[j], 10, 64)
-					result[i].flags = uint64(temp)
+					tempMeta, _ = strconv.ParseInt(record[j], 10, 64)
+					result[i].flags = uint64(tempMeta)
 					break
 				case metaObjectType:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].objectType = int8(temp)
+					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].objectType = int8(tempMeta)
 					break
 				case metaReferenceId:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].refId = int32(temp)
+					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].refId = int32(tempMeta)
 					break
 				case metaValue:
 					result[i].value = record[j]
@@ -185,7 +185,7 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 		var resultCount = query.resultCount()
 		var fieldCount = len(query.table.fields)
 		var result = make([]MetaId, resultCount, resultCount)
-		var temp int64 = 0
+		var tempMetaId int64 = 0
 		var field *Field
 		var j = 0
 		var record []string
@@ -196,20 +196,20 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 				field = query.table.fields[j]
 				switch field.name {
 				case metaId:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].id = int32(temp)
+					tempMetaId, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].id = int32(tempMetaId)
 					break
 				case metaSchemaId:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].schemaId = int32(temp)
+					tempMetaId, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].schemaId = int32(tempMetaId)
 					break
 				case metaObjectType:
-					temp, _ = strconv.ParseInt(record[j], 10, 32)
-					result[i].objectType = int8(temp)
+					tempMetaId, _ = strconv.ParseInt(record[j], 10, 32)
+					result[i].objectType = int8(tempMetaId)
 					break
 				case metaValue:
-					temp, _ = strconv.ParseInt(record[j], 10, 64)
-					result[i].value = temp
+					tempMetaId, _ = strconv.ParseInt(record[j], 10, 64)
+					result[i].value = tempMetaId
 					break
 				}
 			}
