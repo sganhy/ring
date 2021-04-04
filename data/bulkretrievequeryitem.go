@@ -80,3 +80,13 @@ func newQuerySort(field *schema.Field, sortType sortordertype.SortOrderType) *bu
 	sort.operation = operationtype.OperationType(sortType)
 	return sort
 }
+
+func (bulkItem *bulkRetrieveQueryItem) Clone() *bulkRetrieveQueryItem {
+	result := new(bulkRetrieveQueryItem)
+	result.field = bulkItem.field
+	result.operation = bulkItem.operation
+	result.operand = bulkItem.operand
+	result.operands = bulkItem.operands
+	result.caseSensitiveSearch = bulkItem.caseSensitiveSearch
+	return result
+}

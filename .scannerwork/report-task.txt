@@ -1,6 +1,0 @@
-projectKey=ring
-serverUrl=http://localhost:9000
-serverVersion=8.6.0.39681
-dashboardUrl=http://localhost:9000/dashboard?id=ring
-ceTaskId=AXiSlqQlLg8dM50G2QGr
-ceTaskUrl=http://localhost:9000/api/ce/task?id=AXiSlqQlLg8dM50G2QGr

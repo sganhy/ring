@@ -423,10 +423,26 @@ func Test__Field__GetValue(t *testing.T) {
 	// test 2
 	value, err = elemf0.GetValue("22222222222222")
 	if value != invalidValue {
-		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') must be equal to '2222' and err==null")
+		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') must be equal to invalidValue")
 	}
 	if err.Error() != errorInvalidValueType {
 		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') error must be equal to null to '%s'", errorInvalidValueType)
 	}
-
+	// test 3
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Long, 5, "test default", true, false, false, true, true)
+	value, err = elemf0.GetValue("-9223372036854775808")
+	if value != "-9223372036854775808" {
+		t.Errorf("Field.GetValue() ==> GetValue('-9223372036854775808') must be equal to '-9223372036854775808'")
+	}
+	// test 4
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Boolean, 5, "test default", true, false, false, true, true)
+	value, err = elemf0.GetValue("true")
+	if value != "true" {
+		t.Errorf("Field.GetValue() ==> GetValue('true') must be equal to 'true'")
+	}
+	// test 5
+	value, err = elemf0.GetValue("22222")
+	if value != invalidValue {
+		t.Errorf("Field.GetValue() ==> GetValue('22222') must be equal to invalidValue")
+	}
 }
