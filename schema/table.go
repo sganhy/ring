@@ -75,6 +75,8 @@ const dqlWhere = " WHERE "
 const dqlOrderBy = " ORDER BY "
 const maxNumberOfColumn = 65535
 const postGreParameterName = "$"
+const postGreTableCatalog = "pg_tables"
+const postGreCreateOptions = " WITH (autovacuum_enabled=false) "
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
@@ -307,19 +309,25 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
-func (table *Table) GetDdl(tablespace *Tablespace) string {
-	var fields []string
-	for i := 0; i < len(table.fields); i++ {
-		fieldSql := table.fields[i].GetDdl(table.provider, table.tableType)
-		fields = append(fields, fieldSql)
-	}
-	for i := 0; i < len(table.relations); i++ {
-		relationSql := table.relations[i].GetDdl(table.provider)
-		fields = append(fields, relationSql)
-	}
-	sql := fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
-	if tablespace != nil {
-		sql = sql + ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tablespace) string {
+	var sql string
+	switch statement {
+	case ddlstatement.Create:
+		var fields []string
+		for i := 0; i < len(table.fieldsById); i++ {
+			fieldSql := table.fieldsById[i].GetDdl(table.provider, table.tableType)
+			fields = append(fields, fieldSql)
+		}
+		for i := 0; i < len(table.relations); i++ {
+			relationSql := table.relations[i].GetDdl(table.provider)
+			fields = append(fields, relationSql)
+		}
+		sql = fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
+		sql += table.getCreateOptions()
+		if tablespace != nil {
+			sql += ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+		}
+		break
 	}
 	return sql
 }
@@ -744,6 +752,63 @@ func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) 
 	table.sqlCapacity += capacity
 }
 
+func (table *Table) getCreateOptions() string {
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		return postGreCreateOptions
+	}
+	return ""
+}
+
+func (table *Table) create(schema *Schema) bool {
+	var metaQuery = metaQuery{}
+	var firstUniqueIndex = true
+
+	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil))
+	metaQuery.schema = schema
+	metaQuery.table = table
+	err := metaQuery.create()
+
+	if err == nil {
+		for i := 0; i < len(table.indexes); i++ {
+			index := table.indexes[i]
+			if firstUniqueIndex == true && index.unique {
+				index.createAsPk(schema)
+				firstUniqueIndex = false
+			} else {
+				index.create(schema)
+			}
+		}
+	}
+	return err == nil
+}
+
+// is table exists in the specified schema
+func (table *Table) exists(schema *Schema) bool {
+	var query strings.Builder
+	query.WriteString(dqlSelect)
+	if table.provider == databaseprovider.PostgreSql {
+		query.WriteString("1")
+		query.WriteString(dqlFrom)
+		query.WriteString(postGreTableCatalog)
+		query.WriteString(dqlWhere)
+		query.WriteString(" upper(tablename) = upper('")
+		query.WriteString(table.name)
+		query.WriteString("')")
+		query.WriteString(filterSeparator)
+		query.WriteString(" upper(schemaname) = upper('")
+		query.WriteString(table.getSchemaName())
+		query.WriteString("')")
+	}
+	// execute query
+	var metaQuery = metaQuery{}
+	metaQuery.query = query.String()
+	metaQuery.schema = schema
+	metaQuery.table = table
+	result, _ := metaQuery.exists()
+	return result
+}
+
 func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields = make([]Field, 0, 16)
 	var relations = make([]Relation, 0, 16)
@@ -765,7 +830,7 @@ func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalNa
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
 	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
-	uk.Init(1, "pk_@meta_id", "", indexedFields, false, true, true, true)
+	uk.Init(1, "pk_@meta_id", "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
 
 	fields = append(fields, id)
 	fields = append(fields, schemaId)
@@ -816,7 +881,7 @@ func getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "", indexedFields, false, true, true, true)
+	uk.Init(1, "pk_@meta", "", indexedFields, int32(tabletype.Meta), false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2

@@ -8,28 +8,30 @@ import (
 )
 
 type Schema struct {
-	id          int32
-	name        string
-	description string
-	language    Language
-	tables      map[string]*Table
-	tablesById  map[int32]*Table
-	tableSpaces []*Tablespace
-	connections *connectionPool
-	source      sourcetype.SourceType
-	baseline    bool
-	active      bool
+	id           int32
+	name         string
+	physicalName string
+	description  string
+	language     Language
+	tables       map[string]*Table
+	tablesById   map[int32]*Table
+	tableSpaces  []*Tablespace
+	connections  *connectionPool
+	source       sourcetype.SourceType
+	baseline     bool
+	active       bool
 }
 
 const metaSchemaName string = "@meta"
 const metaSchemaDescription string = "@meta"
-const postgreSqlSchema string = "information_schema"
+const postgreSqlSchema string = "rpg_sheet"
 
-func (schema *Schema) Init(id int32, name string, description string, connectionString string, language Language, tables []Table,
+func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
 	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
 	active bool, disablePool bool) {
 	schema.id = id
 	schema.name = name
+	schema.physicalName = physicalName
 	schema.description = description
 	schema.source = sourcetype.NativeDataBase // default value
 	if disablePool == false {
@@ -121,7 +123,7 @@ func (schema *Schema) Clone() *Schema {
 	if schema.connections.poolId == -1 {
 		disabledPool = true
 	}
-	newSchema.Init(schema.id, schema.name, schema.description, schema.GetConnectionString(), schema.language, tables, tableSpaces,
+	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), schema.language, tables, tableSpaces,
 		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
 		schema.baseline, schema.active, disabledPool)
 	return newSchema
@@ -153,6 +155,12 @@ func (schema *Schema) Execute(queries []Query) error {
 
 func (schema *Schema) setSourceType(source sourcetype.SourceType) {
 	schema.source = source
+}
+
+func (schema *Schema) findTablespace(table *Table, index *Index) *Tablespace {
+	result := new(Tablespace)
+	result.name = "rpg_data"
+	return result
 }
 
 func (schema *Schema) loadTables(tables []Table) {
@@ -195,13 +203,13 @@ func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring 
 	var language = Language{}
 
 	language.Init("EN")
-
+	//TODO meta schema name hardcoded ("information_schema")
 	tables = append(tables, *getMetaTable(provider, getPhysicalName(provider, metaSchemaName)))
 	tables = append(tables, *getMetaIdTable(provider, getPhysicalName(provider, metaSchemaName)))
 	tables = append(tables, *getLogTable(provider, getPhysicalName(provider, metaSchemaName)))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	schema.Init(0, metaSchemaName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+	schema.Init(0, metaSchemaName, getPhysicalName(provider, metaSchemaName), metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
 		disablePool)
 	return &schema
 }

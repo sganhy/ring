@@ -7,6 +7,7 @@ import (
 	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -142,7 +143,7 @@ func main() {
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := schema.Index{}
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", aarr, 55, false, true, true, true)
 	fmt.Println(elemr.GetName())
 	var fields = []schema.Field{}
 	//var prim = schema.GetDefaultPrimaryKey()
@@ -164,6 +165,7 @@ func main() {
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
 		physicaltype.Table, 64, "@meta", tabletype.Business, databaseprovider.PostgreSql, "subject test", true, false, true, false)
 	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
+	fmt.Println(elemt.GetDdl(ddlstatement.Create, nil))
 	//fmt.Println(elemt.GetFieldById(4).GetName())
 	//fmt.Println(elemt.GetPrimaryKey().GetName())
 	/*

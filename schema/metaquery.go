@@ -1,51 +1,89 @@
 package schema
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const filterSeparator = " AND "
 
 type metaQuery struct {
-	table   *Table
-	result  *[]interface{}
-	filters []string
-	sort    string
+	schema           *Schema
+	table            *Table
+	result           *[]interface{}
+	filters          []string
+	sort             string
+	query            string
+	resultCount      *int
+	returnResultList bool
+	ddl              bool
 }
 
 func (query metaQuery) Execute(dbConnection *sql.DB) error {
-	var sqlQuery = query.getQuery()
+	var sqlQuery = query.query
+	var columns []interface{}
+	var columnPointers []interface{}
+	var rows *sql.Rows
+	var err error
+	if query.ddl == true {
+		var sqlResult sql.Result
+		ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancelfunc()
+		sqlResult, err = dbConnection.ExecContext(ctx, sqlQuery)
+		fmt.Println(sqlResult)
+		return err
+	} else {
+		rows, err = dbConnection.Query(sqlQuery)
+	}
 
-	rows, err := dbConnection.Query(sqlQuery)
 	if err != nil {
 		return err
 	}
+	*query.resultCount = 0
+	//fmt.Println(sqlQuery)
 
-	fmt.Println(sqlQuery)
 	count := len(query.table.fields)
-	columns := make([]interface{}, count)
-	columnPointers := make([]interface{}, count)
+	if query.returnResultList == true {
+		columns = make([]interface{}, count)
+		columnPointers = make([]interface{}, count)
+	}
 	for rows.Next() {
-		for i := range columns {
-			columnPointers[i] = &columns[i]
+		if query.returnResultList == true {
+			for i := range columns {
+				columnPointers[i] = &columns[i]
+			}
+			if err := rows.Scan(columnPointers...); err != nil {
+				fmt.Println(err)
+				rows.Close()
+				return err
+			}
+			*query.result = append(*query.result, query.table.GetQueryResult(columnPointers))
 		}
-		if err := rows.Scan(columnPointers...); err != nil {
-			fmt.Println(err)
-			rows.Close()
-			return err
-		}
-		*query.result = append(*query.result, query.table.GetQueryResult(columnPointers))
+		*query.resultCount++
 	}
 	rows.Close()
 	return nil
 }
 
+func (query *metaQuery) setSchema(schemaName string) {
+	query.schema = GetSchemaByName(schemaName)
+	query.resultCount = new(int)
+}
+
 func (query *metaQuery) setTable(tableName string) {
-	var metaSchema = GetSchemaByName(metaSchemaName)
-	query.table = metaSchema.GetTableByName(tableName)
+	if query.schema == nil {
+		// get meta schema by default
+		query.schema = GetSchemaByName(metaSchemaName)
+	}
+	query.table = query.schema.GetTableByName(tableName)
+	query.resultCount = new(int)
+	if query.table == nil {
+		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.name)
+	}
 }
 
 func (query *metaQuery) getResult(index int, fieldName string) string {
@@ -55,13 +93,6 @@ func (query *metaQuery) getResult(index int, fieldName string) string {
 		return record[index]
 	}
 	return ""
-}
-
-func (query *metaQuery) resultCount() int {
-	if query.result != nil {
-		return len(*query.result)
-	}
-	return 0
 }
 
 func (query *metaQuery) getField(fieldName string) *Field {
@@ -127,7 +158,7 @@ func (query *metaQuery) getQuery() string {
 func (query *metaQuery) getMetaList() []Meta {
 	if query.table != nil && query.table.name == metaTableName {
 
-		var resultCount = query.resultCount()
+		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
 		var result = make([]Meta, resultCount, resultCount)
 		var tempMeta int64 = 0
@@ -182,7 +213,7 @@ func (query *metaQuery) getMetaList() []Meta {
 func (query *metaQuery) getMetaIdList() []MetaId {
 	if query.table != nil && query.table.name == metaIdTableName {
 
-		var resultCount = query.resultCount()
+		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
 		var result = make([]MetaId, resultCount, resultCount)
 		var tempMetaId int64 = 0
@@ -219,11 +250,38 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 	return nil
 }
 
+// launch select query with result list
 func (query *metaQuery) run() error {
-	var metaSchema = GetSchemaByName(metaSchemaName) // get meta schema
 	result := make([]interface{}, 0, 4)
+	query.ddl = false
+	query.query = query.getQuery()
+	query.returnResultList = true
 	query.result = &result
 	queries := make([]Query, 1, 1)
 	queries[0] = *query
-	return metaSchema.Execute(queries)
+	return query.schema.Execute(queries)
+}
+
+// is table exist
+func (query *metaQuery) exists() (bool, error) {
+	query.returnResultList = false
+	queries := make([]Query, 1, 1)
+	query.ddl = false
+	if query.resultCount == nil {
+		query.resultCount = new(int)
+	}
+	//fmt.Println(query.query)
+	queries[0] = *query
+	query.schema.Execute(queries)
+	//fmt.Println("query count() ==> ")
+	//fmt.Println(*query.resultCount)
+	return *query.resultCount > 0, nil
+}
+
+// create ddl
+func (query *metaQuery) create() error {
+	query.ddl = true
+	queries := make([]Query, 1, 1)
+	queries[0] = *query
+	return query.schema.Execute(queries)
 }

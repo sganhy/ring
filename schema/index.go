@@ -14,6 +14,7 @@ type Index struct {
 	id          int32
 	name        string
 	description string
+	tableId     int32
 	fields      []string
 	bitmap      bool
 	unique      bool
@@ -22,9 +23,10 @@ type Index struct {
 }
 
 const createIndexPostGreSql string = "%s%s INDEX %s ON %s USING btree (%s) %s"
+const createPkPostGreSql string = "ALTER TABLE %s ADD CONSTRAINT \"%s\" PRIMARY KEY (%s) %s"
 const physicalIndexPrefix string = "idx_"
 
-func (index *Index) Init(id int32, name string, description string, fields []string, bitmap bool,
+func (index *Index) Init(id int32, name string, description string, fields []string, tableId int32, bitmap bool,
 	unique bool, baseline bool, active bool) {
 	index.id = id
 	index.name = name
@@ -34,6 +36,7 @@ func (index *Index) Init(id int32, name string, description string, fields []str
 	index.unique = unique
 	index.baseline = baseline
 	index.active = active
+	index.tableId = tableId
 }
 
 //******************************
@@ -71,13 +74,20 @@ func (index *Index) IsActive() bool {
 	return index.active
 }
 
-func (index *Index) ToMeta(tableId int32) *Meta {
+func (index *Index) GetTableId() int32 {
+	return index.tableId
+}
+
+//******************************
+// public methods
+//******************************
+func (index *Index) ToMeta() *Meta {
 	// we cannot have error here
 	var result = new(Meta)
 
 	// key
 	result.id = index.id
-	result.refId = tableId
+	result.refId = index.tableId
 	result.objectType = int8(entitytype.Index)
 
 	// others
@@ -95,16 +105,13 @@ func (index *Index) ToMeta(tableId int32) *Meta {
 	return result
 }
 
-//******************************
-// public methods
-//******************************
 func (index *Index) Clone() *Index {
 	newIndex := new(Index)
 
 	fields := make([]string, len(index.fields))
 	copy(fields, index.fields)
 	newIndex.Init(index.id, index.name, index.description,
-		fields, index.bitmap, index.unique, index.baseline, index.active)
+		fields, index.tableId, index.bitmap, index.unique, index.baseline, index.active)
 
 	return newIndex
 }
@@ -112,9 +119,9 @@ func (index *Index) Clone() *Index {
 func (index *Index) GetDdl(statment ddlstatement.DdlStatement, table *Table, tablespace *Tablespace) string {
 	switch statment {
 	case ddlstatement.Create:
-		return index.create(table, tablespace)
+		return index.getDdlCreate(table, tablespace)
 	case ddlstatement.Drop:
-		return index.drop(table)
+		return index.getDdlDrop(table)
 	}
 	return ""
 }
@@ -155,7 +162,7 @@ func (index *Index) loadFields(fields []string) {
 	}
 }
 
-func (index *Index) drop(table *Table) string {
+func (index *Index) getDdlDrop(table *Table) string {
 	if table == nil || table.provider == databaseprovider.NotDefined {
 		return ""
 	}
@@ -170,7 +177,32 @@ func (index *Index) drop(table *Table) string {
 	return query.String()
 }
 
-func (index *Index) create(table *Table, tablespace *Tablespace) string {
+func (index *Index) getDdlCreatePk(table *Table, tablespace *Tablespace) string {
+	var sqlTablespace = ""
+	var fields strings.Builder
+
+	if tablespace != nil {
+		sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+	}
+	if len(index.fields) > 0 {
+		var field = new(Field)
+		for i := 0; i < len(index.fields); i++ {
+			field.name = index.fields[i]
+			fields.WriteString(field.GetPhysicalName(table.provider))
+			if i < len(index.fields)-1 {
+				fields.WriteString(",")
+			}
+		}
+	}
+	switch table.provider {
+	case databaseprovider.PostgreSql, databaseprovider.MySql:
+		return strings.Trim(fmt.Sprintf(createPkPostGreSql, table.GetPhysicalName(), index.name,
+			fields.String(), sqlTablespace), ddlSpace)
+	}
+	return ""
+
+}
+func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 	var sqlUnique = ""
 	var sqlTablespace = ""
 	var fields strings.Builder
@@ -198,6 +230,31 @@ func (index *Index) create(table *Table, tablespace *Tablespace) string {
 			index.GetPhysicalName(table), table.GetPhysicalName(), fields.String(), sqlTablespace), ddlSpace)
 	}
 	return ""
+}
+
+func (index *Index) create(schema *Schema) bool {
+	var metaQuery = metaQuery{}
+	var table = schema.GetTableById(index.tableId)
+
+	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(table, nil))
+	metaQuery.schema = schema
+	metaQuery.table = table
+
+	err := metaQuery.create()
+	return err == nil
+}
+
+func (index *Index) createAsPk(schema *Schema) bool {
+	var metaQuery = metaQuery{}
+	var table = schema.GetTableById(index.tableId)
+
+	metaQuery.query = index.getDdlCreatePk(table, schema.findTablespace(nil, index))
+	fmt.Println(metaQuery.query)
+	metaQuery.schema = schema
+	metaQuery.table = table
+
+	err := metaQuery.create()
+	return err == nil
 }
 
 func padLeft(input string, padString string, repeat int) string {

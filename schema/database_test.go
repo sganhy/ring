@@ -37,7 +37,7 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	elemt.Init(22, "zorro", "hellkzae", fields, relations, indexes,
 		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined, "subject test", true, false, true, false)
 	tables = append(tables, elemt)
-	schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
+	schema.Init(212, "test", "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
 	for i := -100; i < SCHEMA_COUNT; i++ {
 		var newSchema = schema.Clone()
 		nameLenght := (abs(i) % 30) + 2

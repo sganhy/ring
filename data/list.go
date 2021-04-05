@@ -1,5 +1,9 @@
 package data
 
+import (
+	"errors"
+)
+
 type List struct {
 	sorted   bool
 	data     []*Record
@@ -56,10 +60,10 @@ func (list *List) AppendItem(item interface{}) error {
 		}
 	default:
 	}
-	if validItemType == true {
+	if validItemType {
 		return nil
 	} else {
-		return nil
+		return errors.New("Invalid Item type")
 	}
 }
 

@@ -14,7 +14,7 @@ func Test__Index__Init(t *testing.T) {
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := Index{}
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", aarr, -17, false, true, true, true)
 
 	if elemi.GetName() != "rel test" {
 		t.Errorf("Index.Init() ==> name <> GetName()")
@@ -32,6 +32,9 @@ func Test__Index__Init(t *testing.T) {
 	} else {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
+	if elemi.GetTableId() != -17 {
+		t.Errorf("Index.Init() ==> tableId <> GetTableId()")
+	}
 	if elemi.IsBaseline() != true {
 		t.Errorf("Index.Init() ==> IsBaseline() <> true")
 	}
@@ -45,7 +48,7 @@ func Test__Index__Init(t *testing.T) {
 		t.Errorf("Index.Init() ==> IsBitmap() <> false")
 	}
 
-	elemi.Init(21, "rel test", "hellkzae", nil, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", nil, 0, false, true, true, true)
 	if elemi.GetFields() == nil {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
@@ -58,9 +61,9 @@ func Test__Index__ToMeta(t *testing.T) {
 	aarr := []string{"Gga", "Zorba", "testllk", "testllk22"}
 
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
+	elemi0.Init(21, "rel test", "hellkzae", aarr, -11, false, true, false, true)
 
-	meta := elemi0.ToMeta(777)
+	meta := elemi0.ToMeta()
 	elemi1 := meta.ToIndex()
 
 	if elemi0.GetId() != elemi1.GetId() {
@@ -87,6 +90,9 @@ func Test__Index__ToMeta(t *testing.T) {
 	if elemi0.IsActive() != elemi1.IsActive() {
 		t.Errorf("Index.ToMeta() ==> i0.IsActive() must be equal to i1.IsActive()")
 	}
+	if elemi0.GetTableId() != elemi1.GetTableId() {
+		t.Errorf("Index.ToMeta() ==> i0.GetTableId() must be equal to i1.GetTableId()")
+	}
 	// test fields
 	if elemi1.fields == nil {
 		t.Errorf("Index.ToMeta() ==> i1.fields cannot be nil")
@@ -105,7 +111,7 @@ func Test__Index__Clone(t *testing.T) {
 	aarr := []string{"Gga", "Zorba", "testllk", "testllk22", "xxxxxx", "x44"}
 
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
+	elemi0.Init(21, "rel test", "hellkzae", aarr, 77, false, true, false, true)
 	elemi1 := elemi0.Clone()
 
 	if elemi0.GetId() != elemi1.GetId() {
@@ -128,6 +134,9 @@ func Test__Index__Clone(t *testing.T) {
 	}
 	if elemi0.IsBaseline() != elemi1.IsBaseline() {
 		t.Errorf("Index.Clone() ==> i0.IsBaseline() must be equal to i1.IsBaseline()")
+	}
+	if elemi0.IsActive() != elemi1.IsActive() {
+		t.Errorf("Index.Clone() ==> i0.IsActive() must be equal to i1.IsActive()")
 	}
 	if elemi0.IsActive() != elemi1.IsActive() {
 		t.Errorf("Index.Clone() ==> i0.IsActive() must be equal to i1.IsActive()")
@@ -175,7 +184,7 @@ func Test__Index__GetDdl(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, false, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, int32(tabletype.MetaId), false, false, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -205,7 +214,7 @@ func Test__Index__GetDdl(t *testing.T) {
 
 	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id)"
 	//if CREATE UNIQUE INDEX "pk_@meta" ON information_schema."@meta" (id,schema_id,,reference_id)
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, 55, false, true, true, true)
 	if uk.GetDdl(ddlstatement.Create, table, nil) != query {
 		t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
 	}

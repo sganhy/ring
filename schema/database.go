@@ -44,14 +44,19 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		}
 		var metaSchema = getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
 		defaultSchemaName = metaSchema.name
+
 		//
 		addSchema(metaSchema)
 		databaseInitialized = true
 
 		// unitests context ?
 		if disableConnectionPool == false {
+			// generate meta tables first before getSchemaIdList()
+			generateMetaTables(metaSchema)
+
 			var schemas = getSchemaIdList()
 			fmt.Println("schema id ==> ")
+
 			for i := 0; i < len(schemas); i++ {
 				loadSchemaById(schemas[i])
 			}
@@ -160,6 +165,13 @@ func addSchema(schema *Schema) {
 //******************************
 // private methods
 //******************************
+func generateMetaTables(schema *Schema) {
+	for _, table := range schema.tables {
+		if table.exists(schema) == false {
+			table.create(schema)
+		}
+	}
+}
 
 // get schema list from @meta table
 func getSchemaIdList() []Schema {

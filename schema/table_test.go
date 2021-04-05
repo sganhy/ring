@@ -3,6 +3,7 @@ package schema
 import (
 	"math/rand"
 	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
@@ -61,7 +62,7 @@ func Test__Table__Init(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, 55, false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -125,6 +126,7 @@ func Test__Table__Init(t *testing.T) {
 	if table.IsActive() != false {
 		t.Errorf("Table.Init() ==> IsActive() <> false")
 	}
+
 }
 
 //test: GetFieldByName, GetFieldByNameI, GetFieldById, and GetFieldIndexByName
@@ -316,7 +318,7 @@ func Test__Table__GetIndexByName(t *testing.T) {
 		nameLenght := (abs(i) % 30) + 2
 		// fixture
 		indexName := randStringBytes(nameLenght)
-		index.Init(21, indexName, "hellkzae", aarr, false, true, false, true)
+		index.Init(21, indexName, "hellkzae", aarr, 55, false, true, false, true)
 		indexes = append(indexes, *index)
 	}
 
@@ -387,7 +389,7 @@ func Test__Table__Clone(t *testing.T) {
 	if t1.GetPrimaryKey() != t2.GetPrimaryKey() {
 		t.Errorf("Table.Clone() ==> t1.GetPrimaryKey() reference <> t2.GetPrimaryKey() reference")
 	}
-	if t1.GetDdl(nil) != t2.GetDdl(nil) {
+	if t1.GetDdl(ddlstatement.Create, nil) != t2.GetDdl(ddlstatement.Create, nil) {
 		t.Errorf("Table.Clone() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
 	}
 }

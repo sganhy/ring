@@ -152,7 +152,7 @@ func (meta *Meta) ToIndex() *Index {
 	if entitytype.EntityType(meta.objectType) == entitytype.Index {
 		var index = new(Index)
 		var arr = strings.Split(meta.value, metaIndexSeparator)
-		index.Init(meta.id, meta.name, meta.description, arr, meta.IsIndexBitmap(), meta.IsIndexUnique(),
+		index.Init(meta.id, meta.name, meta.description, arr, meta.refId, meta.IsIndexBitmap(), meta.IsIndexUnique(),
 			meta.IsEntityBaseline(), meta.enabled)
 		return index
 	}
