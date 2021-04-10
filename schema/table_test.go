@@ -94,7 +94,7 @@ func Test__Table__Init(t *testing.T) {
 		t.Errorf("Table.Init() ==> description <> GetDescription()")
 	}
 	if table.GetPhysicalName() != "information_schema.\"@meta\"" {
-		t.Errorf("Table.Init() ==> physical <> information_schema.\"@meta\"")
+		t.Errorf("Table.Init() ==> physical name <> information_schema.\"@meta\"")
 	}
 	if table.GetType() != tabletype.MetaId {
 		t.Errorf("Table.Init() ==> description <> GetDescription()")
@@ -354,6 +354,8 @@ func Test__Table__Clone(t *testing.T) {
 	var fields = []Field{}
 	var relations = []Relation{}
 	var indexes = []Index{}
+	var uk Index = Index{}
+
 	var t1 = new(Table)
 
 	// creating fields
@@ -363,6 +365,10 @@ func Test__Table__Clone(t *testing.T) {
 	field1 := Field{}
 	field1.Init(2, "Zorba", "", fieldtype.Int, 0, "", true, true, true, false, true)
 	fields = append(fields, field1)
+
+	var indexedFields = []string{"Zorba"}
+	uk.Init(1, "uk_test", "ATable Test", indexedFields, 1154, false, false, true, true)
+	indexes = append(indexes, uk)
 
 	t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
 		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
@@ -388,6 +394,9 @@ func Test__Table__Clone(t *testing.T) {
 	// no reference copy
 	if t1.GetPrimaryKey() != t2.GetPrimaryKey() {
 		t.Errorf("Table.Clone() ==> t1.GetPrimaryKey() reference <> t2.GetPrimaryKey() reference")
+	}
+	if t1.GetDatabaseProvider() != t2.GetDatabaseProvider() {
+		t.Errorf("Table.Clone() ==> t1.GetDatabaseProvider() <> t2.GetDatabaseProvider()")
 	}
 	if t1.GetDdl(ddlstatement.Create, nil) != t2.GetDdl(ddlstatement.Create, nil) {
 		t.Errorf("Table.Clone() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
@@ -450,26 +459,40 @@ func Test__Table__ToMeta(t *testing.T) {
 
 func Test__Table__GetDml(t *testing.T) {
 	table := getLogTable(databaseprovider.PostgreSql, "information_schema")
-	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,method,message) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,\"method\",line_number,message,description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
 	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be " + exepectedSQl)
 	}
 }
 
 func Test__Table__GetQueryResult(t *testing.T) {
-	table := getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
+	table := getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	var result []interface{}
 	var resultPtr []interface{}
 	var id int32 = 5
 	//var schemaId int32 = 1
-	var objectType int16 = 15
+	var objectType int8 = 15
+	var referenceId int = 2
+	var dataType int16 = 3
+	var flags int32 = 554545
 	var value int64 = 2222222
+	var name string = "testName"
+	var nameDesc string = "testName DESC"
+	var active bool = true
 
-	// id
-	result = append(result, id)
-	result = append(result, nil)
-	result = append(result, objectType)
-	result = append(result, value)
+	//======================
+	//==== TEST 1
+	//======================
+	result = append(result, id)          //0
+	result = append(result, nil)         //1
+	result = append(result, objectType)  //2
+	result = append(result, referenceId) //3
+	result = append(result, dataType)    //4
+	result = append(result, flags)       //5
+	result = append(result, name)        //6
+	result = append(result, nameDesc)    //7
+	result = append(result, value)       //8
+	result = append(result, active)      //9
 
 	for i := 0; i < len(result); i++ {
 		resultPtr = append(resultPtr, &result[i])
@@ -483,10 +506,54 @@ func Test__Table__GetQueryResult(t *testing.T) {
 		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(objectType)))
 	}
 	if arr[table.GetFieldIndexByName("schema_id")] != "" {
-		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to null")
+		t.Errorf("Table.GetQueryResult() ==> schema_id must be equal to null")
 	}
 	if arr[table.GetFieldIndexByName("value")] != strconv.Itoa(int(value)) {
-		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(value)))
+		t.Errorf("Table.GetQueryResult() ==> value must be equal to '%s'", strconv.Itoa(int(value)))
+	}
+	if arr[table.GetFieldIndexByName("flags")] != strconv.Itoa(int(flags)) {
+		t.Errorf("Table.GetQueryResult() ==> flags must be equal to '%s'", strconv.Itoa(int(flags)))
+	}
+	if arr[table.GetFieldIndexByName("name")] != name {
+		t.Errorf("Table.GetQueryResult() ==> name must be equal to '%s'", name)
+	}
+
+	//======================
+	//==== TEST 2
+	//======================
+	var idU uint = 4294967295
+	var objectTypeU uint8 = 150
+	var referenceIdU uint16 = 20
+	var dataTypeU uint32 = 30
+	var flagsU uint64 = 18446744073709551615 // test max value
+	result[0] = idU
+	result[2] = objectTypeU
+	result[3] = referenceIdU
+	result[4] = dataTypeU
+	result[5] = flagsU
+	arr = table.GetQueryResult(resultPtr)
+
+	if arr[table.GetFieldIndexByName("id")] != strconv.FormatUint(uint64(idU), 10) {
+		t.Errorf("Table.GetQueryResult() ==> id must be equal to '%s'", strconv.Itoa(int(objectTypeU)))
+	}
+	if arr[table.GetFieldIndexByName("object_type")] != strconv.Itoa(int(objectTypeU)) {
+		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(objectTypeU)))
+	}
+	if arr[table.GetFieldIndexByName("flags")] != strconv.FormatUint(flagsU, 10) {
+		t.Errorf("Table.GetQueryResult() ==> flags must be equal to '%s'", strconv.FormatUint(flagsU, 10))
+	}
+	if arr[table.GetFieldIndexByName("data_type")] != strconv.Itoa(int(dataTypeU)) {
+		t.Errorf("Table.GetQueryResult() ==> data_type must be equal to '%s'", strconv.Itoa(int(dataTypeU)))
+	}
+
+	var objectTypeF float32 = 150
+	var referenceIdF float64 = 20
+	result[2] = objectTypeF
+	result[3] = referenceIdF
+	arr = table.GetQueryResult(resultPtr)
+
+	if arr[table.GetFieldIndexByName("object_type")] != strconv.Itoa(int(objectTypeF)) {
+		t.Errorf("Table.GetQueryResult() ==> object_type must be equal to '%s'", strconv.Itoa(int(objectTypeF)))
 	}
 }
 

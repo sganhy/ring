@@ -190,19 +190,7 @@ func (meta *Meta) ToSchema() *Schema {
 
 func (meta *Meta) String() string {
 	// used for debug only
-	/*
-		id          int32
-		dataType    int32
-		description string
-		flags       uint64
-		lineNumber  int64
-		name        string
-		objectType  int8
-		refId       int32 // ref id to Id
-		value       string
-		enabled     bool
-	*/
-	return fmt.Sprintf(" id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; description: %s",
+	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; description: %s",
 		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.description)
 }
 

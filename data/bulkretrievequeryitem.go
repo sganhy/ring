@@ -40,6 +40,9 @@ func newQueryFilter(field *schema.Field, operation operationtype.OperationType, 
 	case int:
 		filter.operand = strconv.Itoa(operand.(int))
 		break
+	case uint:
+		filter.operand = strconv.FormatUint(uint64(operand.(int)), 10)
+		break
 	case bool:
 		filter.operand = strconv.FormatBool(operand.(bool))
 		break

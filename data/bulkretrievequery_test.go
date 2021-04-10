@@ -27,13 +27,14 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 		"value", "active"}
 	rs := mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
+	baseSql := "SELECT id,schema_id,object_type,reference_id,data_type,flags,\"name\",description,\"value\",active FROM " +
+		table.GetPhysicalName()
 
 	//======================
 	//==== 0 arguments + order by
 	//======================
 	bulkQuery := newSimpleQuery(table).(bulkRetrieveQuery)
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM " +
-		"information_schema.\"@meta\" ORDER BY object_type,reference_id DESC").
+	mock.ExpectQuery(baseSql + " ORDER BY object_type,reference_id DESC").
 		WithArgs().
 		WillReturnRows(rs)
 	field := table.GetFieldByName("object_type")
@@ -57,8 +58,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
 
 	bulkQuery = newSimpleQuery(table).(bulkRetrieveQuery) // reset query
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM " +
-		"information_schema.\"@meta\" WHERE schema_id=\\$1").
+	mock.ExpectQuery(baseSql + " WHERE schema_id=\\$1").
 		WithArgs(1).
 		WillReturnRows(rs)
 	queryItem2 := new(bulkRetrieveQueryItem)
@@ -80,8 +80,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	rs = mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
 
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM "+
-		"information_schema.\"@meta\" WHERE schema_id=\\$1 AND name LIKE \\$2").
+	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND \"name\" LIKE \\$2").
 		WithArgs(1, "abi%").
 		WillReturnRows(rs)
 	queryItem3 := new(bulkRetrieveQueryItem)
@@ -103,8 +102,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	rs = mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
 	bulkQuery.clearItems()
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM "+
-		"information_schema.\"@meta\" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
 		" AND schema_id=\\$5 AND schema_id=\\$6 AND schema_id=\\$7 AND schema_id=\\$8 AND schema_id=\\$9 AND schema_id=\\$10"+
 		" AND schema_id=\\$11 AND schema_id=\\$12 AND schema_id=\\$13 AND schema_id=\\$14 AND schema_id=\\$15"+
 		" AND schema_id=\\$16 AND schema_id=\\$17 ORDER BY reference_id DESC").
@@ -129,8 +127,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	rs = mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
 	bulkQuery.clearItems()
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM "+
-		"information_schema.\"@meta\" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
 		" AND schema_id=\\$5 AND schema_id=\\$6").
 		WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -152,8 +149,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	rs = mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
 	bulkQuery.clearItems()
-	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM "+
-		"information_schema.\"@meta\" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
 		" AND schema_id=\\$5").
 		WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,

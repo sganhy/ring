@@ -17,6 +17,7 @@ import (
 	"ring/schema/tabletype"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -29,14 +30,24 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+	runtime.LockOSThread()
+	computerName, _ := syscall.ComputerName()
+	fmt.Printf("==> %s", computerName)
 	rcd := new(data.Record)
+	frame := test4()
+	fmt.Println(frame.File)
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	var ss = schema.GetSchemaByName("@meta")
+
+	ss.LogWarn(1, 544, "hello", "World")
 
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)
 	zone, offset := ttt.Zone()
 	fmt.Println(offset)
 	fmt.Println(zone)
+
+	fmt.Println(test3())
 
 	ttttt := schema.GetTable()
 	fmt.Println(ttttt.GetName())
@@ -178,4 +189,38 @@ func main() {
 	fmt.Println(strings.Join(reg, ","))
 	//time.Sleep(20 * time.Second)
 	fmt.Println("Finished!")
+}
+
+func test2() string {
+	return getFrame(1).Function
+}
+
+func test3() int {
+	return getFrame(1).Line
+}
+
+func test4() runtime.Frame {
+	return getFrame(1)
+}
+
+func getFrame(skipFrames int) runtime.Frame {
+	// We need the frame at index skipFrames+2, since we never want runtime.Callers and getFrame
+	targetFrameIndex := skipFrames + 2
+
+	// Set size to targetFrameIndex+2 to ensure we have room for one more caller than we need
+	programCounters := make([]uintptr, targetFrameIndex+2)
+	n := runtime.Callers(0, programCounters)
+
+	frame := runtime.Frame{Function: "unknown"}
+	if n > 0 {
+		frames := runtime.CallersFrames(programCounters[:n])
+		for more, frameIndex := true, 0; more && frameIndex <= targetFrameIndex; frameIndex++ {
+			var frameCandidate runtime.Frame
+			frameCandidate, more = frames.Next()
+			if frameIndex == targetFrameIndex {
+				frame = frameCandidate
+			}
+		}
+	}
+	return frame
 }

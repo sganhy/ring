@@ -99,6 +99,10 @@ func (relation *Relation) GetInverseRelation() *Relation {
 	return nil
 }
 
+func (relation *Relation) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
+	return getPhysicalName(provider, relation.name)
+}
+
 func (relation *Relation) ToMeta(tableId int32) *Meta {
 	// we cannot have error here
 	var result = new(Meta)

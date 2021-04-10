@@ -67,6 +67,9 @@ func (record *Record) SetField(name string, value interface{}) error {
 			case int:
 				val = strconv.Itoa(value.(int))
 				break
+			case uint:
+				val = strconv.FormatUint(uint64(value.(uint)), 10)
+				break
 			case bool:
 				val = strconv.FormatBool(value.(bool))
 				break

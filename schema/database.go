@@ -37,19 +37,23 @@ func init() {
 func Init(provider databaseprovider.DatabaseProvider, connectionString string, minConnection uint16, maxConnection uint16) {
 	// perform just once
 	if databaseInitialized == false {
+		databaseInitialized = true
 		var disableConnectionPool = false
 		// disable connection pool for unit testing ??
 		if minConnection == 0 && maxConnection == 0 && connectionString == "" {
 			disableConnectionPool = true
 		}
+		// 1> instanciate meta schema
 		var metaSchema = getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
 		defaultSchemaName = metaSchema.name
 
-		//
+		// 2> add meta schema to collection
 		addSchema(metaSchema)
-		databaseInitialized = true
 
-		// unitests context ?
+		// 3> initialize logger
+		initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
+
+		// 4> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
 			// generate meta tables first before getSchemaIdList()
 			generateMetaTables(metaSchema)
@@ -60,8 +64,8 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 			for i := 0; i < len(schemas); i++ {
 				loadSchemaById(schemas[i])
 			}
-			// call garbage collector
 		}
+		// call garbage collector
 		runtime.GC()
 	}
 }

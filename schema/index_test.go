@@ -143,6 +143,7 @@ func Test__Index__Clone(t *testing.T) {
 	}
 }
 
+// test ddl statements
 func Test__Index__GetDdl(t *testing.T) {
 	var fields = []Field{}
 	var relations = []Relation{}
@@ -264,5 +265,17 @@ func Test__Index__GetDdl(t *testing.T) {
 	if uk.GetDdl(ddlstatement.Drop, table, nil) != "" {
 		t.Errorf("Index.GetDdl() ==> should be equal to null")
 	}
-
+	table.provider = databaseprovider.PostgreSql
+	script := uk.getDdlCreatePk(table, &tablespace)
+	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"pk_@meta\" " +
+		"PRIMARY KEY (id,schema_id,object_type,reference_id) USING INDEX TABLESPACE rpg_index"
+	if script != expectedSql {
+		t.Errorf("Index.getDdlCreatePk() ==> expected sql not reached {0}")
+	}
+	//test unknow, provider
+	table.provider = databaseprovider.NotDefined
+	script = uk.getDdlCreatePk(table, &tablespace)
+	if script != "" {
+		t.Errorf("Index.getDdlCreatePk() ==> expected sql script for undefined provider should be null")
+	}
 }

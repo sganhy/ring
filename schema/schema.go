@@ -8,45 +8,57 @@ import (
 )
 
 type Schema struct {
-	id           int32
-	name         string
-	physicalName string
-	description  string
-	language     Language
-	tables       map[string]*Table
-	tablesById   map[int32]*Table
-	tableSpaces  []*Tablespace
-	connections  *connectionPool
-	source       sourcetype.SourceType
-	baseline     bool
-	active       bool
+	id              int32
+	name            string
+	physicalName    string
+	description     string
+	language        Language
+	tables          map[string]*Table
+	tablesById      map[int32]*Table
+	tableSpaces     []*Tablespace
+	connections     *connectionPool
+	source          sourcetype.SourceType
+	logger          *log
+	poolInitialized bool // connection pool initialized
+	baseline        bool
+	active          bool
 }
 
 const metaSchemaName string = "@meta"
 const metaSchemaDescription string = "@meta"
 const postgreSqlSchema string = "rpg_sheet"
 
+var currentJobId int64 = 101007 // min job id
+
 func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
 	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
 	active bool, disablePool bool) {
+
+	logger := new(log)
 	schema.id = id
+	schema.poolInitialized = false
 	schema.name = name
 	schema.physicalName = physicalName
 	schema.description = description
 	schema.source = sourcetype.NativeDataBase // default value
+	schema.logger = logger
+
 	if disablePool == false {
-		connectionPool, err := newConnectionPool(connectionString, provider, minConnection, maxConnection)
+		logger.Init(id, false)
+		connectionPool, err := newConnectionPool(id, connectionString, provider, minConnection, maxConnection)
 		if connectionPool != nil {
 			schema.connections = connectionPool
 		} else {
 			panic(err)
 		}
 	} else {
+		logger.Init(id, true)
 		schema.connections = new(connectionPool)
 		schema.connections.connectionString = connectionString
 		schema.connections.provider = provider
 		schema.connections.poolId = -1 // disable connection pool
 	}
+	schema.poolInitialized = true
 	schema.loadTables(tables)
 	schema.loadTablespaces(tableSpaces)
 	schema.baseline = baseline
@@ -129,6 +141,27 @@ func (schema *Schema) Clone() *Schema {
 	return newSchema
 }
 
+func (schema *Schema) LogWarn(id int32, jobId int64, messages ...interface{}) {
+	if schema.logger != nil {
+		schema.logger.warn(id, jobId, messages...)
+	}
+}
+func (schema *Schema) LogInfo(id int32, jobId int64, messages ...interface{}) {
+	if schema.logger != nil {
+		schema.logger.info(id, jobId, messages...)
+	}
+}
+func (schema *Schema) LogError(id int32, jobId int64, messages ...interface{}) {
+	if schema.logger != nil {
+		schema.logger.error(id, jobId, messages...)
+	}
+}
+func (schema *Schema) LogDebug(id int32, jobId int64, messages ...interface{}) {
+	if schema.logger != nil {
+		schema.logger.debug(id, jobId, messages...)
+	}
+}
+
 func (schema *Schema) Execute(queries []Query) error {
 	var connection = schema.connections.get()
 	var err error
@@ -152,11 +185,6 @@ func (schema *Schema) Execute(queries []Query) error {
 //******************************
 // private methods
 //******************************
-
-func (schema *Schema) setSourceType(source sourcetype.SourceType) {
-	schema.source = source
-}
-
 func (schema *Schema) findTablespace(table *Table, index *Index) *Tablespace {
 	result := new(Tablespace)
 	result.name = "rpg_data"
@@ -188,12 +216,15 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 	}
 }
 
-func getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
+func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
 	//
 	if name == metaSchemaName {
 		return postgreSqlSchema
 	}
 	return name
+}
+func getCurrentJobId() int64 {
+	return currentJobId
 }
 
 func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
@@ -201,15 +232,16 @@ func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring 
 	var tablespaces []Tablespace
 	var schema = Schema{}
 	var language = Language{}
+	var physicalName = schema.getPhysicalName(provider, metaSchemaName)
 
 	language.Init("EN")
 	//TODO meta schema name hardcoded ("information_schema")
-	tables = append(tables, *getMetaTable(provider, getPhysicalName(provider, metaSchemaName)))
-	tables = append(tables, *getMetaIdTable(provider, getPhysicalName(provider, metaSchemaName)))
-	tables = append(tables, *getLogTable(provider, getPhysicalName(provider, metaSchemaName)))
+	tables = append(tables, *getMetaTable(provider, physicalName))
+	tables = append(tables, *getMetaIdTable(provider, physicalName))
+	tables = append(tables, *getLogTable(provider, physicalName))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	schema.Init(0, metaSchemaName, getPhysicalName(provider, metaSchemaName), metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+	schema.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
 		disablePool)
 	return &schema
 }

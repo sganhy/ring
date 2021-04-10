@@ -54,6 +54,7 @@ const metaName string = "name"
 const metaFlags string = "flags"
 const metaIdTableName string = "@meta_id"
 const metaTableName string = "@meta"
+const metaLogTableName string = "@log"
 const metaLogId string = "id"
 const metaLogEntryTime string = "entry_time"
 const metaLogLevelId string = "level_id"
@@ -61,6 +62,7 @@ const metaLogThreadId string = "thread_id"
 const metaLogCallSite string = "call_site"
 const metaLogJobId string = "job_id"
 const metaLogMethod string = "method"
+const metaLoglineNumber string = "line_number"
 const metaLogMessage string = "message"
 const fieldListSeparator string = ","
 const dmlInsertValues = ") VALUES ("
@@ -473,6 +475,9 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 			case int:
 				strValue = strconv.Itoa(value.(int))
 				break
+			case uint:
+				strValue = strconv.FormatUint(uint64(value.(uint)), 10)
+				break
 			case bool:
 				strValue = strconv.FormatBool(value.(bool))
 				break
@@ -541,20 +546,14 @@ func (table *Table) addVariables(query *strings.Builder) {
 }
 
 func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
-	var physicalName = ""
-	//TODO implement other provider
-	switch provider {
-	case databaseprovider.PostgreSql, databaseprovider.MySql:
-		if table.tableType != tabletype.Business {
-			physicalName = physicalSchemaName + ".\"" + table.name + "\""
-		} else {
-			physicalName = physicalSchemaName + ".t_" + table.name
-		}
-		break
-	case databaseprovider.Oracle:
-		physicalName = "Oracle"
-		break
+	var physicalName = physicalSchemaName + "."
+	var tableName = table.name
+
+	if table.tableType == tabletype.Business {
+		// add prefix
+		tableName = "t_" + tableName
 	}
+	physicalName += getPhysicalName(provider, tableName)
 	return physicalName
 }
 
@@ -918,7 +917,9 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	var callSite = Field{}
 	var jobId = Field{}
 	var method = Field{}
+	var lineNumber = Field{}
 	var message = Field{}
+	var description = Field{}
 
 	// "id","entry_time","level_id","thread_id","call_site","message","description","machine_name"
 	id.Init(2111, metaLogId, "", fieldtype.Long, 0, "", true, true, true, false, true)
@@ -929,19 +930,23 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	callSite.Init(2161, metaLogCallSite, "", fieldtype.String, 255, "", true, false, true, false, true)
 	jobId.Init(2203, metaLogJobId, "", fieldtype.Long, 0, "", true, false, true, false, true)
 	method.Init(2213, metaLogMethod, "", fieldtype.String, 80, "", true, false, true, false, true)
+	lineNumber.Init(2221, metaLoglineNumber, "", fieldtype.Int, 0, "", true, false, true, false, true)
 	message.Init(2237, metaLogMessage, "", fieldtype.String, 255, "", true, false, true, false, true)
+	description.Init(2243, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
 
-	fields = append(fields, id)        //1
-	fields = append(fields, entryTime) //2
-	fields = append(fields, levelId)   //3
-	fields = append(fields, threadId)  //4
-	fields = append(fields, callSite)  //5
-	fields = append(fields, jobId)     //6
-	fields = append(fields, method)    //7
-	fields = append(fields, schemaId)  //8
-	fields = append(fields, message)   //9
+	fields = append(fields, id)          //1
+	fields = append(fields, entryTime)   //2
+	fields = append(fields, levelId)     //3
+	fields = append(fields, threadId)    //4
+	fields = append(fields, callSite)    //5
+	fields = append(fields, jobId)       //6
+	fields = append(fields, method)      //7
+	fields = append(fields, schemaId)    //8
+	fields = append(fields, message)     //9
+	fields = append(fields, description) //10
+	fields = append(fields, lineNumber)  //11
 
-	table.Init(int32(tabletype.Log), "@log", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
+	table.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.MetaId, provider, "", false, false, true, true)
 	return table
 }

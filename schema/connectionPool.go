@@ -16,6 +16,7 @@ type connectionPool struct {
 	lastIndex        int
 	putRequestCount  uint16
 	poolId           int
+	schemaId         int32
 	provider         databaseprovider.DatabaseProvider
 	pool             []*connection
 	syncRoot         sync.Mutex
@@ -27,7 +28,7 @@ const initialMinValue = 1
 const initialMaxValue = 2
 const connStringApplicationName = " application_name"
 
-func newConnectionPool(connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) (*connectionPool, error) {
+func newConnectionPool(schemaId int32, connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) (*connectionPool, error) {
 	var newPool = new(connectionPool)
 	currentPoolId++
 	newPool.connectionString = newPool.getConnectionString(connectionString)

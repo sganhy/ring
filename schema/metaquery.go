@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"ring/schema/dmlstatement"
 	"strconv"
 	"strings"
 	"time"
@@ -15,12 +16,14 @@ type metaQuery struct {
 	schema           *Schema
 	table            *Table
 	result           *[]interface{}
+	params           *[]interface{}
 	filters          []string
 	sort             string
 	query            string
 	resultCount      *int
 	returnResultList bool
 	ddl              bool
+	dml              bool
 }
 
 func (query metaQuery) Execute(dbConnection *sql.DB) error {
@@ -29,6 +32,7 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	var columnPointers []interface{}
 	var rows *sql.Rows
 	var err error
+
 	if query.ddl == true {
 		var sqlResult sql.Result
 		ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
@@ -36,11 +40,16 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 		sqlResult, err = dbConnection.ExecContext(ctx, sqlQuery)
 		fmt.Println(sqlResult)
 		return err
+	} else if query.dml == true {
+		rows, err = query.executeQuery(dbConnection, sqlQuery)
+		return err
 	} else {
-		rows, err = dbConnection.Query(sqlQuery)
+		rows, err = query.executeQuery(dbConnection, sqlQuery)
 	}
 
 	if err != nil {
+		fmt.Println("ERROR ==>")
+		fmt.Println(err.Error())
 		return err
 	}
 	*query.resultCount = 0
@@ -254,6 +263,7 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 func (query *metaQuery) run() error {
 	result := make([]interface{}, 0, 4)
 	query.ddl = false
+	query.dml = false
 	query.query = query.getQuery()
 	query.returnResultList = true
 	query.result = &result
@@ -267,6 +277,7 @@ func (query *metaQuery) exists() (bool, error) {
 	query.returnResultList = false
 	queries := make([]Query, 1, 1)
 	query.ddl = false
+	query.dml = false
 	if query.resultCount == nil {
 		query.resultCount = new(int)
 	}
@@ -281,7 +292,74 @@ func (query *metaQuery) exists() (bool, error) {
 // create ddl
 func (query *metaQuery) create() error {
 	query.ddl = true
+	query.dml = false
 	queries := make([]Query, 1, 1)
 	queries[0] = *query
 	return query.schema.Execute(queries)
+}
+
+// insert log
+func (query *metaQuery) insert(params []interface{}) error {
+	query.returnResultList = false
+	query.query = query.table.GetDml(dmlstatement.Insert)
+	query.params = &params
+	query.dml = true
+	query.ddl = false
+	queries := make([]Query, 1, 1)
+	queries[0] = *query
+	return query.schema.Execute(queries)
+}
+
+func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, error) {
+	if query.params == nil {
+		return dbConn.Query(sql)
+	}
+	var params = *query.params
+	switch len(params) {
+	case 0:
+		return dbConn.Query(sql)
+	case 1:
+		return dbConn.Query(sql, params[0])
+	case 2:
+		return dbConn.Query(sql, params[0], params[1])
+	case 3:
+		return dbConn.Query(sql, params[0], params[1], params[2])
+	case 4:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3])
+	case 5:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4])
+	case 6:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5])
+	case 7:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6])
+	case 8:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7])
+	case 9:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7],
+			params[8])
+	case 10:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7],
+			params[8], params[9])
+	case 11:
+		return dbConn.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7],
+			params[8], params[9], params[10])
+	}
+	return nil, nil
+}
+
+func (query *metaQuery) insertLog(newLog *log) error {
+	var params []interface{}
+	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
+	params[0] = newLog.id
+	params[1] = newLog.entryTime
+	params[2] = newLog.level
+	params[3] = newLog.schemaId
+	params[4] = newLog.threadId
+	params[5] = newLog.callSite
+	params[6] = newLog.jobId
+	params[7] = newLog.method
+	params[8] = newLog.lineNumber
+	params[9] = newLog.message
+	params[10] = newLog.description
+	return query.insert(params)
 }

@@ -31,7 +31,7 @@ func (metaid *MetaId) GetValue() int64 {
 // public methods
 //******************************
 func (metaid *MetaId) String() string {
-	return fmt.Sprintf(" id: %d; schema_id: %d; object_type: %d; value: %d",
+	return fmt.Sprintf("id: %d; schema_id: %d; object_type: %d; value: %d",
 		metaid.id, metaid.schemaId, metaid.objectType, metaid.value)
 }
 
