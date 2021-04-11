@@ -5,7 +5,6 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -36,6 +35,8 @@ func init() {
 
 func Init(provider databaseprovider.DatabaseProvider, connectionString string, minConnection uint16, maxConnection uint16) {
 	// perform just once
+	schema := new(Schema)
+
 	if databaseInitialized == false {
 		databaseInitialized = true
 		var disableConnectionPool = false
@@ -44,7 +45,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 			disableConnectionPool = true
 		}
 		// 1> instanciate meta schema
-		var metaSchema = getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
+		var metaSchema = schema.getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
 		defaultSchemaName = metaSchema.name
 
 		// 2> add meta schema to collection
@@ -57,6 +58,9 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		if disableConnectionPool == false {
 			// generate meta tables first before getSchemaIdList()
 			generateMetaTables(metaSchema)
+
+			// generate meta sequences
+			generateMetaSequences(metaSchema)
 
 			var schemas = getSchemaIdList()
 			fmt.Println("schema id ==> ")
@@ -177,6 +181,14 @@ func generateMetaTables(schema *Schema) {
 	}
 }
 
+func generateMetaSequences(schema *Schema) {
+	for _, table := range schema.tables {
+		if table.exists(schema) == false {
+			table.create(schema)
+		}
+	}
+}
+
 // get schema list from @meta table
 func getSchemaIdList() []Schema {
 	var query = metaQuery{}
@@ -184,7 +196,7 @@ func getSchemaIdList() []Schema {
 
 	// generate meta query
 	query.setTable(metaTableName)
-	query.addFilter(metaObjectType, "=", entitytype.Schema.GetId())
+	query.addFilter(metaObjectType, "=", int8(entitytype.Schema))
 	err := query.run()
 
 	if err != nil {
@@ -220,7 +232,7 @@ func getMetaList(schemaId int32) []Meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)
-	query.addFilter(metaSchemaId, "=", strconv.Itoa(int(schemaId)))
+	query.addFilter(metaSchemaId, "=", schemaId)
 	err := query.run()
 	if err != nil {
 		panic(err)
@@ -233,7 +245,7 @@ func getMetaIdList(schemaId int32) []MetaId {
 	var query = metaQuery{}
 
 	query.setTable(metaIdTableName)
-	query.addFilter(metaSchemaId, "=", strconv.Itoa(int(schemaId)))
+	query.addFilter(metaSchemaId, "=", schemaId)
 	err := query.run()
 	if err != nil {
 		panic(err)

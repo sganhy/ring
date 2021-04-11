@@ -8,7 +8,6 @@ import (
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
-	"ring/schema/dmlstatement"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -17,7 +16,6 @@ import (
 	"ring/schema/tabletype"
 	"runtime"
 	"strings"
-	"syscall"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -31,15 +29,13 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 	runtime.LockOSThread()
-	computerName, _ := syscall.ComputerName()
-	fmt.Printf("==> %s", computerName)
+
 	rcd := new(data.Record)
 	frame := test4()
 	fmt.Println(frame.File)
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-	var ss = schema.GetSchemaByName("@meta")
 
-	ss.LogWarn(1, 544, "hello", "World")
+	//ss.LogWarn(1, 544, "hello", "World")
 
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)
@@ -48,10 +44,6 @@ func main() {
 	fmt.Println(zone)
 
 	fmt.Println(test3())
-
-	ttttt := schema.GetTable()
-	fmt.Println(ttttt.GetName())
-	fmt.Println(ttttt.GetDml(dmlstatement.Insert))
 
 	rcd.SetRecordType("@log")
 	rcd.SetField("entry_time", "2014-04-15T21:14:55")
@@ -82,7 +74,7 @@ func main() {
 	*/
 	br.RetrieveRecords()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 10)
 	runtime.GC()
 
 	//time.Sleep(time.Second * 10)

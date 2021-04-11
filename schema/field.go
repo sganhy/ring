@@ -42,6 +42,7 @@ const defaultBooleanValue = "false"
 const defaultDateTimeValue = "0001-01-01T00:00:00.000"
 const defaultShortDateTimeValue = "0001-01-01"
 const defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
+const postgreSqlByteConstraint = " CHECK (%s >= '-128' AND %s <= 127)"
 const maxInt08 = "127"
 const maxInt16 = "32767"
 const maxInt32 = "2147483647"
@@ -54,6 +55,16 @@ const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
 const defaultShortTimeFormat = "2006-01-02"         // rfc3339
 const unknownFieldDataType = ""
 const invalidValue = ""
+const primaryKeyFieldName = "id"
+const primaryKeyDesc = "Internal record number"
+const errorInvalidValueType = "Invalid value type"
+const errorInvalidDateTimeFormat = "Invalid Date/Time format"
+
+// max length for a varchar
+const postgreVarcharMaxSize = 65535
+const mySqlVarcharMaxSize = 65535
+const sqliteVarcharMaxSize = 1000000000
+const fieldToStringFormat = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",
@@ -699,17 +710,6 @@ var sqlKeyWords = map[string]bool{
 	"ZONE":                             true,
 }
 
-const primaryKeyFieldName = "id"
-const primaryKeyDesc = "Internal record number"
-const errorInvalidValueType = "Invalid value type"
-const errorInvalidDateTimeFormat = "Invalid Date/Time format"
-
-// max length for a varchar
-const postgreVarcharMaxSize = 65535
-const mySqlVarcharMaxSize = 65535
-const sqliteVarcharMaxSize = 1000000000
-const fieldToStringFormat = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
-
 func init() {
 	//64
 	defaultPrimaryKeyInt64 = new(Field)
@@ -740,7 +740,7 @@ func (field *Field) Init(id int32, name string, description string, fieldType fi
 	field.multilingual = multilingual
 	field.caseSensitive = caseSensitive
 	//!!! at the end only
-	field.defaultValue = getDefaultValue(defaultValue, field)
+	field.defaultValue = field.getDefaultValue(defaultValue)
 }
 
 //******************************
@@ -879,13 +879,13 @@ func (field *Field) GetValue(value string) (string, error) {
 		}
 		return value, nil
 	case fieldtype.Long, fieldtype.Int, fieldtype.Short, fieldtype.Byte:
-		if isValidInteger(value, field.fieldType) == true {
+		if field.isValidInteger(value) == true {
 			return value, nil
 		}
 		break
 	case fieldtype.DateTime, fieldtype.ShortDateTime, fieldtype.LongDateTime:
 		// must support iso-8601
-		t, e := getDateTimeIso8601(value)
+		t, e := field.getDateTimeIso8601(value)
 		if e == nil {
 			return field.GetDateTimeString(*t), nil
 		}
@@ -906,7 +906,7 @@ func (field *Field) IsValueValid(value string) bool {
 	}
 	switch field.fieldType {
 	case fieldtype.Long, fieldtype.Int, fieldtype.Short, fieldtype.Byte:
-		return isValidInteger(value, field.fieldType)
+		return field.isValidInteger(value)
 	case fieldtype.Double:
 		_, err := strconv.ParseFloat(value, 64)
 		return err == nil
@@ -916,7 +916,7 @@ func (field *Field) IsValueValid(value string) bool {
 	case fieldtype.String:
 		return true
 	case fieldtype.DateTime, fieldtype.LongDateTime, fieldtype.ShortDateTime:
-		_, err := getDateTimeIso8601(value)
+		_, err := field.getDateTimeIso8601(value)
 		return err == nil
 	case fieldtype.Boolean:
 		return strings.ToLower(value) == "true" || strings.ToLower(value) == "false"
@@ -989,36 +989,36 @@ func (field *Field) GetParameterValue(value string) interface{} {
 }
 
 func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
-	return getPhysicalName(provider, field.name)
+	return field.getPhysicalName(provider)
 }
 
 //******************************
 // private methods
 //******************************
-func getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
+func (field *Field) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
 	switch provider {
 	case databaseprovider.PostgreSql:
 		var modifyFieldName = false
-		if strings.Contains(name, "@") == true {
+		if strings.Contains(field.name, "@") == true {
 			modifyFieldName = true
 		} else {
-			if _, ok := sqlKeyWords[strings.ToUpper(name)]; ok {
+			if _, ok := sqlKeyWords[strings.ToUpper(field.name)]; ok {
 				modifyFieldName = true
 			}
 		}
 		if modifyFieldName == true {
 			var sb strings.Builder
-			sb.Grow(len(name) + 2)
+			sb.Grow(len(field.name) + 2)
 			sb.WriteString(doubleQuotes)
-			sb.WriteString(name)
+			sb.WriteString(field.name)
 			sb.WriteString(doubleQuotes)
 			return sb.String()
 		}
 	}
-	return name
+	return field.name
 }
 
-func isValidInteger(value string, fieldType fieldtype.FieldType) bool {
+func (field *Field) isValidInteger(value string) bool {
 	var sign, size = 0, len(value)
 	for _, v := range value {
 		if v >= '0' && v <= '9' {
@@ -1032,46 +1032,46 @@ func isValidInteger(value string, fieldType fieldtype.FieldType) bool {
 		}
 	}
 	// it's a digit
-	switch fieldType {
+	switch field.fieldType {
 	case fieldtype.Long:
-		return int64Condition(value, size, sign)
+		return field.int64Condition(value, size, sign)
 	case fieldtype.Int:
-		return int32Condition(value, size, sign)
+		return field.int32Condition(value, size, sign)
 	case fieldtype.Short:
-		return int16Condition(value, size, sign)
+		return field.int16Condition(value, size, sign)
 	case fieldtype.Byte:
-		return int08Condition(value, size, sign)
+		return field.int08Condition(value, size, sign)
 	}
 	return false
 }
 
-func int08Condition(value string, size int, sign int) bool {
+func (field *Field) int08Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 3) ||
 		(size == 3 && value <= maxInt08 && sign > 0) ||
 		(size == 3 && sign == -1) ||
 		(size == 4 && value <= minInt08 && sign == -1)
 }
 
-func int16Condition(value string, size int, sign int) bool {
+func (field *Field) int16Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 5) ||
 		(size == 5 && value <= maxInt16 && sign > 0) ||
 		(size == 5 && sign == -1) ||
 		(size == 6 && value <= minInt16 && sign == -1)
 }
-func int32Condition(value string, size int, sign int) bool {
+func (field *Field) int32Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 10) ||
 		(size == 10 && value <= maxInt32 && sign > 0) ||
 		(size == 10 && sign == -1) ||
 		(size == 11 && value <= minInt32 && sign == -1)
 }
-func int64Condition(value string, size int, sign int) bool {
+func (field *Field) int64Condition(value string, size int, sign int) bool {
 	return (size > 0 && size < 19) ||
 		(size == 19 && value <= maxInt64 && sign > 0) ||
 		(size == 19 && sign == -1) ||
 		(size == 20 && value <= minInt64 && sign == -1)
 }
 
-func getDefaultValue(defaultValue string, field *Field) string {
+func (field *Field) getDefaultValue(defaultValue string) string {
 	var newDefaultValue = ""
 	if field.IsValueValid(defaultValue) == true {
 		newDefaultValue = defaultValue
@@ -1097,8 +1097,8 @@ func getDefaultValue(defaultValue string, field *Field) string {
 	return newDefaultValue
 }
 
-func getDefaultPrimaryKey(fieldType fieldtype.FieldType) *Field {
-	switch fieldType {
+func (field *Field) getDefaultPrimaryKey() *Field {
+	switch field.fieldType {
 	case fieldtype.Int:
 		return defaultPrimaryKeyInt32
 	case fieldtype.Long:
@@ -1140,10 +1140,15 @@ func (field *Field) getSqlConstraint(provider databaseprovider.DatabaseProvider,
 	if tableType != tabletype.Business && field.notNull == true {
 		result = "NOT " + result
 	}
+
+	if field.fieldType == fieldtype.Byte && provider == databaseprovider.PostgreSql {
+		var physicalName = field.getPhysicalName(provider)
+		result += fmt.Sprintf(postgreSqlByteConstraint, physicalName, physicalName)
+	}
 	return result
 }
 
-func getDateTimeIso8601(value string) (*time.Time, error) {
+func (field *Field) getDateTimeIso8601(value string) (*time.Time, error) {
 	var t time.Time
 	var e error
 

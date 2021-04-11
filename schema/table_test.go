@@ -227,7 +227,7 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	if position != fieldNotFound {
 		t.Errorf("Table.GetFieldIndexByName() ==> field '111' index cannot be found!!")
 	}
-	table = getMetaTable(databaseprovider.MySql, metaSchemaName)
+	table = table.getMetaTable(databaseprovider.MySql, metaSchemaName)
 	position = table.GetFieldIndexByName("description")
 	if position != 2 {
 		t.Errorf("Table.GetFieldIndexByName() ==> field '%s' index should be equal to 2", field.name)
@@ -458,15 +458,25 @@ func Test__Table__ToMeta(t *testing.T) {
 }
 
 func Test__Table__GetDml(t *testing.T) {
-	table := getLogTable(databaseprovider.PostgreSql, "information_schema")
+	tbl := new(Table)
+	//======================
+	//==== testing PostgreSql
+	//======================
+	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
 	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,\"method\",line_number,message,description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
 	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be " + exepectedSQl)
+		t.Errorf("Table.GetDml() ==> query must be equal to" + exepectedSQl)
+	}
+	table = tbl.getMetaTable(databaseprovider.PostgreSql, "information_schema")
+	exepectedSQl = "INSERT INTO information_schema.\"@meta\" (id,schema_id,object_type,reference_id,data_type,flags,\"name\",description,\"value\",active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
+	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to" + exepectedSQl)
 	}
 }
 
 func Test__Table__GetQueryResult(t *testing.T) {
-	table := getMetaTable(databaseprovider.PostgreSql, "information_schema")
+	tbl := new(Table)
+	table := tbl.getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	var result []interface{}
 	var resultPtr []interface{}
 	var id int32 = 5

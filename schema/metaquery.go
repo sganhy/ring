@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-const filterSeparator = " AND "
-
 type metaQuery struct {
 	schema           *Schema
 	table            *Table
@@ -25,6 +23,10 @@ type metaQuery struct {
 	ddl              bool
 	dml              bool
 }
+
+const filterSeparator = " AND "
+
+var metaQueryLogger = new(log)
 
 func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	var sqlQuery = query.query
@@ -111,20 +113,26 @@ func (query *metaQuery) getField(fieldName string) *Field {
 	return nil
 }
 
-func (query *metaQuery) addFilter(fieldName string, operator string, operand string) {
+func (query *metaQuery) addFilter(fieldName string, operator string, operand interface{}) {
 	var field = query.getField(fieldName)
 	if field != nil {
 		if query.filters == nil {
 			query.filters = make([]string, 0, 2)
 		}
+		if query.params == nil {
+			params := make([]interface{}, 0, 2)
+			query.params = &params
+		}
+		var variable = query.table.getVariable(query.table.provider, len(*query.params))
 		var queryFilter strings.Builder
 		// add single cote for varchar values
-		queryFilter.Grow(len(field.name) + len(operator) + 8 + len(operand))
+		queryFilter.Grow(len(field.name) + len(operator) + 8 + len(variable))
 		queryFilter.WriteString(field.GetPhysicalName(query.table.provider))
 		queryFilter.WriteString(" ")
 		queryFilter.WriteString(operator)
 		queryFilter.WriteString(" ")
-		queryFilter.WriteString(operand)
+		queryFilter.WriteString(variable)
+		*query.params = append(*query.params, operand)
 		query.filters = append(query.filters, queryFilter.String())
 	}
 }

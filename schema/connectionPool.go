@@ -31,11 +31,9 @@ const connStringApplicationName = " application_name"
 func newConnectionPool(schemaId int32, connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) (*connectionPool, error) {
 	var newPool = new(connectionPool)
 	currentPoolId++
-	newPool.connectionString = newPool.getConnectionString(connectionString)
+	newPool.connectionString = newPool.getConnectionString(schemaId, connectionString)
 	newPool.provider = provider
 	newPool.poolId = currentPoolId
-
-	fmt.Println(newPool.connectionString)
 
 	// add login
 	if maxConnection > initialMaxValue {
@@ -93,9 +91,9 @@ func (pool *connectionPool) put(conn *connection) {
 	conn.close()
 }
 
-func (pool *connectionPool) getConnectionString(connectionString string) string {
+func (pool *connectionPool) getConnectionString(schemaid int32, connectionString string) string {
 	if !strings.Contains(strings.ToLower(connectionString), connStringApplicationName) {
-		return connectionString + connStringApplicationName + "=Ring"
+		return connectionString + connStringApplicationName + fmt.Sprintf("=Ring(%d)", schemaid)
 	}
 	return connectionString
 }

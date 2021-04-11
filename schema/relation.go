@@ -10,6 +10,7 @@ type Relation struct {
 	id                  int32
 	name                string
 	description         string
+	physicalName        string
 	inverseRelationName string
 	mtmTable            string
 	toTable             *Table
@@ -31,6 +32,12 @@ func (relation *Relation) Init(id int32, name string, description string, invers
 	relation.notNull = notNull
 	relation.baseline = baseline
 	relation.active = active
+	// at the end ==>
+	if toTable != nil {
+		relation.physicalName = relation.getPhysicalName(toTable.provider)
+	} else {
+		relation.physicalName = name
+	}
 }
 
 //******************************
@@ -76,6 +83,10 @@ func (relation *Relation) IsActive() bool {
 	return relation.active
 }
 
+func (relation *Relation) GetPhysicalName() string {
+	return relation.physicalName
+}
+
 //******************************
 // public methods
 //******************************
@@ -97,10 +108,6 @@ func (relation *Relation) GetInverseRelation() *Relation {
 		return relation.toTable.GetRelationByName(relation.inverseRelationName)
 	}
 	return nil
-}
-
-func (relation *Relation) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
-	return getPhysicalName(provider, relation.name)
 }
 
 func (relation *Relation) ToMeta(tableId int32) *Meta {
@@ -142,4 +149,10 @@ func (relation *Relation) Clone() *Relation {
 		relation.inverseRelationName, relation.mtmTable, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
 		relation.active)
 	return newRelation
+}
+
+func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
+	var field = new(Field)
+	field.name = relation.name
+	return field.GetPhysicalName(provider)
 }

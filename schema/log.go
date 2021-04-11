@@ -1,7 +1,7 @@
 package schema
 
 import (
-	"fmt"
+	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -52,14 +52,14 @@ func initLogger(schema *Schema, table *Table) {
 //******************************
 func (logger *log) setMethod(method string) {
 	if len(method) > 80 {
-		logger.method = method[0:79]
+		logger.method = method[0:80]
 	} else {
 		logger.method = method
 	}
 }
 func (logger *log) setMessage(message string) {
 	if len(message) > 255 {
-		logger.message = message[0:254]
+		logger.message = message[0:255]
 	} else {
 		logger.message = message
 	}
@@ -67,11 +67,20 @@ func (logger *log) setMessage(message string) {
 func (logger *log) setEntryTime() {
 	// truncate preserving the monotonic clock
 	currTime := time.Now().UTC()
-	nano := currTime.Nanosecond()
-	logger.entryTime = currTime.Add(time.Nanosecond * time.Duration(-1*nano))
+	nano := currTime.Nanosecond() % 1000000
+	// truncate nano seconds
+	logger.entryTime = currTime.Add(time.Duration(-nano) * time.Nanosecond)
 }
 func (logger *log) setCallSite(callSite string) {
+	if len(callSite) > 255 {
+		logger.callSite = callSite[0:255]
+	} else {
+		logger.callSite = callSite
+	}
+}
 
+func (logger *log) setThreadId(threadId int) {
+	logger.threadId = int32(threadId & 2147483647)
 }
 
 //******************************
@@ -110,7 +119,7 @@ func (logger *log) info(id int32, jobId int64, messages ...interface{}) {
 //go:noinline
 func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages ...interface{}) {
 	var message = logger.getMessage(messages)
-	var description = ""
+	var description = logger.getDescription(messages)
 
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
@@ -120,8 +129,7 @@ func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages .
 		// connection pool not yet ready
 		go logger.writeDeferToDb(newLog)
 	} else {
-		// print to console (sysctl)
-
+		//fmt.Println(message)
 	}
 }
 
@@ -135,9 +143,8 @@ func (logger *log) writeToDb(newLog *log) {
 
 func (logger *log) writeDeferToDb(newLog *log) {
 	// max try 10 times
-	for i := 0; i < 10; i++ {
-		fmt.Println("time.Sleep(1 * time.Second)")
-		time.Sleep(1 * time.Second)
+	for i := 0; i < 5; i++ {
+		time.Sleep(2 * time.Second)
 		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
 			logger.writeToDb(newLog)
 			break
@@ -153,7 +160,7 @@ func (logger *log) getNewLog(id int32, level int8, schemaId int32, jobId int64, 
 	newLog.id = id
 	newLog.setEntryTime()
 	newLog.level = level
-	newLog.threadId = 0
+	newLog.setThreadId(logger.getThreadId())
 	newLog.callSite = callsite
 	newLog.jobId = jobId
 	newLog.setMethod(method)
@@ -181,6 +188,10 @@ func (logger *log) getCallerInfo() (string, string, int32) {
 	return callSite, method, int32(frame.Line)
 }
 
+func (logger *log) getThreadId() int {
+	return os.Getpid()
+}
+
 // get method name
 func (logger *log) getFrame(skipFrames int) runtime.Frame {
 	// We need the frame at index skipFrames+2, since we never want runtime.Callers and getFrame
@@ -205,28 +216,23 @@ func (logger *log) getFrame(skipFrames int) runtime.Frame {
 }
 
 func (logger *log) getMessage(params []interface{}) string {
-	fmt.Println("(logger *log) getMessage")
 	if len(params) > 0 {
-		fmt.Println("(logger *log) getMessage 1 ")
 		param := params[0]
-		fmt.Println("(logger *log) getMessage 2 ")
-		fmt.Printf("%T", param)
 		switch param.(type) {
 		case string:
-			fmt.Println("(logger *log) getMessage 3 ")
 			return param.(string)
 		}
+	}
+	return ""
+}
 
-		/*
-			for _, arg := range params {
-				switch arg.(type) {
-				case string:
-					fmt.Println(arg.(string))
-					return arg.(string)
-				}
-			}
-		*/
-
+func (logger *log) getDescription(params []interface{}) string {
+	if len(params) > 1 {
+		param := params[1]
+		switch param.(type) {
+		case string:
+			return param.(string)
+		}
 	}
 	return ""
 }

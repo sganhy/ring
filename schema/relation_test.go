@@ -12,8 +12,9 @@ import (
 
 // INIT
 func Test__Relation__Init(t *testing.T) {
+	table := new(Table)
 	elemr0 := Relation{}
-	elemt := getMetaTable(databaseprovider.PostgreSql, metaSchemaName)
+	elemt := table.getMetaTable(databaseprovider.PostgreSql, metaSchemaName)
 	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
 
 	if elemr0.GetName() != "arel test" {

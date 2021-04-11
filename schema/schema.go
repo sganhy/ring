@@ -16,6 +16,7 @@ type Schema struct {
 	tables          map[string]*Table
 	tablesById      map[int32]*Table
 	tableSpaces     []*Tablespace
+	sequences       []*Sequence
 	connections     *connectionPool
 	source          sourcetype.SourceType
 	logger          *log
@@ -42,6 +43,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.description = description
 	schema.source = sourcetype.NativeDataBase // default value
 	schema.logger = logger
+	schema.sequences = make([]*Sequence, 0, 1)
 
 	if disablePool == false {
 		logger.Init(id, false)
@@ -161,6 +163,11 @@ func (schema *Schema) LogDebug(id int32, jobId int64, messages ...interface{}) {
 		schema.logger.debug(id, jobId, messages...)
 	}
 }
+func (schema *Schema) LogFatal(id int32, jobId int64, messages ...interface{}) {
+	if schema.logger != nil {
+		schema.logger.fatal(id, jobId, messages...)
+	}
+}
 
 func (schema *Schema) Execute(queries []Query) error {
 	var connection = schema.connections.get()
@@ -223,25 +230,37 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 	}
 	return name
 }
-func getCurrentJobId() int64 {
-	return currentJobId
-}
 
-func getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
+func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
+	var table = new(Table)
 	var tables []Table
 	var tablespaces []Tablespace
-	var schema = Schema{}
+	var result = new(Schema)
 	var language = Language{}
-	var physicalName = schema.getPhysicalName(provider, metaSchemaName)
+	var sequence = new(Sequence)
+	var physicalName = result.getPhysicalName(provider, metaSchemaName)
+
+	var metaTable = table.getMetaTable(provider, physicalName)
+	var metaIdTable = table.getMetaIdTable(provider, physicalName)
+	var metaLogTable = table.getLogTable(provider, physicalName)
 
 	language.Init("EN")
+
 	//TODO meta schema name hardcoded ("information_schema")
-	tables = append(tables, *getMetaTable(provider, physicalName))
-	tables = append(tables, *getMetaIdTable(provider, physicalName))
-	tables = append(tables, *getLogTable(provider, physicalName))
+	tables = append(tables, *metaTable)
+	tables = append(tables, *metaIdTable)
+	tables = append(tables, *metaLogTable)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	schema.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+	result.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
 		disablePool)
-	return &schema
+
+	// add sequences
+	result.sequences = append(result.sequences, sequence.getJobId())
+
+	return result
+}
+
+func getCurrentJobId() int64 {
+	return currentJobId
 }

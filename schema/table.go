@@ -80,6 +80,8 @@ const postGreParameterName = "$"
 const postGreTableCatalog = "pg_tables"
 const postGreCreateOptions = " WITH (autovacuum_enabled=false) "
 
+var tableLogger = new(log)
+
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
 	subject string, cached bool, readonly bool, baseline bool, active bool) {
@@ -516,11 +518,6 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	return result
 }
 
-//4debug
-func GetTable() *Table {
-	return getLogTable(databaseprovider.PostgreSql, "information_schema")
-}
-
 //******************************
 // private methods
 //******************************
@@ -548,12 +545,14 @@ func (table *Table) addVariables(query *strings.Builder) {
 func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
 	var physicalName = physicalSchemaName + "."
 	var tableName = table.name
+	var field = new(Field)
 
 	if table.tableType == tabletype.Business {
 		// add prefix
 		tableName = "t_" + tableName
 	}
-	physicalName += getPhysicalName(provider, tableName)
+	field.name = tableName
+	physicalName += field.getPhysicalName(provider)
 	return physicalName
 }
 
@@ -580,7 +579,7 @@ func (table *Table) getFieldList(provider databaseprovider.DatabaseProvider) str
 }
 
 // return -1 if not found
-func findPrimaryKey(fields []Field) (int, *Field) {
+func (table *Table) findPrimaryKey(fields []Field) (int, *Field) {
 	var invalidFieldCount = 0
 	for i := 0; i < len(fields); i++ {
 		if fields[i].IsValid() == false {
@@ -671,13 +670,14 @@ func (table *Table) sortIndexes() {
 func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 	// copy slice -- func make([]T, len, cap) []T
 	if fields != nil {
+		var field = new(Field)
 		var capacity = len(fields)
 		var primaryKey *Field = nil
 		var primaryKeyIndex = -1
 
 		// missing primaryKey ? for business tables
 		if tableType == tabletype.Business {
-			primaryKeyIndex, primaryKey = findPrimaryKey(fields)
+			primaryKeyIndex, primaryKey = table.findPrimaryKey(fields)
 			if primaryKey == nil {
 				capacity++
 			}
@@ -689,7 +689,8 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// add missing primary key
 		if primaryKey == nil && tableType == tabletype.Business {
-			var defaultPrimaryKey = getDefaultPrimaryKey(fieldtype.Long)
+			field.fieldType = fieldtype.Long
+			var defaultPrimaryKey = field.getDefaultPrimaryKey()
 			table.fields = append(table.fields, defaultPrimaryKey)         // sorted by name
 			table.fieldsById = append(table.fieldsById, defaultPrimaryKey) // sorted by id
 		}
@@ -698,7 +699,8 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// replace primary key
 		if tableType == tabletype.Business && primaryKey != nil {
-			var defaultPrimaryKey = getDefaultPrimaryKey(primaryKey.fieldType)
+			field.fieldType = primaryKey.fieldType
+			var defaultPrimaryKey = field.getDefaultPrimaryKey()
 			table.fields[primaryKeyIndex] = defaultPrimaryKey
 			table.fieldsById[primaryKeyIndex] = defaultPrimaryKey
 		}
@@ -751,6 +753,17 @@ func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) 
 	table.sqlCapacity += capacity
 }
 
+// used by metaquery to generate variable value
+func (table *Table) getVariable(provider databaseprovider.DatabaseProvider, index int) string {
+	result := ""
+	switch provider {
+	case databaseprovider.PostgreSql:
+		result = postGreParameterName
+		result += strconv.Itoa(index + 1)
+	}
+	return result
+}
+
 func (table *Table) getCreateOptions() string {
 	switch table.provider {
 	case databaseprovider.PostgreSql:
@@ -767,6 +780,7 @@ func (table *Table) create(schema *Schema) bool {
 	metaQuery.schema = schema
 	metaQuery.table = table
 	err := metaQuery.create()
+	tableLogger.info(17, getCurrentJobId(), "Create Table", fmt.Sprintf("id=%d; name=%s", table.id, table.name))
 
 	if err == nil {
 		for i := 0; i < len(table.indexes); i++ {
@@ -808,11 +822,11 @@ func (table *Table) exists(schema *Schema) bool {
 	return result
 }
 
-func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields = make([]Field, 0, 16)
 	var relations = make([]Relation, 0, 16)
 	var indexes = make([]Index, 0, 16)
-	var table = new(Table)
+	var result = new(Table)
 
 	// physical_name is built later
 	//  == metaId table
@@ -838,17 +852,17 @@ func getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalNa
 
 	indexes = append(indexes, uk)
 
-	table.Init(int32(tabletype.MetaId), metaIdTableName, "", fields, relations, indexes,
+	result.Init(int32(tabletype.MetaId), metaIdTableName, "", fields, relations, indexes,
 		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, provider, "", true, false, true, true)
 
-	return table
+	return result
 }
 
-func getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index
-	var table = new(Table)
+	var result = new(Table)
 	var uk Index
 
 	// physical_name is built later
@@ -895,17 +909,17 @@ func getMetaTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName
 
 	indexes = append(indexes, uk)
 
-	table.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes,
+	result.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes,
 		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, provider, "", true, false, true, true)
 
-	return table
+	return result
 }
 
-func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index
-	var table = new(Table)
+	var result = new(Table)
 
 	// physical_name is built later
 	//  == metaId table
@@ -926,7 +940,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	entryTime.Init(2129, metaLogEntryTime, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
 	levelId.Init(2131, metaLogLevelId, "", fieldtype.Short, 0, "", true, false, true, false, true)
 	schemaId.Init(2137, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
-	threadId.Init(2143, metaLogThreadId, "", fieldtype.Long, 0, "", true, false, true, false, true)
+	threadId.Init(2143, metaLogThreadId, "", fieldtype.Int, 0, "", true, false, true, false, true)
 	callSite.Init(2161, metaLogCallSite, "", fieldtype.String, 255, "", true, false, true, false, true)
 	jobId.Init(2203, metaLogJobId, "", fieldtype.Long, 0, "", true, false, true, false, true)
 	method.Init(2213, metaLogMethod, "", fieldtype.String, 80, "", true, false, true, false, true)
@@ -946,7 +960,7 @@ func getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName 
 	fields = append(fields, description) //10
 	fields = append(fields, lineNumber)  //11
 
-	table.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
+	result.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.MetaId, provider, "", false, false, true, true)
-	return table
+	return result
 }
