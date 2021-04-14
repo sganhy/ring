@@ -73,6 +73,7 @@ func main() {
 		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
 	*/
 	br.RetrieveRecords()
+	br.Clear()
 
 	time.Sleep(time.Second * 10)
 	runtime.GC()

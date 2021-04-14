@@ -57,10 +57,10 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		// 4> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
 			// generate meta tables first before getSchemaIdList()
-			generateMetaTables(metaSchema)
+			createMetaTables(metaSchema)
 
 			// generate meta sequences
-			generateMetaSequences(metaSchema)
+			createMetaSequences(metaSchema)
 
 			var schemas = getSchemaIdList()
 			fmt.Println("schema id ==> ")
@@ -173,18 +173,29 @@ func addSchema(schema *Schema) {
 //******************************
 // private methods
 //******************************
-func generateMetaTables(schema *Schema) {
+func createMetaTables(schema *Schema) {
+	// first create log table
+	logTable := schema.GetTableByName(metaLogTableName)
+	if logTable.exists(schema) == false {
+		err := logTable.create(schema)
+		if err != nil {
+			panic(err)
+		}
+	}
 	for _, table := range schema.tables {
 		if table.exists(schema) == false {
-			table.create(schema)
+			err := table.create(schema)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
 
-func generateMetaSequences(schema *Schema) {
-	for _, table := range schema.tables {
-		if table.exists(schema) == false {
-			table.create(schema)
+func createMetaSequences(schema *Schema) {
+	for _, sequence := range schema.sequences {
+		if sequence.exists(schema) == false {
+			sequence.create(schema)
 		}
 	}
 }

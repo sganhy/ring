@@ -21,7 +21,19 @@ type Record struct {
 	recordType *schema.Table
 }
 
-// schemaName.TableName
+//******************************
+// getters / setters
+//******************************
+func (record *Record) setTable(table *schema.Table) {
+	record.recordType = table
+}
+func (record *Record) getTable() *schema.Table {
+	return record.recordType
+}
+
+//******************************
+// public methods
+//******************************
 func (record *Record) SetRecordType(recordType string) error {
 	record.recordType = schema.GetTableBySchemaName(recordType)
 	if record.recordType != nil {
@@ -135,7 +147,7 @@ func (record *Record) Copy() *Record {
 	return result
 }
 
-func (record *Record) String() string {
+func (record Record) String() string {
 	if record.recordType == nil {
 		return ""
 	}
@@ -165,6 +177,14 @@ func (record *Record) String() string {
 //******************************
 // private methods
 //******************************
+func (record *Record) setField(id int64) {
+	if record.recordType != nil {
+		var index = record.recordType.GetPrimaryKeyIndex()
+		if index >= 0 {
+			record.data[index] = strconv.FormatInt(id, 10)
+		}
+	}
+}
 
 func (record *Record) setRecordType(recordType *schema.Table) {
 	// is it the same ?

@@ -11,10 +11,6 @@ import (
 	"strings"
 )
 
-const metaMaxInt32 int64 = 2147483647
-const metaMaxInt8 int64 = 127
-const metaIndexSeparator string = ";"
-
 type Meta struct {
 	id          int32
 	dataType    int32
@@ -29,17 +25,20 @@ type Meta struct {
 }
 
 const (
-	bitPositionFieldCaseSensitive   uint8 = 2
-	bitPositionFieldNotNull         uint8 = 3
-	bitPositionFieldMultilingual    uint8 = 4
-	bitPositionIndexBitmap          uint8 = 9
-	bitPositionIndexUnique          uint8 = 10
-	bitPositionEntityBaseline       uint8 = 14
-	bitPositionFirstPositionSize    uint8 = 17 // max value bit pos for field=16 !!!
-	bitPositionFirstPositionRelType uint8 = 18 // max value bit pos for field=17 !!!
-	bitPositionRelationNotNull      uint8 = 4  // max value bit pos for relation =17 !!!
-	bitPositionTableCached          uint8 = 9
-	bitPositionTableReadonly        uint8 = 10
+	bitPositionFieldCaseSensitive   uint8  = 2
+	bitPositionFieldNotNull         uint8  = 3
+	bitPositionFieldMultilingual    uint8  = 4
+	bitPositionIndexBitmap          uint8  = 9
+	bitPositionIndexUnique          uint8  = 10
+	bitPositionEntityBaseline       uint8  = 14
+	bitPositionFirstPositionSize    uint8  = 17 // max value bit pos for field=16 !!!
+	bitPositionFirstPositionRelType uint8  = 18 // max value bit pos for field=17 !!!
+	bitPositionRelationNotNull      uint8  = 4  // max value bit pos for relation =17 !!!
+	bitPositionTableCached          uint8  = 9
+	bitPositionTableReadonly        uint8  = 10
+	metaMaxInt32                    int64  = 2147483647
+	metaMaxInt8                     int64  = 127
+	metaIndexSeparator              string = ";"
 )
 
 //******************************

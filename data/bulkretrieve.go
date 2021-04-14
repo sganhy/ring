@@ -15,6 +15,8 @@ type BulkRetrieve struct {
 }
 
 const errorInvalidIndex = "This BulkRetrieve does not have a level #%d to retrieve results for."
+const errorInvalidPageSize = "An invalid page size was detected (page size should be greater than 0)."
+const errorInvalidPageNumber = "An invalid page number was detected (page number should be greater or equal than 1)."
 const errorIndexAlreadyExist = "ThisIndex %d already exist."
 const errorUnknownSchema = "Unknown schema."
 const errorInvalidObject = "Object type '%s' is not valid."
@@ -122,4 +124,44 @@ func (bulkRetrieve *BulkRetrieve) GetRecordList(entryIndex int) List {
 	}
 	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
 	return *query.result
+}
+
+func (bulkRetrieve *BulkRetrieve) Clear() {
+	if bulkRetrieve.data != nil {
+		// re-slicing
+		*bulkRetrieve.data = (*bulkRetrieve.data)[:0]
+	}
+}
+
+func (bulkRetrieve *BulkRetrieve) SetPage(entryIndex int, pageNumber int, pageSize int) error {
+	queryCount := len(*bulkRetrieve.data)
+	if entryIndex < 0 || entryIndex >= queryCount {
+		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
+	}
+	if pageSize <= 0 {
+		return errors.New(errorInvalidPageSize)
+	}
+	if pageNumber <= 0 {
+		return errors.New(errorInvalidPageNumber)
+	}
+	return nil
+}
+
+func (bulkRetrieve *BulkRetrieve) SetRootById(objectName string, id int64) error {
+	table := bulkRetrieve.currentSchema.GetTableByName(objectName)
+	if table == nil {
+		return errors.New(fmt.Sprintf(errorInvalidObject, objectName))
+	}
+	rcd := new(Record)
+	rcd.setTable(table)
+	rcd.setField(id)
+	return bulkRetrieve.SetRoot(rcd)
+}
+
+func (bulkRetrieve *BulkRetrieve) SetRoot(rootRecord *Record) error {
+	table := rootRecord.getTable()
+	if table == nil {
+		return errors.New(errorUnknownRecordType)
+	}
+	return nil
 }

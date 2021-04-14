@@ -22,9 +22,11 @@ type Index struct {
 	active      bool
 }
 
-const createIndexPostGreSql string = "%s%s INDEX %s ON %s USING btree (%s) %s"
-const createPkPostGreSql string = "ALTER TABLE %s ADD CONSTRAINT \"%s\" PRIMARY KEY (%s) %s"
-const physicalIndexPrefix string = "idx_"
+const (
+	createIndexPostGreSql string = "%s%s INDEX %s ON %s USING btree (%s) %s"
+	createPkPostGreSql    string = "ALTER TABLE %s ADD CONSTRAINT \"%s\" PRIMARY KEY (%s) %s"
+	physicalIndexPrefix   string = "idx_"
+)
 
 func (index *Index) Init(id int32, name string, description string, fields []string, tableId int32, bitmap bool,
 	unique bool, baseline bool, active bool) {
@@ -232,7 +234,7 @@ func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 	return ""
 }
 
-func (index *Index) create(schema *Schema) bool {
+func (index *Index) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var table = schema.GetTableById(index.tableId)
 
@@ -241,20 +243,19 @@ func (index *Index) create(schema *Schema) bool {
 	metaQuery.table = table
 
 	err := metaQuery.create()
-	return err == nil
+	return err
 }
 
-func (index *Index) createAsPk(schema *Schema) bool {
+func (index *Index) createAsPk(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var table = schema.GetTableById(index.tableId)
 
 	metaQuery.query = index.getDdlCreatePk(table, schema.findTablespace(nil, index))
-	fmt.Println(metaQuery.query)
 	metaQuery.schema = schema
 	metaQuery.table = table
 
 	err := metaQuery.create()
-	return err == nil
+	return err
 }
 
 func padLeft(input string, padString string, repeat int) string {

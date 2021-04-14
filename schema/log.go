@@ -1,18 +1,12 @@
 package schema
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"strings"
 	"time"
 )
-
-const levelError int8 = 1
-const levelInfo int8 = 2
-const levelWarning int8 = 3
-const levelFatal int8 = 4
-const levelDebug int8 = 5
-const tagLoggerFrame = "schema.(*Schema).Log"
 
 type log struct {
 	id          int32     // {param 1}
@@ -29,19 +23,32 @@ type log struct {
 	active      bool      // none
 }
 
-var logSchema *Schema
-var logTable *Table
+const (
+	levelError     int8   = 1
+	levelInfo      int8   = 2
+	levelWarning   int8   = 3
+	levelFatal     int8   = 4
+	levelDebug     int8   = 5
+	tagLoggerFrame string = "schema.(*Schema).Log"
+)
 
-func (logger *log) Init(schemaId int32, disableDbLogs bool) {
+var (
+	logSchema *Schema
+	logTable  *Table
+)
+
+func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 	logger.schemaId = schemaId
 	logger.active = !disableDbLogs
+	// get metas chema to fetch current JobId
 	if schemaId == 0 {
-		logger.info(0, getCurrentJobId(), "Baseline Logger Initialized", "")
+		logger.info(0, jobId, "Baseline Logger Initialized", "")
 	} else {
-		logger.info(0, getCurrentJobId(), "Logger Initialized", "")
+		logger.info(0, jobId, "Logger Initialized", "")
 	}
 }
 
+// get @log table + its schema
 func initLogger(schema *Schema, table *Table) {
 	logSchema = schema
 	logTable = table
@@ -124,11 +131,14 @@ func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages .
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
 	if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
+		fmt.Println("logger.writeToDb(newLog) ==> " + description)
 		logger.writeToDb(newLog)
 	} else if logger.active == true {
 		// connection pool not yet ready
+		fmt.Println("go logger.writeDeferToDb(newLog) ==> " + description)
 		go logger.writeDeferToDb(newLog)
 	} else {
+		fmt.Println(" not log ==> " + description)
 		//fmt.Println(message)
 	}
 }
@@ -143,7 +153,9 @@ func (logger *log) writeToDb(newLog *log) {
 
 func (logger *log) writeDeferToDb(newLog *log) {
 	// max try 10 times
+
 	for i := 0; i < 5; i++ {
+		fmt.Println("writeDeferToDb")
 		time.Sleep(2 * time.Second)
 		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
 			logger.writeToDb(newLog)

@@ -125,9 +125,10 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 		}
 		var variable = query.table.getVariable(query.table.provider, len(*query.params))
 		var queryFilter strings.Builder
+		var fieldPhysicalName = field.GetPhysicalName(query.table.provider)
 		// add single cote for varchar values
-		queryFilter.Grow(len(field.name) + len(operator) + 8 + len(variable))
-		queryFilter.WriteString(field.GetPhysicalName(query.table.provider))
+		queryFilter.Grow(len(fieldPhysicalName) + len(operator) + 8 + len(variable))
+		queryFilter.WriteString(fieldPhysicalName)
 		queryFilter.WriteString(" ")
 		queryFilter.WriteString(operator)
 		queryFilter.WriteString(" ")

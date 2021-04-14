@@ -32,39 +32,39 @@ type Field struct {
 	active        bool
 }
 
+const (
+	defaultNumberValue         string = "0"
+	doubleQuotes               string = "\""
+	defaultBooleanValue        string = "false"
+	defaultDateTimeValue       string = "0001-01-01T00:00:00.000"
+	defaultShortDateTimeValue  string = "0001-01-01"
+	defaultLongDateTimeValue   string = "0001-01-01T00:00:00Z"
+	postgreSqlByteConstraint   string = " CHECK (%s >= '-128' AND %s <= 127)"
+	maxInt08                   string = "127"
+	maxInt16                   string = "32767"
+	maxInt32                   string = "2147483647"
+	maxInt64                   string = "9223372036854775807"
+	minInt08                   string = "-128"
+	minInt16                   string = "-32768"
+	minInt32                   string = "-2147483648"
+	minInt64                   string = "-9223372036854775808"
+	defaultTimeFormat          string = "2006-01-02T15:04:05.000" // rfc3339
+	defaultShortTimeFormat     string = "2006-01-02"              // rfc3339
+	unknownFieldDataType       string = ""
+	invalidValue               string = ""
+	primaryKeyFieldName        string = "id"
+	primaryKeyDesc             string = "Internal record number"
+	errorInvalidValueType      string = "Invalid value type"
+	errorInvalidDateTimeFormat string = "Invalid Date/Time format"
+	postgreVarcharMaxSize      uint16 = 65535
+	mySqlVarcharMaxSize        uint16 = 65535
+	sqliteVarcharMaxSize       int64  = 1000000000
+	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
+)
+
 var defaultPrimaryKeyInt64 *Field = nil
 var defaultPrimaryKeyInt32 *Field = nil
 var defaultPrimaryKeyInt16 *Field = nil
-
-const defaultNumberValue = "0"
-const doubleQuotes = "\""
-const defaultBooleanValue = "false"
-const defaultDateTimeValue = "0001-01-01T00:00:00.000"
-const defaultShortDateTimeValue = "0001-01-01"
-const defaultLongDateTimeValue = "0001-01-01T00:00:00Z"
-const postgreSqlByteConstraint = " CHECK (%s >= '-128' AND %s <= 127)"
-const maxInt08 = "127"
-const maxInt16 = "32767"
-const maxInt32 = "2147483647"
-const maxInt64 = "9223372036854775807"
-const minInt08 = "-128"
-const minInt16 = "-32768"
-const minInt32 = "-2147483648"
-const minInt64 = "-9223372036854775808"
-const defaultTimeFormat = "2006-01-02T15:04:05.000" // rfc3339
-const defaultShortTimeFormat = "2006-01-02"         // rfc3339
-const unknownFieldDataType = ""
-const invalidValue = ""
-const primaryKeyFieldName = "id"
-const primaryKeyDesc = "Internal record number"
-const errorInvalidValueType = "Invalid value type"
-const errorInvalidDateTimeFormat = "Invalid Date/Time format"
-
-// max length for a varchar
-const postgreVarcharMaxSize = 65535
-const mySqlVarcharMaxSize = 65535
-const sqliteVarcharMaxSize = 1000000000
-const fieldToStringFormat = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",

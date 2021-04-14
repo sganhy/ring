@@ -11,11 +11,14 @@ type Sequence struct {
 	active      bool
 }
 
-const sequenceJobId = "@job_id"
-const sequenceLexId = "@lexicon_id"
+const (
+	minJobIdValue     int64  = 101007
+	maxJobIdValue     int64  = 9223372036854775807
+	sequenceJobIdName string = "@job_id"
+	sequenceLexId     string = "@lexicon_id"
+)
 
-func (sequence *Sequence) Init(id int32, name string, description string, schemaId int32,
-	maxValue int64) {
+func (sequence *Sequence) Init(id int32, name string, description string, schemaId int32, maxValue int64) {
 	sequence.id = id
 	sequence.name = name
 	sequence.description = description
@@ -58,18 +61,20 @@ func (sequence *Sequence) GetValue() *CacheId {
 //******************************
 // private methods
 //******************************
-func (sequence *Sequence) getJobId() *Sequence {
-	result := new(Sequence)
-	result.id = 0
-	result.name = sequenceJobId
-	result.description = "Unique job number assigned based on auto-numbering definition"
-	result.baseline = true
-	result.active = true
-	result.value = new(CacheId)
-	result.value.CurrentId = 101007
-	return result
+func (sequence *Sequence) exists(schema *Schema) bool {
+	return true
 }
 
-func (sequence *Sequence) exist() bool {
-	return true
+func (sequence *Sequence) create(schema *Schema) error {
+	return nil
+}
+
+func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
+	// id int32, name string, description string, schemaId int32, maxValue int64
+	result := new(Sequence)
+	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue)
+	result.active = true
+	result.baseline = true
+	result.value.CurrentId = minJobIdValue
+	return result
 }

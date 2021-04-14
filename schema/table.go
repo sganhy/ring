@@ -40,47 +40,47 @@ type Table struct {
 	//internal readonly LexiconIndex[] LexiconIndexes;
 }
 
-const createTableSql string = "CREATE TABLE %s (\n%s\n)"
-const fieldNotFound int = -1
-const relationNotFound int = -1
-const metaSchemaId string = "schema_id"
-const metaId string = "id"
-const metaObjectType string = "object_type"
-const metaDataType string = "data_type"
-const metaDescription string = "description"
-const metaValue string = "value"
-const metaReferenceId string = "reference_id"
-const metaName string = "name"
-const metaFlags string = "flags"
-const metaIdTableName string = "@meta_id"
-const metaTableName string = "@meta"
-const metaLogTableName string = "@log"
-const metaLogId string = "id"
-const metaLogEntryTime string = "entry_time"
-const metaLogLevelId string = "level_id"
-const metaLogThreadId string = "thread_id"
-const metaLogCallSite string = "call_site"
-const metaLogJobId string = "job_id"
-const metaLogMethod string = "method"
-const metaLoglineNumber string = "line_number"
-const metaLogMessage string = "message"
-const fieldListSeparator string = ","
-const dmlInsertValues = ") VALUES ("
-const dmlInsertStart = " ("
-const dmlInsertEnd = ")"
-const dqlSpace = " "
-const ddlSpace = " "
-const dmlSpace = " "
-const dqlSelect = "SELECT "
-const dqlFrom = " FROM "
-const dqlWhere = " WHERE "
-const dqlOrderBy = " ORDER BY "
-const maxNumberOfColumn = 65535
-const postGreParameterName = "$"
-const postGreTableCatalog = "pg_tables"
-const postGreCreateOptions = " WITH (autovacuum_enabled=false) "
-
-var tableLogger = new(log)
+const (
+	createTableSql       string = "CREATE TABLE %s (\n%s\n)"
+	ddlSpace             string = " "
+	dmlInsertEnd         string = ")"
+	dmlInsertStart       string = " ("
+	dmlInsertValues      string = ") VALUES ("
+	dmlSpace             string = " "
+	dqlFrom              string = " FROM "
+	dqlOrderBy           string = " ORDER BY "
+	dqlSelect            string = "SELECT "
+	dqlSpace             string = " "
+	dqlWhere             string = " WHERE "
+	fieldListSeparator   string = ","
+	fieldNotFound        int    = -1
+	maxNumberOfColumn    int    = 65535
+	metaDataType         string = "data_type"
+	metaDescription      string = "description"
+	metaFlags            string = "flags"
+	metaId               string = "id"
+	metaIdTableName      string = "@meta_id"
+	metaLogCallSite      string = "call_site"
+	metaLogEntryTime     string = "entry_time"
+	metaLogId            string = "id"
+	metaLogJobId         string = "job_id"
+	metaLogLevelId       string = "level_id"
+	metaLoglineNumber    string = "line_number"
+	metaLogMessage       string = "message"
+	metaLogMethod        string = "method"
+	metaLogTableName     string = "@log"
+	metaLogThreadId      string = "thread_id"
+	metaName             string = "name"
+	metaObjectType       string = "object_type"
+	metaReferenceId      string = "reference_id"
+	metaSchemaId         string = "schema_id"
+	metaTableName        string = "@meta"
+	metaValue            string = "value"
+	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
+	postGreParameterName string = "$"
+	postGreTableCatalog  string = "pg_tables"
+	relationNotFound     int    = -1
+)
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
@@ -518,6 +518,13 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	return result
 }
 
+func (table *Table) GetPrimaryKeyIndex() int {
+	if table.tableType == tabletype.Business {
+		return int(table.mapper[0])
+	}
+	return -1
+}
+
 //******************************
 // private methods
 //******************************
@@ -530,7 +537,6 @@ func (table *Table) addVariables(query *strings.Builder) {
 		index = 1
 		break
 	}
-	//TODO improve performance ==> switch outside of loop
 	for i := 0; i < len(table.fields); i++ {
 		query.WriteString(variableName)
 		query.WriteString(strconv.Itoa(index))
@@ -563,6 +569,11 @@ func (table *Table) getSchemaName() string {
 		return table.physicalName[:index]
 	}
 	return ""
+}
+
+func (table *Table) getLogger() *log {
+	var schema = GetSchemaById(table.schemaId)
+	return schema.logger
 }
 
 func (table *Table) getFieldList(provider databaseprovider.DatabaseProvider) string {
@@ -772,28 +783,40 @@ func (table *Table) getCreateOptions() string {
 	return ""
 }
 
-func (table *Table) create(schema *Schema) bool {
+func (table *Table) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var firstUniqueIndex = true
+	var logger = table.getLogger()
+	var creationTime = time.Now()
+	var err error
 
 	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil))
 	metaQuery.schema = schema
 	metaQuery.table = table
-	err := metaQuery.create()
-	tableLogger.info(17, getCurrentJobId(), "Create Table", fmt.Sprintf("id=%d; name=%s", table.id, table.name))
+	err = metaQuery.create()
 
-	if err == nil {
+	if err != nil {
+		logger.error(-1, 0, err)
+		return err
+	} else {
 		for i := 0; i < len(table.indexes); i++ {
 			index := table.indexes[i]
 			if firstUniqueIndex == true && index.unique {
-				index.createAsPk(schema)
+				err = index.createAsPk(schema)
 				firstUniqueIndex = false
 			} else {
-				index.create(schema)
+				err = index.create(schema)
+			}
+			if err != nil {
+				return err
 			}
 		}
 	}
-	return err == nil
+
+	duration := time.Now().Sub(creationTime)
+	logger.info(17, 0, "Create Table", fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
+		table.id, table.physicalName, int(duration.Seconds()*1000)))
+	return err
 }
 
 // is table exists in the specified schema
@@ -884,7 +907,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	schemaId.Init(1013, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	objectType.Init(1019, metaObjectType, "", fieldtype.Byte, 0, "", true, true, true, false, true)
 	referenceId.Init(1021, metaReferenceId, "", fieldtype.Int, 0, "", true, true, true, false, true)
-	dataType.Init(1031, metaDataType, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	dataType.Init(1031, metaDataType, "", fieldtype.Int, 0, "", true, true, true, false, true)
 
 	flags.Init(1039, metaFlags, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	name.Init(1061, metaName, "", fieldtype.String, 30, "", true, true, true, false, true)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/sourcetype"
+	"strings"
 	"time"
 )
 
@@ -25,18 +26,18 @@ type Schema struct {
 	active          bool
 }
 
-const metaSchemaName string = "@meta"
-const metaSchemaDescription string = "@meta"
-const postgreSqlSchema string = "rpg_sheet"
-
-var currentJobId int64 = 101007 // min job id
+const (
+	metaSchemaName        string = "@meta"
+	metaSchemaDescription string = "@meta"
+	postgreSqlSchema      string = "rpg_sheet"
+)
 
 func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
 	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
 	active bool, disablePool bool) {
 
 	logger := new(log)
-	schema.id = id
+	schema.id = id // first assign the id !!!!
 	schema.poolInitialized = false
 	schema.name = name
 	schema.physicalName = physicalName
@@ -46,7 +47,8 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.sequences = make([]*Sequence, 0, 1)
 
 	if disablePool == false {
-		logger.Init(id, false)
+		// load sequences ==> before log init
+		logger.Init(id, schema.getMetaJobId(), false)
 		connectionPool, err := newConnectionPool(id, connectionString, provider, minConnection, maxConnection)
 		if connectionPool != nil {
 			schema.connections = connectionPool
@@ -54,7 +56,8 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 			panic(err)
 		}
 	} else {
-		logger.Init(id, true)
+		// load sequences ==> before log init
+		logger.Init(id, 0, true)
 		schema.connections = new(connectionPool)
 		schema.connections.connectionString = connectionString
 		schema.connections.provider = provider
@@ -63,6 +66,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.poolInitialized = true
 	schema.loadTables(tables)
 	schema.loadTablespaces(tableSpaces)
+	schema.loadSequences()
 	schema.baseline = baseline
 	schema.active = active
 }
@@ -107,6 +111,22 @@ func (schema *Schema) GetTableByName(name string) *Table {
 	}
 	return nil
 }
+func (schema *Schema) GetSequenceByName(name string) *Sequence {
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(schema.sequences) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
+		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
+		indexerCompare = strings.Compare(name, schema.sequences[indexerMiddle].name)
+		if indexerCompare == 0 {
+			return schema.sequences[indexerMiddle]
+		} else if indexerCompare > 0 {
+			indexerLeft = indexerMiddle + 1
+		} else {
+			indexerRight = indexerMiddle - 1
+		}
+	}
+	return nil
+}
 func (schema *Schema) GetTableById(id int32) *Table {
 	if val, ok := schema.tablesById[id]; ok {
 		return val
@@ -143,29 +163,29 @@ func (schema *Schema) Clone() *Schema {
 	return newSchema
 }
 
-func (schema *Schema) LogWarn(id int32, jobId int64, messages ...interface{}) {
+func (schema *Schema) LogWarn(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.warn(id, jobId, messages...)
+		schema.logger.warn(id, 0, messages...)
 	}
 }
-func (schema *Schema) LogInfo(id int32, jobId int64, messages ...interface{}) {
+func (schema *Schema) LogInfo(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.info(id, jobId, messages...)
+		schema.logger.info(id, 0, messages...)
 	}
 }
-func (schema *Schema) LogError(id int32, jobId int64, messages ...interface{}) {
+func (schema *Schema) LogError(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.error(id, jobId, messages...)
+		schema.logger.error(id, 0, messages...)
 	}
 }
-func (schema *Schema) LogDebug(id int32, jobId int64, messages ...interface{}) {
+func (schema *Schema) LogDebug(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.debug(id, jobId, messages...)
+		schema.logger.debug(id, 0, messages...)
 	}
 }
-func (schema *Schema) LogFatal(id int32, jobId int64, messages ...interface{}) {
+func (schema *Schema) LogFatal(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.fatal(id, jobId, messages...)
+		schema.logger.fatal(id, 0, messages...)
 	}
 }
 
@@ -223,6 +243,14 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 	}
 }
 
+func (schema *Schema) loadSequences() {
+	var seq = Sequence{}
+	if schema.name == metaSchemaName {
+
+	}
+	schema.sequences = append(schema.sequences, seq.getJobId(schema.id))
+}
+
 func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
 	//
 	if name == metaSchemaName {
@@ -237,7 +265,6 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var tablespaces []Tablespace
 	var result = new(Schema)
 	var language = Language{}
-	var sequence = new(Sequence)
 	var physicalName = result.getPhysicalName(provider, metaSchemaName)
 
 	var metaTable = table.getMetaTable(provider, physicalName)
@@ -255,12 +282,13 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	result.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
-	// add sequences
-	result.sequences = append(result.sequences, sequence.getJobId())
-
 	return result
 }
 
-func getCurrentJobId() int64 {
-	return currentJobId
+func (schema *Schema) getMetaJobId() int64 {
+	if schema.id > 0 {
+		//metaSchema := GetSchemaById(0)
+
+	}
+	return minJobIdValue
 }
