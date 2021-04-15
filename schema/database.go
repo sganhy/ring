@@ -8,19 +8,23 @@ import (
 	"strings"
 )
 
-// sorted by id
-var schemaById *[]*Schema          // assign firstly --> sorted by Id
-var schemaIndexByName *[]*database // assign secondly  --> sorted by name
-var defaultSchemaName string
-var databaseInitialized = false
-
-const schemaSeparator = "."
-const initialSliceCount = 16
-
 type database struct {
 	name  string
 	index int
 }
+
+const (
+	schemaSeparator   string = "."
+	initialSliceCount int    = 16
+)
+
+// sorted by id
+var (
+	schemaById          *[]*Schema   // assign firstly --> sorted by Id
+	schemaIndexByName   *[]*database // assign secondly  --> sorted by name
+	defaultSchemaName   string
+	databaseInitialized = false
+)
 
 func init() {
 	lstById := make([]*Schema, 0, initialSliceCount)
@@ -28,6 +32,10 @@ func init() {
 	lstByName := make([]*database, 0, initialSliceCount)
 	schemaIndexByName = &lstByName
 }
+
+//******************************
+// getters
+//******************************
 
 //******************************
 // public methods
@@ -63,8 +71,6 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 			createMetaSequences(metaSchema)
 
 			var schemas = getSchemaIdList()
-			fmt.Println("schema id ==> ")
-
 			for i := 0; i < len(schemas); i++ {
 				loadSchemaById(schemas[i])
 			}
@@ -138,6 +144,9 @@ func GetSchemaById(id int32) *Schema {
 	return nil
 }
 
+//******************************
+// private methods
+//******************************
 // not thread safe !! slow!! Used only during initialization
 func addSchema(schema *Schema) {
 	metaDb := new(database)
@@ -170,9 +179,6 @@ func addSchema(schema *Schema) {
 	}
 }
 
-//******************************
-// private methods
-//******************************
 func createMetaTables(schema *Schema) {
 	// first create log table
 	logTable := schema.GetTableByName(metaLogTableName)
@@ -183,7 +189,7 @@ func createMetaTables(schema *Schema) {
 		}
 	}
 	for _, table := range schema.tables {
-		if table.exists(schema) == false {
+		if table.id != logTable.id && table.exists(schema) == false {
 			err := table.create(schema)
 			if err != nil {
 				panic(err)
@@ -197,6 +203,9 @@ func createMetaSequences(schema *Schema) {
 		if sequence.exists(schema) == false {
 			sequence.create(schema)
 		}
+		if sequence.value.exists(entitytype.Sequence, sequence.id, schema.id) == false {
+			sequence.value.create(entitytype.Sequence, sequence.id, schema.id)
+		}
 	}
 }
 
@@ -207,7 +216,7 @@ func getSchemaIdList() []Schema {
 
 	// generate meta query
 	query.setTable(metaTableName)
-	query.addFilter(metaObjectType, "=", int8(entitytype.Schema))
+	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Schema))
 	err := query.run()
 
 	if err != nil {
@@ -243,7 +252,7 @@ func getMetaList(schemaId int32) []Meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)
-	query.addFilter(metaSchemaId, "=", schemaId)
+	query.addFilter(metaSchemaId, operatorEqual, schemaId)
 	err := query.run()
 	if err != nil {
 		panic(err)
@@ -256,7 +265,7 @@ func getMetaIdList(schemaId int32) []MetaId {
 	var query = metaQuery{}
 
 	query.setTable(metaIdTableName)
-	query.addFilter(metaSchemaId, "=", schemaId)
+	query.addFilter(metaSchemaId, operatorEqual, schemaId)
 	err := query.run()
 	if err != nil {
 		panic(err)

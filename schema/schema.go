@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/sourcetype"
+	"sort"
 	"strings"
 	"time"
 )
@@ -48,7 +49,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 
 	if disablePool == false {
 		// load sequences ==> before log init
-		logger.Init(id, schema.getMetaJobId(), false)
+		logger.Init(id, false)
 		connectionPool, err := newConnectionPool(id, connectionString, provider, minConnection, maxConnection)
 		if connectionPool != nil {
 			schema.connections = connectionPool
@@ -57,7 +58,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 		}
 	} else {
 		// load sequences ==> before log init
-		logger.Init(id, 0, true)
+		logger.Init(id, true)
 		schema.connections = new(connectionPool)
 		schema.connections.connectionString = connectionString
 		schema.connections.provider = provider
@@ -72,7 +73,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (schema *Schema) GetId() int32 {
 	return schema.id
@@ -96,6 +97,10 @@ func (schema *Schema) IsBaseline() bool {
 
 func (schema *Schema) IsActive() bool {
 	return schema.active
+}
+
+func (schema *Schema) GetPhysicalName() string {
+	return schema.physicalName
 }
 
 func (schema *Schema) GetLanguage() *Language {
@@ -231,7 +236,7 @@ func (schema *Schema) loadTables(tables []Table) {
 
 	for i := 0; i < len(tables); i++ {
 		table := tables[i]
-		schema.tables[table.name] = &table
+		schema.tables[table.GetName()] = &table
 		schema.tablesById[table.id] = &table
 	}
 }
@@ -246,9 +251,17 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 func (schema *Schema) loadSequences() {
 	var seq = Sequence{}
 	if schema.name == metaSchemaName {
-
+		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
+		schema.sequences = append(schema.sequences, seq.getLanguageId(schema.id))
+		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
+		schema.sequences = append(schema.sequences, seq.getIndexId(schema.id))
+		schema.sequences = append(schema.sequences, seq.getEventId(schema.id))
 	}
 	schema.sequences = append(schema.sequences, seq.getJobId(schema.id))
+	// sort sequences
+	sort.Slice(schema.sequences, func(i, j int) bool {
+		return schema.sequences[i].name < schema.sequences[j].name
+	})
 }
 
 func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
@@ -285,10 +298,10 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	return result
 }
 
-func (schema *Schema) getMetaJobId() int64 {
+func (schema *Schema) getJobId() int64 {
 	if schema.id > 0 {
 		//metaSchema := GetSchemaById(0)
 
 	}
-	return minJobIdValue
+	return 101007
 }

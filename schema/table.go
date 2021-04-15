@@ -765,9 +765,9 @@ func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) 
 }
 
 // used by metaquery to generate variable value
-func (table *Table) getVariable(provider databaseprovider.DatabaseProvider, index int) string {
+func (table *Table) getVariableName(index int) string {
 	result := ""
-	switch provider {
+	switch table.provider {
 	case databaseprovider.PostgreSql:
 		result = postGreParameterName
 		result += strconv.Itoa(index + 1)
@@ -791,8 +791,9 @@ func (table *Table) create(schema *Schema) error {
 	var err error
 
 	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil))
-	metaQuery.schema = schema
-	metaQuery.table = table
+	metaQuery.setSchema(schema.name)
+	metaQuery.setTable(table.name)
+
 	err = metaQuery.create()
 
 	if err != nil {
@@ -828,19 +829,21 @@ func (table *Table) exists(schema *Schema) bool {
 		query.WriteString(dqlFrom)
 		query.WriteString(postGreTableCatalog)
 		query.WriteString(dqlWhere)
-		query.WriteString(" upper(tablename) = upper('")
-		query.WriteString(table.name)
-		query.WriteString("')")
+		query.WriteString(" upper(tablename)=")
+		query.WriteString(table.getVariableName(0))
 		query.WriteString(filterSeparator)
-		query.WriteString(" upper(schemaname) = upper('")
-		query.WriteString(table.getSchemaName())
-		query.WriteString("')")
+		query.WriteString(" upper(schemaname)=")
+		query.WriteString(table.getVariableName(1))
+
 	}
+
 	// execute query
 	var metaQuery = metaQuery{}
 	metaQuery.query = query.String()
-	metaQuery.schema = schema
-	metaQuery.table = table
+	metaQuery.setSchema(schema.name)
+	metaQuery.setTable(table.name)
+	metaQuery.addParam(strings.ToUpper(table.name))
+	metaQuery.addParam(strings.ToUpper(schema.GetPhysicalName()))
 	result, _ := metaQuery.exists()
 	return result
 }

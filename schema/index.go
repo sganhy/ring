@@ -239,11 +239,10 @@ func (index *Index) create(schema *Schema) error {
 	var table = schema.GetTableById(index.tableId)
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(table, nil))
-	metaQuery.schema = schema
-	metaQuery.table = table
+	metaQuery.setSchema(schema.GetName())
+	metaQuery.setTable(table.GetName())
 
-	err := metaQuery.create()
-	return err
+	return metaQuery.create()
 }
 
 func (index *Index) createAsPk(schema *Schema) error {
@@ -251,11 +250,10 @@ func (index *Index) createAsPk(schema *Schema) error {
 	var table = schema.GetTableById(index.tableId)
 
 	metaQuery.query = index.getDdlCreatePk(table, schema.findTablespace(nil, index))
-	metaQuery.schema = schema
-	metaQuery.table = table
+	metaQuery.setSchema(schema.name)
+	metaQuery.setTable(table.GetName())
 
-	err := metaQuery.create()
-	return err
+	return metaQuery.create()
 }
 
 func padLeft(input string, padString string, repeat int) string {

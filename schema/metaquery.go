@@ -24,10 +24,43 @@ type metaQuery struct {
 	dml              bool
 }
 
-const filterSeparator = " AND "
+const (
+	filterSeparator string = " AND "
+	operatorEqual   string = "="
+)
 
-var metaQueryLogger = new(log)
+var (
+	metaQueryLogger = new(log)
+)
 
+func (query *metaQuery) Init(schema *Schema, table *Table) {
+	query.table = table
+	query.schema = schema
+}
+
+//******************************
+// getters and setters
+//******************************
+func (query *metaQuery) setSchema(schemaName string) {
+	query.schema = GetSchemaByName(schemaName)
+	query.resultCount = new(int)
+}
+
+func (query *metaQuery) setTable(tableName string) {
+	if query.schema == nil {
+		// get meta schema by default
+		query.schema = GetSchemaByName(metaSchemaName)
+	}
+	query.table = query.schema.GetTableByName(tableName)
+	query.resultCount = new(int)
+	if query.table == nil {
+		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.name)
+	}
+}
+
+//******************************
+// public methods
+//******************************
 func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	var sqlQuery = query.query
 	var columns []interface{}
@@ -43,9 +76,11 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 		fmt.Println(sqlResult)
 		return err
 	} else if query.dml == true {
+		fmt.Println(sqlQuery)
 		rows, err = query.executeQuery(dbConnection, sqlQuery)
 		return err
 	} else {
+		fmt.Println(sqlQuery)
 		rows, err = query.executeQuery(dbConnection, sqlQuery)
 	}
 
@@ -80,23 +115,9 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	return nil
 }
 
-func (query *metaQuery) setSchema(schemaName string) {
-	query.schema = GetSchemaByName(schemaName)
-	query.resultCount = new(int)
-}
-
-func (query *metaQuery) setTable(tableName string) {
-	if query.schema == nil {
-		// get meta schema by default
-		query.schema = GetSchemaByName(metaSchemaName)
-	}
-	query.table = query.schema.GetTableByName(tableName)
-	query.resultCount = new(int)
-	if query.table == nil {
-		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.name)
-	}
-}
-
+//******************************
+// private methods
+//******************************
 func (query *metaQuery) getResult(index int, fieldName string) string {
 	if query.result != nil && index >= 0 && index < len(*query.result) {
 		var record = (*query.result)[index].([]string)
@@ -113,6 +134,14 @@ func (query *metaQuery) getField(fieldName string) *Field {
 	return nil
 }
 
+func (query *metaQuery) addParam(param interface{}) {
+	if query.params == nil {
+		params := make([]interface{}, 0, 2)
+		query.params = &params
+	}
+	*query.params = append(*query.params, param)
+}
+
 func (query *metaQuery) addFilter(fieldName string, operator string, operand interface{}) {
 	var field = query.getField(fieldName)
 	if field != nil {
@@ -123,15 +152,13 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 			params := make([]interface{}, 0, 2)
 			query.params = &params
 		}
-		var variable = query.table.getVariable(query.table.provider, len(*query.params))
+		var variable = query.table.getVariableName(len(*query.params))
 		var queryFilter strings.Builder
 		var fieldPhysicalName = field.GetPhysicalName(query.table.provider)
 		// add single cote for varchar values
 		queryFilter.Grow(len(fieldPhysicalName) + len(operator) + 8 + len(variable))
 		queryFilter.WriteString(fieldPhysicalName)
-		queryFilter.WriteString(" ")
 		queryFilter.WriteString(operator)
-		queryFilter.WriteString(" ")
 		queryFilter.WriteString(variable)
 		*query.params = append(*query.params, operand)
 		query.filters = append(query.filters, queryFilter.String())
@@ -174,7 +201,7 @@ func (query *metaQuery) getQuery() string {
 }
 
 func (query *metaQuery) getMetaList() []Meta {
-	if query.table != nil && query.table.name == metaTableName {
+	if query.table != nil && query.table.GetName() == metaTableName {
 
 		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
@@ -229,7 +256,7 @@ func (query *metaQuery) getMetaList() []Meta {
 }
 
 func (query *metaQuery) getMetaIdList() []MetaId {
-	if query.table != nil && query.table.name == metaIdTableName {
+	if query.table != nil && query.table.GetName() == metaIdTableName {
 
 		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
@@ -283,6 +310,10 @@ func (query *metaQuery) run() error {
 
 // is table exist
 func (query *metaQuery) exists() (bool, error) {
+	// sql empty ?
+	if query.query == "" {
+		query.query = query.getQuery()
+	}
 	query.returnResultList = false
 	queries := make([]Query, 1, 1)
 	query.ddl = false
@@ -370,5 +401,31 @@ func (query *metaQuery) insertLog(newLog *log) error {
 	params[8] = newLog.lineNumber
 	params[9] = newLog.message
 	params[10] = newLog.description
+	return query.insert(params)
+}
+
+func (query *metaQuery) insertMeta(meta *Meta, schemaId int32) error {
+	var params []interface{}
+	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
+	params[0] = meta.id
+	params[1] = schemaId
+	params[2] = meta.objectType
+	params[3] = meta.refId
+	params[4] = meta.dataType
+	params[5] = meta.flags
+	params[6] = meta.name
+	params[7] = meta.description
+	params[8] = meta.value
+	params[9] = meta.enabled
+	return query.insert(params)
+}
+
+func (query *metaQuery) insertMetaId(metaid *MetaId) error {
+	var params []interface{}
+	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
+	params[0] = metaid.id
+	params[1] = metaid.schemaId
+	params[2] = metaid.objectType
+	params[3] = metaid.value
 	return query.insert(params)
 }
