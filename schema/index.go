@@ -24,7 +24,7 @@ type Index struct {
 
 const (
 	createIndexPostGreSql string = "%s%s INDEX %s ON %s USING btree (%s) %s"
-	createPkPostGreSql    string = "ALTER TABLE %s ADD CONSTRAINT \"%s\" PRIMARY KEY (%s) %s"
+	createPkPostGreSql    string = "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s"
 	physicalIndexPrefix   string = "idx_"
 )
 
@@ -182,6 +182,9 @@ func (index *Index) getDdlDrop(table *Table) string {
 func (index *Index) getDdlCreatePk(table *Table, tablespace *Tablespace) string {
 	var sqlTablespace = ""
 	var fields strings.Builder
+	field := Field{}
+	field.name = index.name
+	var indexName = field.GetPhysicalName(table.provider)
 
 	if tablespace != nil {
 		sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
@@ -198,7 +201,8 @@ func (index *Index) getDdlCreatePk(table *Table, tablespace *Tablespace) string 
 	}
 	switch table.provider {
 	case databaseprovider.PostgreSql, databaseprovider.MySql:
-		return strings.Trim(fmt.Sprintf(createPkPostGreSql, table.GetPhysicalName(), index.name,
+		// ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s
+		return strings.Trim(fmt.Sprintf(createPkPostGreSql, table.GetPhysicalName(), indexName,
 			fields.String(), sqlTablespace), ddlSpace)
 	}
 	return ""

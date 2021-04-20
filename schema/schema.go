@@ -46,20 +46,16 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.source = sourcetype.NativeDataBase // default value
 	schema.logger = logger
 	schema.sequences = make([]*Sequence, 0, 1)
+	schema.connections = new(connectionPool)
 
 	if disablePool == false {
 		// load sequences ==> before log init
 		logger.Init(id, false)
-		connectionPool, err := newConnectionPool(id, connectionString, provider, minConnection, maxConnection)
-		if connectionPool != nil {
-			schema.connections = connectionPool
-		} else {
-			panic(err)
-		}
+		schema.connections.Init(id, connectionString, provider, minConnection, maxConnection)
 	} else {
 		// load sequences ==> before log init
 		logger.Init(id, true)
-		schema.connections = new(connectionPool)
+		// instanciate connectionPool without database connections
 		schema.connections.connectionString = connectionString
 		schema.connections.provider = provider
 		schema.connections.poolId = -1 // disable connection pool
@@ -105,6 +101,10 @@ func (schema *Schema) GetPhysicalName() string {
 
 func (schema *Schema) GetLanguage() *Language {
 	return &schema.language
+}
+
+func (schema *Schema) GetDatabaseProvider() databaseprovider.DatabaseProvider {
+	return schema.connections.provider
 }
 
 //******************************
@@ -298,10 +298,10 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	return result
 }
 
-func (schema *Schema) getJobId() int64 {
-	if schema.id > 0 {
-		//metaSchema := GetSchemaById(0)
-
+func (schema *Schema) getJobIdValue() int64 {
+	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
+	if jobIdSequence != nil {
+		return jobIdSequence.value.CurrentId
 	}
-	return 101007
+	return -1
 }

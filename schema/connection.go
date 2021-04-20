@@ -16,28 +16,38 @@ type connection struct {
 	dbConnection *sql.DB
 }
 
-func newConnection(id int, connectionString string, provider string) (*connection, error) {
+func (conn *connection) Init(id int, connectionString string, provider string) error {
 	db, err := sql.Open(provider, connectionString)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = db.Ping()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	newConnection := new(connection)
-	newConnection.id = id
-	newConnection.creation = time.Now()
-	newConnection.lastGet = time.Now()
-	newConnection.lastPing = time.Now()
-	newConnection.closed = false
-	newConnection.dbConnection = db
+	conn.id = id
+	conn.creation = time.Now()
+	conn.lastGet = time.Now()
+	conn.lastPing = time.Now()
+	conn.closed = false
+	conn.dbConnection = db
 
-	runtime.SetFinalizer(newConnection, finalizer)
-	return newConnection, nil
+	runtime.SetFinalizer(conn, finalizer)
+	return nil
 }
 
+//******************************
+// getters and setters
+//******************************
+
+//******************************
+// public methods
+//******************************
+
+//******************************
+// private methods
+//******************************
 func (conn *connection) close() {
 	if conn.dbConnection != nil && conn.closed == false {
 		// close properly connection

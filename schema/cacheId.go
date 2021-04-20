@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
 	"sync"
 )
@@ -10,10 +11,30 @@ type CacheId struct {
 	MaxId         int64
 	ReservedRange int32
 	syncRoot      sync.Mutex
+	query         *metaQuery
+}
+
+var (
+	cacheIdSchema *Schema
+	cacheIdTable  *Table
+	cacheIdQuery  string
+)
+
+func InitCacheId(schema *Schema, table *Table) {
+	cacheIdSchema = schema
+	cacheIdTable = table
+	field := table.GetFieldByName(metaValue)
+	fields := []*Field{field}
+	cacheIdQuery = table.GetDml(dmlstatement.UpdateReturning, fields)
+}
+
+func (cacheId *CacheId) Init() {
+	cacheId.query = new(metaQuery)
+	cacheId.query.Init(cacheIdSchema, cacheIdTable)
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 
 //******************************
@@ -53,5 +74,15 @@ func (cacheId *CacheId) exists(objectType entitytype.EntityType, objectId int32,
 	query.addFilter(metaObjectType, operatorEqual, int8(objectType))
 
 	result, _ := query.exists()
+	return result
+}
+
+func (cacheId *CacheId) getNewId(objectType entitytype.EntityType, objectId int32, schemaId int32) bool {
+
+	cacheId.query.addFilter(metaId, operatorEqual, objectId)
+	cacheId.query.addFilter(metaSchemaId, operatorEqual, schemaId)
+	cacheId.query.addFilter(metaObjectType, operatorEqual, int8(objectType))
+
+	result, _ := cacheId.query.exists()
 	return result
 }

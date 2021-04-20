@@ -5,4 +5,5 @@ rem go mod vendor
 go test -v ./schema
 go test -v ./data
 
+
 pause

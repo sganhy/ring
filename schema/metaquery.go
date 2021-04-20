@@ -341,7 +341,7 @@ func (query *metaQuery) create() error {
 // insert log
 func (query *metaQuery) insert(params []interface{}) error {
 	query.returnResultList = false
-	query.query = query.table.GetDml(dmlstatement.Insert)
+	query.query = query.table.GetDml(dmlstatement.Insert, nil)
 	query.params = &params
 	query.dml = true
 	query.ddl = false

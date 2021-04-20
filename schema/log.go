@@ -45,7 +45,7 @@ func (logger *log) Init(schemaId int32, disableDbLogs bool) {
 		logger.info(0, 0, "Baseline Logger Initialized", "")
 	} else {
 		metaSchema := GetSchemaById(0)
-		jobId := metaSchema.getJobId()
+		jobId := metaSchema.getJobIdValue()
 		logger.info(0, jobId, "Logger Initialized", "")
 	}
 }
@@ -140,7 +140,8 @@ func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages .
 		fmt.Println("go logger.writeDeferToDb(newLog) ==> " + description)
 		go logger.writeDeferToDb(newLog)
 	} else {
-		fmt.Println(" not log ==> " + description)
+		//do nothing?
+		//fmt.Println(" not log ==> " + description)
 		//fmt.Println(message)
 	}
 }
@@ -160,7 +161,7 @@ func (logger *log) writeDeferToDb(newLog *log) {
 		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
-			newLog.jobId = metaSchema.getJobId()
+			newLog.jobId = metaSchema.getJobIdValue()
 			logger.writeToDb(newLog)
 			break
 		}

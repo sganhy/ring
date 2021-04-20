@@ -62,7 +62,10 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		// 3> initialize logger
 		initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
 
-		// 4> load other schemas if connection pool is not disable
+		// 4> initialize cache Id
+		InitCacheId(metaSchema, metaSchema.GetTableByName(metaIdTableName))
+
+		// 5> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
 			// generate meta tables first before getSchemaIdList()
 			createMetaTables(metaSchema)

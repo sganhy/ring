@@ -15,83 +15,98 @@ type connectionPool struct {
 	swapIndex        int
 	lastIndex        int
 	putRequestCount  uint16
-	poolId           int
+	poolId           int32
 	schemaId         int32
 	provider         databaseprovider.DatabaseProvider
 	pool             []*connection
 	syncRoot         sync.Mutex
 }
 
-var currentPoolId = 0
+const (
+	initialMinValue           uint16 = 1
+	initialMaxValue           uint16 = 2
+	connStringApplicationName string = " application_name"
+)
 
-const initialMinValue = 1
-const initialMaxValue = 2
-const connStringApplicationName = " application_name"
+var (
+	currentPoolId int32 = 0
+)
 
-func newConnectionPool(schemaId int32, connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) (*connectionPool, error) {
-	var newPool = new(connectionPool)
+func (connPool *connectionPool) Init(schemaId int32, connectionString string, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16) {
 	currentPoolId++
-	newPool.connectionString = newPool.getConnectionString(schemaId, connectionString)
-	newPool.provider = provider
-	newPool.poolId = currentPoolId
+	connPool.connectionString = connectionString //connPool.getConnectionString(schemaId, connectionString)
+	connPool.provider = provider
+	connPool.poolId = currentPoolId
 
 	// add login
 	if maxConnection > initialMaxValue {
-		newPool.maxConnection = int(maxConnection)
+		connPool.maxConnection = int(maxConnection)
 	} else {
-		newPool.maxConnection = initialMaxValue
+		connPool.maxConnection = int(initialMaxValue)
 	}
 	if minConnection > initialMinValue && minConnection <= maxConnection {
-		newPool.minConnection = int(minConnection)
+		connPool.minConnection = int(minConnection)
 	} else {
-		newPool.minConnection = initialMinValue
+		connPool.minConnection = int(initialMinValue)
 	}
-	newPool.pool = make([]*connection, 0, newPool.maxConnection)
+	connPool.pool = make([]*connection, 0, connPool.maxConnection)
 
-	for i := 0; i < newPool.minConnection; i++ {
-		connection, err := newConnection(i+1, newPool.connectionString, provider.String())
+	for i := 0; i < connPool.minConnection; i++ {
+		connection := new(connection)
+		err := connection.Init(i+1, connPool.connectionString, provider.String())
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
-		newPool.pool = append(newPool.pool, connection)
+		connPool.pool = append(connPool.pool, connection)
 	}
 	// cursor pointing on last element
-	newPool.cursor = newPool.minConnection - 1
-	newPool.lastIndex = newPool.maxConnection - 1
-	return newPool, nil
+	connPool.cursor = connPool.minConnection - 1
+	connPool.lastIndex = connPool.maxConnection - 1
 }
 
-func (pool *connectionPool) get() *connection {
-	pool.syncRoot.Lock()
-	if pool.cursor >= 0 {
-		var result = pool.pool[pool.cursor]
-		pool.pool[pool.cursor] = nil
-		pool.cursor--
-		pool.syncRoot.Unlock()
+//******************************
+// getters and setters
+//******************************
+
+//******************************
+// public methods
+//******************************
+
+//******************************
+// private methods
+//******************************
+func (connPool *connectionPool) get() *connection {
+	connPool.syncRoot.Lock()
+	if connPool.cursor >= 0 {
+		var result = connPool.pool[connPool.cursor]
+		connPool.pool[connPool.cursor] = nil
+		connPool.cursor--
+		connPool.syncRoot.Unlock()
 		return result
 	}
-	pool.syncRoot.Unlock()
-	var newConn, _ = newConnection(-1, pool.connectionString, pool.provider.String())
+	connPool.syncRoot.Unlock()
+	newConn := new(connection)
+	_ = newConn.Init(-1, connPool.connectionString, connPool.provider.String())
 	//TODO add login
 	return newConn
 }
 
-func (pool *connectionPool) put(conn *connection) {
-	pool.syncRoot.Lock()
-	if pool.cursor < pool.lastIndex {
-		pool.cursor++
-		pool.putRequestCount++
-		pool.swapIndex = int(pool.putRequestCount) % (pool.cursor + 1)
-		pool.pool[pool.cursor] = pool.pool[pool.swapIndex]
-		pool.pool[pool.swapIndex] = conn
-		pool.syncRoot.Unlock()
+func (connPool *connectionPool) put(conn *connection) {
+	connPool.syncRoot.Lock()
+	if connPool.cursor < connPool.lastIndex {
+		connPool.cursor++
+		connPool.putRequestCount++
+		connPool.swapIndex = int(connPool.putRequestCount) % (connPool.cursor + 1)
+		connPool.pool[connPool.cursor] = connPool.pool[connPool.swapIndex]
+		connPool.pool[connPool.swapIndex] = conn
+		connPool.syncRoot.Unlock()
 		return
 	}
-	pool.syncRoot.Unlock()
+	connPool.syncRoot.Unlock()
 	conn.close()
 }
 
-func (pool *connectionPool) getConnectionString(schemaid int32, connectionString string) string {
+func (connPool *connectionPool) getConnectionString(schemaid int32, connectionString string) string {
 	if !strings.Contains(strings.ToLower(connectionString), connStringApplicationName) {
 		return connectionString + connStringApplicationName + fmt.Sprintf("=Ring(%d)", schemaid)
 	}

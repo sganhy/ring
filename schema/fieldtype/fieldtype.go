@@ -33,6 +33,7 @@ const (
 	LongDateTime  FieldType = 19
 	Array         FieldType = 21
 	Boolean       FieldType = 23
+	LongString    FieldType = 27
 	NotDefined    FieldType = 125
 )
 
@@ -50,7 +51,7 @@ func (fieldType FieldType) String() string {
 		return strFloat
 	case Double:
 		return strDouble
-	case String:
+	case String, LongString:
 		return strString
 	case ShortDateTime:
 		return strShortDateTime

@@ -36,6 +36,7 @@ func (sequence *Sequence) Init(id int32, name string, description string, schema
 	sequence.schemaId = schemaId
 	sequence.maxValue = maxValue
 	sequence.value = new(CacheId)
+	sequence.value.Init()
 	sequence.baseline = baseline
 	sequence.active = active
 }

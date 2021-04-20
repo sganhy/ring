@@ -462,15 +462,33 @@ func Test__Table__GetDml(t *testing.T) {
 	//======================
 	//==== testing PostgreSql
 	//======================
+	// table @log
 	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
 	exepectedSQl := "INSERT INTO information_schema.\"@log\" (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,\"method\",line_number,message,description) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
-	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to" + exepectedSQl)
+	if table.GetDml(dmlstatement.Insert, nil) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
 	}
+	// table @meta
 	table = tbl.getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	exepectedSQl = "INSERT INTO information_schema.\"@meta\" (id,schema_id,object_type,reference_id,data_type,flags,\"name\",description,\"value\",active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
-	if table.GetDml(dmlstatement.Insert) != exepectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to" + exepectedSQl)
+	if table.GetDml(dmlstatement.Insert, nil) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
+	}
+	exepectedSQl = "DELETE FROM information_schema.\"@meta\" WHERE id=$1 AND schema_id=$2 AND object_type=$3 AND reference_id=$4"
+	if table.GetDml(dmlstatement.Delete, nil) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
+	}
+	// table @meta_id
+	table = tbl.getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
+	exepectedSQl = "DELETE FROM information_schema.\"@meta_id\" WHERE id=$1 AND schema_id=$2 AND object_type=$3"
+	if table.GetDml(dmlstatement.Delete, nil) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
+	}
+	exepectedSQl = "UPDATE information_schema.\"@meta_id\" SET \"value\"=$1 WHERE id=$2 AND schema_id=$3 AND object_type=$4"
+	field := table.GetFieldByName("value")
+	fields := []*Field{field}
+	if table.GetDml(dmlstatement.Update, fields) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
 	}
 }
 

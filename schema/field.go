@@ -35,6 +35,7 @@ type Field struct {
 const (
 	defaultNumberValue         string = "0"
 	doubleQuotes               string = "\""
+	mysqlQuotes                string = "`"
 	defaultBooleanValue        string = "false"
 	defaultDateTimeValue       string = "0001-01-01T00:00:00.000"
 	defaultShortDateTimeValue  string = "0001-01-01"
@@ -62,12 +63,15 @@ const (
 	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
 )
 
-var defaultPrimaryKeyInt64 *Field = nil
-var defaultPrimaryKeyInt32 *Field = nil
-var defaultPrimaryKeyInt16 *Field = nil
+var (
+	defaultPrimaryKeyInt64 *Field = nil
+	defaultPrimaryKeyInt32 *Field = nil
+	defaultPrimaryKeyInt16 *Field = nil
+)
 
 var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.String:        "varchar",
+	fieldtype.LongString:    "text",
 	fieldtype.Double:        "float8",
 	fieldtype.Float:         "float4",
 	fieldtype.Long:          "int8",
@@ -78,6 +82,20 @@ var postgreDataType = map[fieldtype.FieldType]string{
 	fieldtype.ShortDateTime: "date",
 	fieldtype.DateTime:      "timestamp without time zone",
 	fieldtype.LongDateTime:  "timestamp with time zone"}
+
+var mysqlDataType = map[fieldtype.FieldType]string{
+	fieldtype.String:        "VARCHAR",
+	fieldtype.LongString:    "LONGTEXT",
+	fieldtype.Double:        "DOUBLE",
+	fieldtype.Float:         "FLOAT",
+	fieldtype.Long:          "BIGINT",
+	fieldtype.Int:           "INT",
+	fieldtype.Short:         "SMALLINT",
+	fieldtype.Byte:          "TINYINT",
+	fieldtype.Boolean:       "BOOLEAN",
+	fieldtype.ShortDateTime: "DATE",
+	fieldtype.DateTime:      "TIMESTAMP",
+	fieldtype.LongDateTime:  "TIMESTAMP"}
 
 // sql key words ==> SQL:2003,SQL:1999,SQL-92, and PostgreSQL
 var sqlKeyWords = map[string]bool{
@@ -996,24 +1014,30 @@ func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) 
 // private methods
 //******************************
 func (field *Field) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
+	var fieldSeparator = ""
 	switch provider {
 	case databaseprovider.PostgreSql:
-		var modifyFieldName = false
-		if strings.Contains(field.name, "@") == true {
+		fieldSeparator = doubleQuotes
+		break
+	case databaseprovider.MySql:
+		fieldSeparator = mysqlQuotes
+		break
+	}
+	var modifyFieldName = false
+	if strings.Contains(field.name, "@") == true {
+		modifyFieldName = true
+	} else {
+		if _, ok := sqlKeyWords[strings.ToUpper(field.name)]; ok {
 			modifyFieldName = true
-		} else {
-			if _, ok := sqlKeyWords[strings.ToUpper(field.name)]; ok {
-				modifyFieldName = true
-			}
 		}
-		if modifyFieldName == true {
-			var sb strings.Builder
-			sb.Grow(len(field.name) + 2)
-			sb.WriteString(doubleQuotes)
-			sb.WriteString(field.name)
-			sb.WriteString(doubleQuotes)
-			return sb.String()
-		}
+	}
+	if modifyFieldName == true {
+		var sb strings.Builder
+		sb.Grow(len(field.name) + 2)
+		sb.WriteString(fieldSeparator)
+		sb.WriteString(field.name)
+		sb.WriteString(fieldSeparator)
+		return sb.String()
 	}
 	return field.name
 }
@@ -1111,26 +1135,32 @@ func (field *Field) getDefaultPrimaryKey() *Field {
 
 func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) string {
 	var result = unknownFieldDataType
+	var mapper map[fieldtype.FieldType]string
+	var maxStringSize uint16 = 0
+
 	switch provider {
 	case databaseprovider.MySql:
-		if val, ok := postgreDataType[field.fieldType]; ok {
-			result = val
-		}
+		mapper = mysqlDataType
+		maxStringSize = mySqlVarcharMaxSize
 		break
 	case databaseprovider.PostgreSql:
-		if val, ok := postgreDataType[field.fieldType]; ok {
-			result = val
-			if field.fieldType == fieldtype.String {
-				if field.size <= 0 || field.size > postgreVarcharMaxSize {
-					result = "text"
-				} else {
-					// long text in postgresql
-					result += fmt.Sprintf("(%d)", field.size)
-				}
-			}
-		}
+		mapper = postgreDataType
+		maxStringSize = postgreVarcharMaxSize
 		break
 	}
+
+	if val, ok := mapper[field.fieldType]; ok {
+		result = val
+		if field.fieldType == fieldtype.String {
+			if field.size <= 0 || field.size > maxStringSize {
+				result = mapper[fieldtype.LongString]
+			} else {
+				// long text in postgresql
+				result += fmt.Sprintf("(%d)", field.size)
+			}
+		}
+	}
+
 	return result
 }
 

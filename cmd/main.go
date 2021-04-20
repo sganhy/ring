@@ -33,7 +33,8 @@ func main() {
 	rcd := new(data.Record)
 	frame := test4()
 	fmt.Println(frame.File)
-	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	//schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	schema.Init(databaseprovider.MySql, "root:root@/rpg_sheet", 10, 20)
 
 	//ss.LogWarn(1, 544, "hello", "World")
 
@@ -73,7 +74,6 @@ func main() {
 		br.AppendFilter(1, "schema_id", operationtype.NotEqual, 4)
 	*/
 	br.RetrieveRecords()
-	br.Clear()
 
 	time.Sleep(time.Second * 10)
 	runtime.GC()

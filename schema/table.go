@@ -47,6 +47,7 @@ const (
 	dmlInsertStart       string = " ("
 	dmlInsertValues      string = ") VALUES ("
 	dmlSpace             string = " "
+	dmlUpdateSet         string = " SET "
 	dqlFrom              string = " FROM "
 	dqlOrderBy           string = " ORDER BY "
 	dqlSelect            string = "SELECT "
@@ -76,9 +77,13 @@ const (
 	metaSchemaId         string = "schema_id"
 	metaTableName        string = "@meta"
 	metaValue            string = "value"
+	metaMetaUkIndex      string = "pk_@meta"
+	metaMetaIdUkIndex    string = "pk_@meta_id"
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
+	mysqlParameterName   string = "?"
 	postGreTableCatalog  string = "pg_tables"
+	mysqlTableCatalog    string = "information_schema.tables"
 	relationNotFound     int    = -1
 )
 
@@ -95,6 +100,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadIndexes(indexes) //!!!! run at the end only
 	// initialize cacheId
 	table.cacheId = new(CacheId)
+	table.cacheId.Init()
 	table.cacheId.CurrentId = 0
 	table.cacheId.MaxId = 0
 	table.cacheId.ReservedRange = 0
@@ -116,7 +122,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (table *Table) GetId() int32 {
 	return table.id
@@ -336,7 +342,7 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tabl
 	return sql
 }
 
-func (table *Table) GetDml(dmlType dmlstatement.DmlStatement) string {
+func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) string {
 	var result strings.Builder
 	switch dmlType {
 	case dmlstatement.Insert:
@@ -352,8 +358,32 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement) string {
 		//fmt.Printf("GetDml() len(str)/sql.Cap() %d /%d\n", len(result.String()), result.Cap())
 		break
 	case dmlstatement.Update:
+		variableName, index := table.getVariableInfo()
+		result.Grow(int(table.sqlCapacity))
+		result.WriteString(dmlType.String())
+		result.WriteString(dmlSpace)
+		result.WriteString(table.physicalName)
+		result.WriteString(dmlUpdateSet)
+		for i := 0; i < len(fields); i++ {
+			result.WriteString(fields[i].GetPhysicalName(table.provider))
+			result.WriteString(operatorEqual)
+			result.WriteString(variableName)
+			result.WriteString(strconv.Itoa(index))
+			index++
+		}
+		result.WriteString(dqlWhere)
+		table.addPrimaryKeyFilter(&result, len(fields))
 		break
 	case dmlstatement.Delete:
+		result.Grow(len(table.physicalName) + 30)
+		result.WriteString(dmlType.String())
+		result.WriteString(dmlSpace)
+		result.WriteString(table.physicalName)
+		result.WriteString(dqlWhere)
+		table.addPrimaryKeyFilter(&result, 0)
+		break
+	case dmlstatement.UpdateReturning:
+		result.Grow(len(table.physicalName) + 30)
 		break
 	}
 	return result.String()
@@ -529,17 +559,13 @@ func (table *Table) GetPrimaryKeyIndex() int {
 // private methods
 //******************************
 func (table *Table) addVariables(query *strings.Builder) {
-	var variableName string
-	var index = 0
-	switch table.provider {
-	case databaseprovider.PostgreSql:
-		variableName = postGreParameterName
-		index = 1
-		break
-	}
+
+	variableName, index := table.getVariableInfo()
 	for i := 0; i < len(table.fields); i++ {
 		query.WriteString(variableName)
-		query.WriteString(strconv.Itoa(index))
+		if table.provider == databaseprovider.PostgreSql {
+			query.WriteString(strconv.Itoa(index))
+		}
 		// check last element
 		if i < len(table.fields)-1 {
 			query.WriteString(",")
@@ -547,7 +573,15 @@ func (table *Table) addVariables(query *strings.Builder) {
 		index++
 	}
 }
-
+func (table *Table) getVariableInfo() (string, int) {
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		return postGreParameterName, 1
+	case databaseprovider.MySql:
+		return mysqlParameterName, 0
+	}
+	return "", 0
+}
 func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
 	var physicalName = physicalSchemaName + "."
 	var tableName = table.name
@@ -771,6 +805,10 @@ func (table *Table) getVariableName(index int) string {
 	case databaseprovider.PostgreSql:
 		result = postGreParameterName
 		result += strconv.Itoa(index + 1)
+		break
+	case databaseprovider.MySql:
+		result = mysqlParameterName
+		break
 	}
 	return result
 }
@@ -783,6 +821,56 @@ func (table *Table) getCreateOptions() string {
 	return ""
 }
 
+func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
+	var variableName string
+	var addedIndex = index
+
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		variableName = postGreParameterName
+		addedIndex++
+		break
+	case databaseprovider.MySql:
+		variableName = mysqlParameterName
+		break
+	}
+
+	//tableType    tabletype.TableType
+	switch table.tableType {
+	case tabletype.Meta:
+		var ukIndex = table.GetIndexByName(metaMetaUkIndex)
+		for i := 0; i < len(ukIndex.fields); i++ {
+			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
+			query.WriteString(operatorEqual)
+			query.WriteString(variableName)
+			query.WriteString(strconv.Itoa(addedIndex))
+			if i < len(ukIndex.fields)-1 {
+				query.WriteString(filterSeparator)
+				addedIndex++
+			}
+		}
+		break
+	case tabletype.MetaId:
+		var ukIndex = table.GetIndexByName(metaMetaIdUkIndex)
+		for i := 0; i < len(ukIndex.fields); i++ {
+			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
+			query.WriteString(operatorEqual)
+			query.WriteString(variableName)
+			query.WriteString(strconv.Itoa(addedIndex))
+			if i < len(ukIndex.fields)-1 {
+				query.WriteString(filterSeparator)
+				addedIndex++
+			}
+		}
+		break
+	case tabletype.Business:
+		query.WriteString(defaultPrimaryKeyInt64.name)
+		query.WriteString(operatorEqual)
+		query.WriteString(strconv.Itoa(addedIndex))
+		break
+	}
+}
+
 func (table *Table) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var firstUniqueIndex = true
@@ -791,6 +879,7 @@ func (table *Table) create(schema *Schema) error {
 	var err error
 
 	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil))
+	fmt.Println(metaQuery.query)
 	metaQuery.setSchema(schema.name)
 	metaQuery.setTable(table.name)
 
@@ -824,17 +913,25 @@ func (table *Table) create(schema *Schema) error {
 func (table *Table) exists(schema *Schema) bool {
 	var query strings.Builder
 	query.WriteString(dqlSelect)
-	if table.provider == databaseprovider.PostgreSql {
-		query.WriteString("1")
-		query.WriteString(dqlFrom)
+	query.WriteString("1")
+	query.WriteString(dqlFrom)
+	switch table.provider {
+	case databaseprovider.PostgreSql:
 		query.WriteString(postGreTableCatalog)
 		query.WriteString(dqlWhere)
-		query.WriteString(" upper(tablename)=")
+		query.WriteString("upper(tablename)=")
 		query.WriteString(table.getVariableName(0))
 		query.WriteString(filterSeparator)
-		query.WriteString(" upper(schemaname)=")
+		query.WriteString("upper(schemaname)=")
 		query.WriteString(table.getVariableName(1))
-
+		break
+	case databaseprovider.MySql:
+		query.WriteString(mysqlTableCatalog)
+		query.WriteString(dqlWhere)
+		query.WriteString("upper(table_name)=?")
+		query.WriteString(filterSeparator)
+		query.WriteString("upper(table_schema)=?")
+		break
 	}
 
 	// execute query
@@ -869,7 +966,7 @@ func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, s
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
 	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
-	uk.Init(1, "pk_@meta_id", "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, metaMetaIdUkIndex, "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
 
 	fields = append(fields, id)
 	fields = append(fields, schemaId)
@@ -920,7 +1017,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, "pk_@meta", "", indexedFields, int32(tabletype.Meta), false, true, true, true)
+	uk.Init(1, metaMetaUkIndex, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -936,7 +1033,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	indexes = append(indexes, uk)
 
 	result.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes,
-		physicaltype.Table, 0, schemaPhysicalName, tabletype.MetaId, provider, "", true, false, true, true)
+		physicaltype.Table, 0, schemaPhysicalName, tabletype.Meta, provider, "", true, false, true, true)
 
 	return result
 }
