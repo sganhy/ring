@@ -50,7 +50,7 @@ func Test__Relation__Init(t *testing.T) {
 }
 
 //test mappers Meta to Relation, and Relation to Meta
-func Test__Relation__ToMeta(t *testing.T) {
+func Test__Relation__toMeta(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
@@ -68,36 +68,36 @@ func Test__Relation__ToMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
 
-	meta := elemr0.ToMeta(777)
-	elemr1 := meta.ToRelation(&elemt)
+	meta := elemr0.toMeta(777)
+	elemr1 := meta.toRelation(&elemt)
 
 	if elemr0.GetId() != elemr1.GetId() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetId() must be equal to r1.GetId()")
+		t.Errorf("Relation.toMeta() ==> r0.GetId() must be equal to r1.GetId()")
 	}
 	if elemr0.GetName() != elemr1.GetName() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetName() must be equal to r1.GetName()")
+		t.Errorf("Relation.toMeta() ==> r0.GetName() must be equal to r1.GetName()")
 	}
 	if elemr0.GetDescription() != elemr1.GetDescription() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetDescription() must be equal to r1.GetDescription()")
+		t.Errorf("Relation.toMeta() ==> r0.GetDescription() must be equal to r1.GetDescription()")
 	}
 	if elemr0.GetInverseRelationName() != elemr1.GetInverseRelationName() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetInverseRelationName() must be equal to r1.GetInverseRelationName()")
+		t.Errorf("Relation.toMeta() ==> r0.GetInverseRelationName() must be equal to r1.GetInverseRelationName()")
 	}
 	if elemr0.GetType() != elemr1.GetType() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetType() must be equal to r1.GetType()")
+		t.Errorf("Relation.toMeta() ==> r0.GetType() must be equal to r1.GetType()")
 	}
 	// check reference of table must be the same
 	if elemr0.GetToTable() != elemr1.GetToTable() {
-		t.Errorf("Relation.ToMeta() ==> r0.GetToTable() reference must be equal to r1.GetToTable()")
+		t.Errorf("Relation.toMeta() ==> r0.GetToTable() reference must be equal to r1.GetToTable()")
 	}
 	if elemr0.IsBaseline() != elemr1.IsBaseline() {
-		t.Errorf("Relation.ToMeta() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
+		t.Errorf("Relation.toMeta() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
 	}
 	if elemr0.IsNotNull() != elemr1.IsNotNull() {
-		t.Errorf("Relation.ToMeta() ==> r0.IsNotNull() must be equal to r1.IsNotNull()")
+		t.Errorf("Relation.toMeta() ==> r0.IsNotNull() must be equal to r1.IsNotNull()")
 	}
 	if elemr0.IsActive() != elemr1.IsActive() {
-		t.Errorf("Relation.ToMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
+		t.Errorf("Relation.toMeta() ==> r0.IsActive() must be equal to r1.IsActive()")
 	}
 	// test GetDdlSql
 

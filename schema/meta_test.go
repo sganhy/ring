@@ -79,19 +79,19 @@ func Test__Meta__ToField(t *testing.T) {
 
 	// testing nil return
 	meta.objectType = 4
-	if meta.ToField() != nil {
+	if meta.toField() != nil {
 		t.Errorf("Meta.ToField() ==> objectType==4 must return nil")
 	}
-	if meta.ToRelation(nil) != nil {
+	if meta.toRelation(nil) != nil {
 		t.Errorf("Meta.ToRelation() ==> objectType==4 must return nil")
 	}
-	if meta.ToIndex() != nil {
+	if meta.toIndex() != nil {
 		t.Errorf("Meta.ToIndex() ==> objectType==4 must return nil")
 	}
-	if meta.ToTable(nil, nil, nil) != nil {
+	if meta.toTable(nil, nil, nil) != nil {
 		t.Errorf("Meta.ToTable() ==> objectType==4 must return nil")
 	}
-	if meta.ToSchema() != nil {
+	if meta.toSchema() != nil {
 		t.Errorf("Meta.ToSchema() ==> objectType==4 must return nil")
 	}
 }

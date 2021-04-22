@@ -4,6 +4,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/relationtype"
+	"ring/schema/sqlfmt"
 )
 
 type Relation struct {
@@ -41,7 +42,7 @@ func (relation *Relation) Init(id int32, name string, description string, invers
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (relation *Relation) GetId() int32 {
 	return relation.id
@@ -110,7 +111,27 @@ func (relation *Relation) GetInverseRelation() *Relation {
 	return nil
 }
 
-func (relation *Relation) ToMeta(tableId int32) *Meta {
+func (relation *Relation) Clone() *Relation {
+	newRelation := new(Relation)
+	/*
+		id int32, name string, description string, inverseRelationName string,
+			mtmTable string, toTable *Table, relationType relationType.RelationType, notNull bool, baseline bool, active bool
+	*/
+	// don't clone ToTable for reflexive relationship (recursive call)
+	newRelation.Init(relation.id, relation.name, relation.description,
+		relation.inverseRelationName, relation.mtmTable, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
+		relation.active)
+	return newRelation
+}
+
+//******************************
+// private methods
+//******************************
+func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
+	return sqlfmt.FormatEntityName(provider, relation.name)
+}
+
+func (relation *Relation) toMeta(tableId int32) *Meta {
 	// we cannot have error here
 	var result = new(Meta)
 
@@ -136,23 +157,4 @@ func (relation *Relation) ToMeta(tableId int32) *Meta {
 	result.description = relation.description
 	result.enabled = relation.active
 	return result
-}
-
-func (relation *Relation) Clone() *Relation {
-	newRelation := new(Relation)
-	/*
-		id int32, name string, description string, inverseRelationName string,
-			mtmTable string, toTable *Table, relationType relationType.RelationType, notNull bool, baseline bool, active bool
-	*/
-	// don't clone ToTable for reflexive relationship (recursive call)
-	newRelation.Init(relation.id, relation.name, relation.description,
-		relation.inverseRelationName, relation.mtmTable, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
-		relation.active)
-	return newRelation
-}
-
-func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
-	var field = new(Field)
-	field.name = relation.name
-	return field.GetPhysicalName(provider)
 }

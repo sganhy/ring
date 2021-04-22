@@ -33,8 +33,8 @@ func main() {
 	rcd := new(data.Record)
 	frame := test4()
 	fmt.Println(frame.File)
-	//schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-	schema.Init(databaseprovider.MySql, "root:root@/rpg_sheet", 10, 20)
+	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	//schema.Init(databaseprovider.MySql, "root:root@/rpg_sheet", 10, 20)
 
 	//ss.LogWarn(1, 544, "hello", "World")
 
@@ -99,22 +99,11 @@ func main() {
 	fmt.Println("Successfully connected!")
 
 	// FIELDS **********
-	elemf0 := schema.Field{}
-	elemf0.Init(11, "aField Test", "AField Test", fieldtype.Long, 5, "test default", true, false, false, true, true)
-
-	meta := elemf0.ToMeta(12)
-	elemf00 := meta.ToField()
-	fmt.Println(elemf0.IsNotNull())
-	fmt.Println(meta.IsFieldNotNull())
-	fmt.Println(elemf00.GetSize())
-
 	elemf := schema.Field{}
 	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
 
 	var lang = schema.Language{}
 	lang.Init("FR")
-	fmt.Println(meta.IsEntityBaseline())
-	fmt.Println(elemf00.GetDefaultValue())
 	fmt.Println(elemf.IsNumeric())
 	var sss = elemf.GetSearchableValue("a", searchabletype.None)
 	var sss2 = "A"
@@ -156,7 +145,6 @@ func main() {
 	fields = append(fields, elemf3)
 	fields = append(fields, elemf4)
 	fields = append(fields, elemf5)
-	fields = append(fields, elemf0)
 	//aarr2 = append(aarr2, *prim)
 	var relations = []schema.Relation{}
 	relations = append(relations, elemr)

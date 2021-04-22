@@ -231,7 +231,7 @@ func getSchemaIdList() []Schema {
 
 	// O(log n)
 	for i := 0; i < count; i++ {
-		result[i] = *metaList[i].ToSchema()
+		result[i] = *metaList[i].toSchema()
 	}
 	return result
 }

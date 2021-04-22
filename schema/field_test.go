@@ -114,7 +114,7 @@ func Test__Field__getDefaultPrimaryKey(t *testing.T) {
 }
 
 // GetDdlSql
-func Test__Field__GetDdlSql(t *testing.T) {
+func Test__Field__GetDdl(t *testing.T) {
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 5, "test default", true, true, false, true, true)
@@ -174,44 +174,44 @@ func Test__Field__ToMeta(t *testing.T) {
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 15, "test default", true, false, false, true, true)
-	meta := elemf0.ToMeta(777)
-	elemf1 := meta.ToField()
+	meta := elemf0.toMeta(777)
+	elemf1 := meta.toField()
 
 	if elemf0.GetId() != elemf1.GetId() {
-		t.Errorf("Field.ToMeta() ==> f0.GetId() must be equal to f1.GetId()")
+		t.Errorf("Field.toMeta() ==> f0.GetId() must be equal to f1.GetId()")
 	}
 	if elemf0.GetName() != elemf1.GetName() {
-		t.Errorf("Field.ToMeta() ==> f0.GetName() must be equal to f1.GetName()")
+		t.Errorf("Field.toMeta() ==> f0.GetName() must be equal to f1.GetName()")
 	}
 	if elemf0.GetDescription() != elemf1.GetDescription() {
-		t.Errorf("Field.ToMeta() ==> f0.GetDescription() must be equal to f1.GetDescription()")
+		t.Errorf("Field.toMeta() ==> f0.GetDescription() must be equal to f1.GetDescription()")
 	}
 	if elemf0.GetType() != elemf1.GetType() {
-		t.Errorf("Field.ToMeta() ==> f0.GetType() must be equal to f1.GetType()")
+		t.Errorf("Field.toMeta() ==> f0.GetType() must be equal to f1.GetType()")
 	}
 	if elemf0.GetSize() != elemf1.GetSize() {
-		t.Errorf("Field.ToMeta() ==> f0.GetSize() must be equal to f1.GetSize()")
+		t.Errorf("Field.toMeta() ==> f0.GetSize() must be equal to f1.GetSize()")
 	}
 	if elemf0.GetDefaultValue() != elemf1.GetDefaultValue() {
-		t.Errorf("Field.ToMeta() ==> f0.GetDefaultValue() must be equal to f1.GetDefaultValue()")
+		t.Errorf("Field.toMeta() ==> f0.GetDefaultValue() must be equal to f1.GetDefaultValue()")
 	}
 	if elemf0.IsBaseline() != elemf1.IsBaseline() {
-		t.Errorf("Field.ToMeta() ==> f0.IsBaseline() must be equal to f1.IsBaseline()")
+		t.Errorf("Field.toMeta() ==> f0.IsBaseline() must be equal to f1.IsBaseline()")
 	}
 	if elemf0.IsNotNull() != elemf1.IsNotNull() {
-		t.Errorf("Field.ToMeta() ==> f0.IsNotNull() must be equal to f1.IsNotNull()")
+		t.Errorf("Field.toMeta() ==> f0.IsNotNull() must be equal to f1.IsNotNull()")
 	}
 	if elemf0.IsCaseSensitive() != elemf1.IsCaseSensitive() {
-		t.Errorf("Field.ToMeta() ==> f0.IsCaseSensitive() must be equal to f1.IsCaseSensitive()")
+		t.Errorf("Field.toMeta() ==> f0.IsCaseSensitive() must be equal to f1.IsCaseSensitive()")
 	}
 	if elemf0.IsMultilingual() != elemf1.IsMultilingual() {
-		t.Errorf("Field.ToMeta() ==> f0.IsMultilingual() must be equal to f1.IsMultilingual()")
+		t.Errorf("Field.toMeta() ==> f0.IsMultilingual() must be equal to f1.IsMultilingual()")
 	}
 	if elemf0.IsActive() != elemf1.IsActive() {
-		t.Errorf("Field.ToMeta() ==> f0.IsActive() must be equal to f1.IsActive()")
+		t.Errorf("Field.toMeta() ==> f0.IsActive() must be equal to f1.IsActive()")
 	}
 	if elemf0.String() != elemf1.String() {
-		t.Errorf("Field.ToMeta() ==> f0.String() must be equal to f1.String()")
+		t.Errorf("Field.toMeta() ==> f0.String() must be equal to f1.String()")
 	}
 
 }

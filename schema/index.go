@@ -5,6 +5,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
+	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"strconv"
 	"strings"
@@ -23,8 +24,7 @@ type Index struct {
 }
 
 const (
-	createIndexPostGreSql string = "%s%s INDEX %s ON %s USING btree (%s) %s"
-	createPkPostGreSql    string = "ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s"
+	createIndexPostGreSql string = "%s%s %s %s ON %s USING btree (%s) %s"
 	physicalIndexPrefix   string = "idx_"
 )
 
@@ -42,7 +42,7 @@ func (index *Index) Init(id int32, name string, description string, fields []str
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (index *Index) GetId() int32 {
 	return index.id
@@ -83,29 +83,6 @@ func (index *Index) GetTableId() int32 {
 //******************************
 // public methods
 //******************************
-func (index *Index) ToMeta() *Meta {
-	// we cannot have error here
-	var result = new(Meta)
-
-	// key
-	result.id = index.id
-	result.refId = index.tableId
-	result.objectType = int8(entitytype.Index)
-
-	// others
-	result.dataType = 0
-	result.name = index.name // max length 30 !! must be validated before
-	result.description = index.description
-	result.value = strings.Join(index.fields, metaIndexSeparator)
-
-	// flags
-	result.flags = 0
-	result.setIndexBitmap(index.bitmap)
-	result.setIndexUnique(index.unique)
-	result.setEntityBaseline(index.baseline)
-	result.enabled = index.active
-	return result
-}
 
 func (index *Index) Clone() *Index {
 	newIndex := new(Index)
@@ -135,18 +112,18 @@ func (index *Index) GetPhysicalName(table *Table) string {
 
 	switch table.tableType {
 	case tabletype.Business:
-		result.WriteString(padLeft(strconv.Itoa(int(table.id)), "0", 4))
+		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(table.id)), "0", 4))
 		result.WriteString("_")
-		result.WriteString(padLeft(strconv.Itoa(int(index.id)), "0", 4))
+		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	case tabletype.Mtm:
 		result.WriteString("mtm_")
-		result.WriteString(padLeft(strconv.Itoa(int(index.id)), "0", 4))
+		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	default:
 		result.WriteString(table.name[1:])
 		result.WriteString("_")
-		result.WriteString(padLeft(strconv.Itoa(int(index.id)), "0", 3))
+		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 3))
 	}
 	return result.String()
 }
@@ -154,6 +131,30 @@ func (index *Index) GetPhysicalName(table *Table) string {
 //******************************
 // private methods
 //******************************
+func (index *Index) toMeta() *Meta {
+	// we cannot have error here
+	var result = new(Meta)
+
+	// key
+	result.id = index.id
+	result.refId = index.tableId
+	result.objectType = int8(entitytype.Index)
+
+	// others
+	result.dataType = 0
+	result.name = index.name // max length 30 !! must be validated before
+	result.description = index.description
+	result.value = strings.Join(index.fields, metaIndexSeparator)
+
+	// flags
+	result.flags = 0
+	result.setIndexBitmap(index.bitmap)
+	result.setIndexUnique(index.unique)
+	result.setEntityBaseline(index.baseline)
+	result.enabled = index.active
+	return result
+}
+
 func (index *Index) loadFields(fields []string) {
 	// copy slice -- func make([]T, len, cap) []T
 	if fields != nil {
@@ -179,35 +180,6 @@ func (index *Index) getDdlDrop(table *Table) string {
 	return query.String()
 }
 
-func (index *Index) getDdlCreatePk(table *Table, tablespace *Tablespace) string {
-	var sqlTablespace = ""
-	var fields strings.Builder
-	field := Field{}
-	field.name = index.name
-	var indexName = field.GetPhysicalName(table.provider)
-
-	if tablespace != nil {
-		sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
-	}
-	if len(index.fields) > 0 {
-		var field = new(Field)
-		for i := 0; i < len(index.fields); i++ {
-			field.name = index.fields[i]
-			fields.WriteString(field.GetPhysicalName(table.provider))
-			if i < len(index.fields)-1 {
-				fields.WriteString(",")
-			}
-		}
-	}
-	switch table.provider {
-	case databaseprovider.PostgreSql, databaseprovider.MySql:
-		// ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s
-		return strings.Trim(fmt.Sprintf(createPkPostGreSql, table.GetPhysicalName(), indexName,
-			fields.String(), sqlTablespace), ddlSpace)
-	}
-	return ""
-
-}
 func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 	var sqlUnique = ""
 	var sqlTablespace = ""
@@ -220,19 +192,16 @@ func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 		sqlTablespace = tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
 	}
 	if len(index.fields) > 0 {
-
-		var field = new(Field)
 		for i := 0; i < len(index.fields); i++ {
-			field.name = index.fields[i]
-			fields.WriteString(field.GetPhysicalName(table.provider))
+			fields.WriteString(sqlfmt.FormatEntityName(table.provider, index.fields[i]))
 			if i < len(index.fields)-1 {
 				fields.WriteString(",")
 			}
 		}
 	}
 	switch table.provider {
-	case databaseprovider.PostgreSql, databaseprovider.MySql:
-		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique,
+	case databaseprovider.PostgreSql:
+		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
 			index.GetPhysicalName(table), table.GetPhysicalName(), fields.String(), sqlTablespace), ddlSpace)
 	}
 	return ""
@@ -242,29 +211,9 @@ func (index *Index) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var table = schema.GetTableById(index.tableId)
 
-	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(table, nil))
+	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(table, nil, nil))
 	metaQuery.setSchema(schema.GetName())
 	metaQuery.setTable(table.GetName())
 
 	return metaQuery.create()
-}
-
-func (index *Index) createAsPk(schema *Schema) error {
-	var metaQuery = metaQuery{}
-	var table = schema.GetTableById(index.tableId)
-
-	metaQuery.query = index.getDdlCreatePk(table, schema.findTablespace(nil, index))
-	metaQuery.setSchema(schema.name)
-	metaQuery.setTable(table.GetName())
-
-	return metaQuery.create()
-}
-
-func padLeft(input string, padString string, repeat int) string {
-	var count = repeat - len(input)
-	if count > 0 {
-		return strings.Repeat(padString, count) + input
-	} else {
-		return input
-	}
 }

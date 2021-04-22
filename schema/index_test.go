@@ -63,45 +63,45 @@ func Test__Index__ToMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemi0.Init(21, "rel test", "hellkzae", aarr, -11, false, true, false, true)
 
-	meta := elemi0.ToMeta()
-	elemi1 := meta.ToIndex()
+	meta := elemi0.toMeta()
+	elemi1 := meta.toIndex()
 
 	if elemi0.GetId() != elemi1.GetId() {
-		t.Errorf("Index.ToMeta() ==> i0.GetId() must be equal to i1.GetId()")
+		t.Errorf("Index.toMeta() ==> i0.GetId() must be equal to i1.GetId()")
 	}
 	if elemi0.GetName() != elemi1.GetName() {
-		t.Errorf("Index.ToMeta() ==> i0.GetName() must be equal to i1.GetName()")
+		t.Errorf("Index.toMeta() ==> i0.GetName() must be equal to i1.GetName()")
 	}
 	if elemi0.GetDescription() != elemi1.GetDescription() {
-		t.Errorf("Index.ToMeta() ==> i0.GetDescription() must be equal to i1.GetDescription()")
+		t.Errorf("Index.toMeta() ==> i0.GetDescription() must be equal to i1.GetDescription()")
 	}
 	if strings.Join(elemi0.GetFields(), "#") != strings.Join(elemi1.GetFields(), "#") {
-		t.Errorf("Index.ToMeta() ==> i0.GetFields() must be equal to i1.GetFields()")
+		t.Errorf("Index.toMeta() ==> i0.GetFields() must be equal to i1.GetFields()")
 	}
 	if elemi0.IsBitmap() != elemi1.IsBitmap() {
-		t.Errorf("Index.ToMeta() ==> i0.IsBitmap() must be equal to i1.IsBitmap()")
+		t.Errorf("Index.toMeta() ==> i0.IsBitmap() must be equal to i1.IsBitmap()")
 	}
 	if elemi0.IsUnique() != elemi1.IsUnique() {
-		t.Errorf("Index.ToMeta() ==> i0.IsUnique() must be equal to i1.IsUnique()")
+		t.Errorf("Index.toMeta() ==> i0.IsUnique() must be equal to i1.IsUnique()")
 	}
 	if elemi0.IsBaseline() != elemi1.IsBaseline() {
-		t.Errorf("Index.ToMeta() ==> i0.IsBaseline() must be equal to i1.IsBaseline()")
+		t.Errorf("Index.toMeta() ==> i0.IsBaseline() must be equal to i1.IsBaseline()")
 	}
 	if elemi0.IsActive() != elemi1.IsActive() {
-		t.Errorf("Index.ToMeta() ==> i0.IsActive() must be equal to i1.IsActive()")
+		t.Errorf("Index.toMeta() ==> i0.IsActive() must be equal to i1.IsActive()")
 	}
 	if elemi0.GetTableId() != elemi1.GetTableId() {
-		t.Errorf("Index.ToMeta() ==> i0.GetTableId() must be equal to i1.GetTableId()")
+		t.Errorf("Index.toMeta() ==> i0.GetTableId() must be equal to i1.GetTableId()")
 	}
 	// test fields
 	if elemi1.fields == nil {
-		t.Errorf("Index.ToMeta() ==> i1.fields cannot be nil")
+		t.Errorf("Index.toMeta() ==> i1.fields cannot be nil")
 	} else {
 		// keep ";" hardcoded to detectec metaIndexSeparator constant change
 		arr0str := strings.Join(elemi0.fields, ";")
 		arr1str := strings.Join(elemi1.fields, ";")
 		if arr0str != arr1str {
-			t.Errorf("Index.ToMeta() ==> elemi0.fields is not equal to elemi1.fields")
+			t.Errorf("Index.toMeta() ==> elemi0.fields is not equal to elemi1.fields")
 		}
 	}
 }
@@ -265,17 +265,5 @@ func Test__Index__GetDdl(t *testing.T) {
 	if uk.GetDdl(ddlstatement.Drop, table, nil) != "" {
 		t.Errorf("Index.GetDdl() ==> should be equal to null")
 	}
-	table.provider = databaseprovider.PostgreSql
-	script := uk.getDdlCreatePk(table, &tablespace)
-	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"pk_@meta\" " +
-		"PRIMARY KEY (id,schema_id,object_type,reference_id) USING INDEX TABLESPACE rpg_index"
-	if script != expectedSql {
-		t.Errorf("Index.getDdlCreatePk() ==> expected sql not reached {0}")
-	}
-	//test unknow, provider
-	table.provider = databaseprovider.NotDefined
-	script = uk.getDdlCreatePk(table, &tablespace)
-	if script != "" {
-		t.Errorf("Index.getDdlCreatePk() ==> expected sql script for undefined provider should be null")
-	}
+
 }

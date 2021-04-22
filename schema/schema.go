@@ -217,7 +217,7 @@ func (schema *Schema) Execute(queries []Query) error {
 //******************************
 // private methods
 //******************************
-func (schema *Schema) findTablespace(table *Table, index *Index) *Tablespace {
+func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *Tablespace {
 	result := new(Tablespace)
 	result.name = "rpg_data"
 	return result

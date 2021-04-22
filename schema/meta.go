@@ -42,7 +42,7 @@ const (
 )
 
 //******************************
-// getters
+// getters and setters
 //******************************
 
 //******************************
@@ -123,8 +123,18 @@ func (meta *Meta) GetRelationType() relationtype.RelationType {
 	return result
 }
 
+func (meta *Meta) String() string {
+	// used for debug only
+	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; description: %s",
+		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.description)
+}
+
+//******************************
+// private methods
+//******************************
+
 // mappers
-func (meta *Meta) ToField() *Field {
+func (meta *Meta) toField() *Field {
 	if entitytype.EntityType(meta.objectType) == entitytype.Field {
 		var field = new(Field)
 		field.Init(meta.id, meta.name, meta.description,
@@ -136,7 +146,7 @@ func (meta *Meta) ToField() *Field {
 	return nil
 }
 
-func (meta *Meta) ToRelation(table *Table) *Relation {
+func (meta *Meta) toRelation(table *Table) *Relation {
 	if entitytype.EntityType(meta.objectType) == entitytype.Relation {
 		var relation = new(Relation)
 		relation.Init(meta.id, meta.name, meta.description,
@@ -147,7 +157,7 @@ func (meta *Meta) ToRelation(table *Table) *Relation {
 	return nil
 }
 
-func (meta *Meta) ToIndex() *Index {
+func (meta *Meta) toIndex() *Index {
 	if entitytype.EntityType(meta.objectType) == entitytype.Index {
 		var index = new(Index)
 		var arr = strings.Split(meta.value, metaIndexSeparator)
@@ -159,7 +169,7 @@ func (meta *Meta) ToIndex() *Index {
 }
 
 // loosing schemaId and databaseprovider
-func (meta *Meta) ToTable(fields []Field, relations []Relation, indexes []Index) *Table {
+func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index) *Table {
 	if entitytype.EntityType(meta.objectType) == entitytype.Table {
 		var table = new(Table)
 		/*
@@ -176,7 +186,7 @@ func (meta *Meta) ToTable(fields []Field, relations []Relation, indexes []Index)
 }
 
 // Build partial schema object
-func (meta *Meta) ToSchema() *Schema {
+func (meta *Meta) toSchema() *Schema {
 	if entitytype.EntityType(meta.objectType) == entitytype.Schema {
 		var schema = new(Schema)
 		schema.id = meta.id
@@ -186,16 +196,6 @@ func (meta *Meta) ToSchema() *Schema {
 	}
 	return nil
 }
-
-func (meta *Meta) String() string {
-	// used for debug only
-	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; description: %s",
-		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.description)
-}
-
-//******************************
-// private methods
-//******************************
 
 // flags
 func (meta *Meta) setFieldMultilingual(value bool) {
@@ -286,13 +286,13 @@ func initTableMappers(metaList []Meta) (map[int32][]Field, map[int32][]Relation,
 		objectType = entitytype.EntityType(metaList[i].objectType)
 		switch objectType {
 		case entitytype.Field:
-			fieldsMap[metaList[i].refId] = append(fieldsMap[metaList[i].refId], *metaList[i].ToField())
+			fieldsMap[metaList[i].refId] = append(fieldsMap[metaList[i].refId], *metaList[i].toField())
 			break
 		case entitytype.Relation:
-			relationsMap[metaList[i].refId] = append(relationsMap[metaList[i].refId], *metaList[i].ToRelation(nil))
+			relationsMap[metaList[i].refId] = append(relationsMap[metaList[i].refId], *metaList[i].toRelation(nil))
 			break
 		case entitytype.Index:
-			indexesMap[metaList[i].refId] = append(indexesMap[metaList[i].refId], *metaList[i].ToIndex())
+			indexesMap[metaList[i].refId] = append(indexesMap[metaList[i].refId], *metaList[i].toIndex())
 			break
 		}
 	}
@@ -308,7 +308,7 @@ func getTables(schema Schema, metaList []Meta) []Table {
 		objectType = entitytype.EntityType(metaList[i].objectType)
 		if objectType == entitytype.Table {
 			var tableId = metaList[i].id
-			var table = *metaList[i].ToTable(fieldsMap[tableId], relationsMap[tableId], IndexesMap[tableId])
+			var table = *metaList[i].toTable(fieldsMap[tableId], relationsMap[tableId], IndexesMap[tableId])
 			//TO define
 			table.schemaId = schema.id
 			//table.provider = schema.

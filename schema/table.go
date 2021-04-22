@@ -2,12 +2,14 @@ package schema
 
 import (
 	"fmt"
+	"ring/schema/constrainttype"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
+	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"sort"
 	"strconv"
@@ -116,7 +118,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.active = active
 	if provider != databaseprovider.NotDefined {
 		table.physicalName = table.getPhysicalName(provider, schemaPhysicalName)
-		table.fieldList = table.getFieldList(provider)
+		table.fieldList = table.getFieldList()
 		table.loadSqlCapacity(provider) // !!!load after loadFields
 	}
 }
@@ -450,31 +452,6 @@ func (table *Table) Clone() *Table {
 	return newTable
 }
 
-func (table *Table) ToMeta() *Meta {
-	var metaTable = new(Meta)
-
-	// key
-	metaTable.id = table.id
-	metaTable.refId = 0
-	metaTable.objectType = int8(entitytype.Table)
-
-	// others
-	metaTable.dataType = 0
-	metaTable.name = table.name // max length 30 !! must be validated before
-	metaTable.description = table.description
-	metaTable.value = table.subject
-
-	// flags
-	metaTable.flags = 0
-
-	metaTable.setEntityBaseline(table.baseline)
-	metaTable.setTableCached(table.cached)
-	metaTable.setTableReadonly(table.readonly)
-	metaTable.enabled = table.active
-
-	return metaTable
-}
-
 func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	var capacity = len(table.fields)
 	var result = make([]string, capacity, capacity)
@@ -558,6 +535,31 @@ func (table *Table) GetPrimaryKeyIndex() int {
 //******************************
 // private methods
 //******************************
+func (table *Table) toMeta() *Meta {
+	var metaTable = new(Meta)
+
+	// key
+	metaTable.id = table.id
+	metaTable.refId = 0
+	metaTable.objectType = int8(entitytype.Table)
+
+	// others
+	metaTable.dataType = 0
+	metaTable.name = table.name // max length 30 !! must be validated before
+	metaTable.description = table.description
+	metaTable.value = table.subject
+
+	// flags
+	metaTable.flags = 0
+
+	metaTable.setEntityBaseline(table.baseline)
+	metaTable.setTableCached(table.cached)
+	metaTable.setTableReadonly(table.readonly)
+	metaTable.enabled = table.active
+
+	return metaTable
+}
+
 func (table *Table) addVariables(query *strings.Builder) {
 
 	variableName, index := table.getVariableInfo()
@@ -585,14 +587,13 @@ func (table *Table) getVariableInfo() (string, int) {
 func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
 	var physicalName = physicalSchemaName + "."
 	var tableName = table.name
-	var field = new(Field)
 
 	if table.tableType == tabletype.Business {
 		// add prefix
 		tableName = "t_" + tableName
 	}
-	field.name = tableName
-	physicalName += field.getPhysicalName(provider)
+	physicalName += sqlfmt.FormatEntityName(table.provider, table.name)
+	//.getPhysicalName(provider)
 	return physicalName
 }
 
@@ -610,17 +611,43 @@ func (table *Table) getLogger() *log {
 	return schema.logger
 }
 
-func (table *Table) getFieldList(provider databaseprovider.DatabaseProvider) string {
+func (table *Table) getFieldList() string {
 	// reduce memory usage
 	// capacity
 	var b strings.Builder
 	for i := 0; i < len(table.fieldsById); i++ {
-		b.WriteString(table.fieldsById[i].GetPhysicalName(provider))
+		b.WriteString(table.fieldsById[i].GetPhysicalName(table.provider))
 		if i < len(table.fieldsById)-1 {
 			b.WriteString(fieldListSeparator)
 		}
 	}
 	return b.String()
+}
+
+func (table *Table) getUniqueFieldList() string {
+	// reduce memory usage
+	// capacity
+	var b strings.Builder
+	switch table.tableType {
+	case tabletype.Business:
+		b.WriteString(table.GetPrimaryKey().GetPhysicalName(table.provider))
+		break
+	case tabletype.Meta:
+		var ukIndex = table.GetIndexByName(metaMetaUkIndex)
+		for i := 0; i < len(ukIndex.fields); i++ {
+			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
+			b.WriteString(fieldListSeparator)
+		}
+		break
+	case tabletype.MetaId:
+		var ukIndex = table.GetIndexByName(metaMetaIdUkIndex)
+		for i := 0; i < len(ukIndex.fields); i++ {
+			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
+			b.WriteString(fieldListSeparator)
+		}
+		break
+	}
+	return strings.Trim(b.String(), fieldListSeparator)
 }
 
 // return -1 if not found
@@ -873,31 +900,34 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 
 func (table *Table) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
-	var firstUniqueIndex = true
+	//	var firstUniqueIndex = true
 	var logger = table.getLogger()
 	var creationTime = time.Now()
 	var err error
 
-	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil))
+	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil, nil))
 	fmt.Println(metaQuery.query)
 	metaQuery.setSchema(schema.name)
 	metaQuery.setTable(table.name)
-
+	// create table
 	err = metaQuery.create()
-
 	if err != nil {
 		logger.error(-1, 0, err)
 		return err
-	} else {
+	}
+
+	// add primary key
+	var primaryKey = new(constraint)
+	primaryKey.Init(constrainttype.PrimaryKey, table)
+	primaryKey.create(schema)
+
+	// create indexes except for @meta & meta_id tables
+	if table.tableType != tabletype.Meta && table.tableType != tabletype.MetaId {
 		for i := 0; i < len(table.indexes); i++ {
 			index := table.indexes[i]
-			if firstUniqueIndex == true && index.unique {
-				err = index.createAsPk(schema)
-				firstUniqueIndex = false
-			} else {
-				err = index.create(schema)
-			}
+			err = index.create(schema)
 			if err != nil {
+				logger.error(-1, 0, err)
 				return err
 			}
 		}
@@ -933,7 +963,6 @@ func (table *Table) exists(schema *Schema) bool {
 		query.WriteString("upper(table_schema)=?")
 		break
 	}
-
 	// execute query
 	var metaQuery = metaQuery{}
 	metaQuery.query = query.String()

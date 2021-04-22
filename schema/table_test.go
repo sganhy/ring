@@ -404,7 +404,7 @@ func Test__Table__Clone(t *testing.T) {
 }
 
 // test mapper
-func Test__Table__ToMeta(t *testing.T) {
+func Test__Table__toMeta(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
@@ -425,35 +425,35 @@ func Test__Table__ToMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
 
-	meta := elemt.ToMeta()
-	newTable := meta.ToTable(fields, relations, indexes)
+	meta := elemt.toMeta()
+	newTable := meta.toTable(fields, relations, indexes)
 
 	if elemt.GetId() != newTable.GetId() {
-		t.Errorf("Table.ToMeta() ==> t0.GetId() must be equal to t1.GetId()")
+		t.Errorf("Table.toMeta() ==> t0.GetId() must be equal to t1.GetId()")
 	}
 	if elemt.GetName() != newTable.GetName() {
-		t.Errorf("Table.ToMeta() ==> t0.GetName() must be equal to t1.GetName()")
+		t.Errorf("Table.toMeta() ==> t0.GetName() must be equal to t1.GetName()")
 	}
 	if elemt.GetDescription() != newTable.GetDescription() {
-		t.Errorf("Table.ToMeta() ==> t0.GetDescription() must be equal to t1.GetDescription()")
+		t.Errorf("Table.toMeta() ==> t0.GetDescription() must be equal to t1.GetDescription()")
 	}
 	if elemt.GetPhysicalType() != newTable.GetPhysicalType() {
-		t.Errorf("Table.ToMeta() ==> t0.GetPhysicalType() must be equal to t1.GetPhysicalType()")
+		t.Errorf("Table.toMeta() ==> t0.GetPhysicalType() must be equal to t1.GetPhysicalType()")
 	}
 	if elemt.GetSubject() != newTable.GetSubject() {
-		t.Errorf("Table.ToMeta() ==> t0.GetSubject() must be equal to t1.GetSubject()")
+		t.Errorf("Table.toMeta() ==> t0.GetSubject() must be equal to t1.GetSubject()")
 	}
 	if elemt.IsCached() != newTable.IsCached() {
-		t.Errorf("Table.ToMeta() ==> t0.IsCached() must be equal to t1.IsCached()")
+		t.Errorf("Table.toMeta() ==> t0.IsCached() must be equal to t1.IsCached()")
 	}
 	if elemt.IsBaseline() != newTable.IsBaseline() {
-		t.Errorf("Table.ToMeta() ==> t0.IsBaseline() must be equal to t1.IsBaseline()")
+		t.Errorf("Table.toMeta() ==> t0.IsBaseline() must be equal to t1.IsBaseline()")
 	}
 	if elemt.IsReadonly() != newTable.IsReadonly() {
-		t.Errorf("Table.ToMeta() ==> t0.IsReadonly() must be equal to t1.IsReadonly()")
+		t.Errorf("Table.toMeta() ==> t0.IsReadonly() must be equal to t1.IsReadonly()")
 	}
 	if elemt.IsActive() != newTable.IsActive() {
-		t.Errorf("Table.ToMeta() ==> t0.IsActive() must be equal to t1.IsActive()")
+		t.Errorf("Table.toMeta() ==> t0.IsActive() must be equal to t1.IsActive()")
 	}
 }
 
@@ -489,6 +489,32 @@ func Test__Table__GetDml(t *testing.T) {
 	fields := []*Field{field}
 	if table.GetDml(dmlstatement.Update, fields) != exepectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
+	}
+	//======================
+	//==== testing Mysql
+	//======================
+	// table @log
+	table = tbl.getLogTable(databaseprovider.MySql, "information_schema")
+	exepectedSQl = "INSERT INTO information_schema.`@log` (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,`method`,line_number,message,description) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+	if table.GetDml(dmlstatement.Insert, nil) != exepectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + exepectedSQl)
+	}
+}
+
+func Test__Table__GetDql(t *testing.T) {
+	tbl := new(Table)
+	//======================
+	//==== testing PostgreSql
+	//======================
+	// table @log
+	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
+	exepectedSQl := "SELECT id,entry_time,level_id,schema_id,thread_id,call_site,job_id,\"method\",line_number,message,description FROM information_schema.\"@log\""
+	if table.GetDql("", "") != exepectedSQl {
+		t.Errorf("Table.GetDql() ==> query must be equal to " + exepectedSQl)
+	}
+	exepectedSQl = "SELECT id,entry_time,level_id,schema_id,thread_id,call_site,job_id,\"method\",line_number,message,description FROM information_schema.\"@log\" WHERE level_id>=? AND thread_id=? ORDER BY entry_time DESC"
+	if table.GetDql("level_id>=? AND thread_id=?", "entry_time DESC") != exepectedSQl {
+		t.Errorf("Table.GetDql() ==> query must be equal to " + exepectedSQl)
 	}
 }
 

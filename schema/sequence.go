@@ -71,28 +71,6 @@ func (sequence *Sequence) GetValue() *CacheId {
 //******************************
 // public methods
 //******************************
-func (sequence *Sequence) ToMeta() *Meta {
-	var metaTable = new(Meta)
-
-	// key
-	metaTable.id = sequence.id
-	metaTable.refId = sequence.schemaId
-	metaTable.objectType = int8(entitytype.Sequence)
-
-	// others
-	metaTable.dataType = 0
-	metaTable.name = sequence.name // max length 30 !! must be validated before
-	metaTable.description = sequence.description
-	metaTable.value = strconv.FormatInt(sequence.maxValue, 10)
-
-	// flags
-	metaTable.flags = 0
-	metaTable.setEntityBaseline(sequence.baseline)
-	metaTable.enabled = sequence.active
-
-	return metaTable
-}
-
 //******************************
 // private methods
 //******************************
@@ -112,7 +90,7 @@ func (sequence *Sequence) create(schema *Schema) error {
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
-	return query.insertMeta(sequence.ToMeta(), sequence.schemaId)
+	return query.insertMeta(sequence.toMeta(), sequence.schemaId)
 }
 
 func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
@@ -156,4 +134,26 @@ func (sequence *Sequence) getEventId(schemaId int32) *Sequence {
 	result.Init(5, sequenceEventId, "Unique event number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
 	result.value.CurrentId = 198
 	return result
+}
+
+func (sequence *Sequence) toMeta() *Meta {
+	var metaTable = new(Meta)
+
+	// key
+	metaTable.id = sequence.id
+	metaTable.refId = sequence.schemaId
+	metaTable.objectType = int8(entitytype.Sequence)
+
+	// others
+	metaTable.dataType = 0
+	metaTable.name = sequence.name // max length 30 !! must be validated before
+	metaTable.description = sequence.description
+	metaTable.value = strconv.FormatInt(sequence.maxValue, 10)
+
+	// flags
+	metaTable.flags = 0
+	metaTable.setEntityBaseline(sequence.baseline)
+	metaTable.enabled = sequence.active
+
+	return metaTable
 }
