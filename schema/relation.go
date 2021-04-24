@@ -88,6 +88,10 @@ func (relation *Relation) GetPhysicalName() string {
 	return relation.physicalName
 }
 
+func (relation *Relation) GetEntityType() entitytype.EntityType {
+	return entitytype.Relation
+}
+
 //******************************
 // public methods
 //******************************

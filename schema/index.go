@@ -80,6 +80,11 @@ func (index *Index) GetTableId() int32 {
 	return index.tableId
 }
 
+func (index *Index) GetEntityType() entitytype.EntityType {
+	return entitytype.Index
+
+}
+
 //******************************
 // public methods
 //******************************

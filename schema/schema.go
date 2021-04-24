@@ -3,6 +3,8 @@ package schema
 import (
 	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
+	"ring/schema/entitytype"
 	"ring/schema/sourcetype"
 	"sort"
 	"strings"
@@ -30,7 +32,11 @@ type Schema struct {
 const (
 	metaSchemaName        string = "@meta"
 	metaSchemaDescription string = "@meta"
-	postgreSqlSchema      string = "rpg_sheet"
+	postgreSqlSchema      string = "rpg_sheet_test"
+)
+
+var (
+	createSchemaSql string = "%s %s %s"
 )
 
 func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
@@ -105,6 +111,10 @@ func (schema *Schema) GetLanguage() *Language {
 
 func (schema *Schema) GetDatabaseProvider() databaseprovider.DatabaseProvider {
 	return schema.connections.provider
+}
+
+func (schema *Schema) GetEntityType() entitytype.EntityType {
+	return entitytype.Schema
 }
 
 //******************************
@@ -214,9 +224,43 @@ func (schema *Schema) Execute(queries []Query) error {
 	return nil
 }
 
+func (schema *Schema) GetDdl(statement ddlstatement.DdlStatement) string {
+	var query string
+	if statement == ddlstatement.Create {
+		query = fmt.Sprintf(createSchemaSql, ddlstatement.Create.String(), entitytype.Schema.String(), schema.GetPhysicalName())
+	}
+	return query
+}
+
 //******************************
 // private methods
 //******************************
+func (schema *Schema) create() error {
+	var metaQuery = metaQuery{}
+	var creationTime = time.Now()
+	var logger = schema.logger
+	var err error
+
+	metaQuery.Init(schema, nil)
+	metaQuery.query = schema.GetDdl(ddlstatement.Create)
+	err = metaQuery.create()
+
+	if err != nil {
+		logger.error(-1, 0, err)
+		panic(err)
+	}
+
+	duration := time.Now().Sub(creationTime)
+	logger.info(16, 0, "Create "+entitytype.Schema.String(), fmt.Sprintf("name=%s; execution_time=%d (ms)",
+		schema.physicalName, int(duration.Seconds()*1000)))
+	return nil
+}
+
+func (schema *Schema) exists() bool {
+	cata := new(catalogue)
+	return cata.exists(schema, schema)
+}
+
 func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *Tablespace {
 	result := new(Tablespace)
 	result.name = "rpg_data"

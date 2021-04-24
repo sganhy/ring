@@ -42,7 +42,7 @@ func (sequence *Sequence) Init(id int32, name string, description string, schema
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (sequence *Sequence) GetId() int32 {
 	return sequence.id
@@ -66,6 +66,10 @@ func (sequence *Sequence) GetMaxValue() int64 {
 
 func (sequence *Sequence) GetValue() *CacheId {
 	return sequence.value
+}
+
+func (sequence *Sequence) GetEntityType() entitytype.EntityType {
+	return entitytype.Sequence
 }
 
 //******************************

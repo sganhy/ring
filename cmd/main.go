@@ -34,7 +34,7 @@ func main() {
 	frame := test4()
 	fmt.Println(frame.File)
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-	//schema.Init(databaseprovider.MySql, "root:root@/rpg_sheet", 10, 20)
+	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
 
 	//ss.LogWarn(1, 544, "hello", "World")
 
@@ -158,6 +158,7 @@ func main() {
 		physicaltype.Table, 64, "@meta", tabletype.Business, databaseprovider.PostgreSql, "subject test", true, false, true, false)
 	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
 	fmt.Println(elemt.GetDdl(ddlstatement.Create, nil))
+
 	//fmt.Println(elemt.GetFieldById(4).GetName())
 	//fmt.Println(elemt.GetPrimaryKey().GetName())
 	/*

@@ -11,6 +11,9 @@ const (
 	Index      EntityType = 3
 	Schema     EntityType = 7
 	Sequence   EntityType = 15
+	Language   EntityType = 17
+	Tablespace EntityType = 18
+	Constraint EntityType = 101 // not stored in @meta table
 	NotDefined EntityType = 127
 )
 

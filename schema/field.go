@@ -84,10 +84,10 @@ var (
 		fieldtype.LongString:    "LONGTEXT",
 		fieldtype.Double:        "DOUBLE",
 		fieldtype.Float:         "FLOAT",
-		fieldtype.Long:          "BIGINT",
-		fieldtype.Int:           "INT",
-		fieldtype.Short:         "SMALLINT",
-		fieldtype.Byte:          "TINYINT",
+		fieldtype.Long:          "BIGINT(20)",
+		fieldtype.Int:           "INT(11)",
+		fieldtype.Short:         "SMALLINT(6)",
+		fieldtype.Byte:          "TINYINT(4)",
 		fieldtype.Boolean:       "BOOLEAN",
 		fieldtype.ShortDateTime: "DATE",
 		fieldtype.DateTime:      "TIMESTAMP",
@@ -176,6 +176,11 @@ func (field *Field) IsMultilingual() bool {
 	return field.multilingual
 }
 
+func (field *Field) GetEntityType() entitytype.EntityType {
+	return entitytype.Field
+
+}
+
 //******************************
 // public methods
 //******************************
@@ -224,8 +229,7 @@ func (field *Field) GetDdl(provider databaseprovider.DatabaseProvider, tableType
 	if datatype == unknownFieldDataType {
 		return unknownFieldDataType
 	}
-	return strings.TrimSpace(field.GetPhysicalName(provider) + " " + field.getSqlDataType(provider) + " " +
-		field.getFieldConstraint(provider, tableType))
+	return strings.TrimSpace(field.GetPhysicalName(provider) + " " + field.getSqlDataType(provider))
 }
 
 // reformat value for records
@@ -487,21 +491,6 @@ func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) s
 		}
 	}
 
-	return result
-}
-
-func (field *Field) getFieldConstraint(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
-	// postgresql
-	var result = "NULL"
-	if tableType != tabletype.Business && field.notNull == true {
-		result = "NOT " + result
-	}
-	/*
-		if field.fieldType == fieldtype.Byte && provider == databaseprovider.PostgreSql {
-			var physicalName = field.getPhysicalName(provider)
-			result += fmt.Sprintf(postgreSqlByteConstraint, physicalName, physicalName)
-		}
-	*/
 	return result
 }
 

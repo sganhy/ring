@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"ring/schema/entitytype"
 	"strings"
 )
 
@@ -209,7 +210,7 @@ func (language *Language) Init(code string) {
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 func (language *Language) GetCode() string {
 	return language.code
@@ -221,4 +222,9 @@ func (language *Language) GetName() string {
 
 func (language *Language) GetNativeName() string {
 	return language.nativeName
+}
+
+func (language *Language) GetEntityType() entitytype.EntityType {
+	return entitytype.Language
+
 }

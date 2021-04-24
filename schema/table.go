@@ -43,7 +43,7 @@ type Table struct {
 }
 
 const (
-	createTableSql       string = "CREATE TABLE %s (\n%s\n)"
+	createTableSql       string = "%s %s %s (\n%s\n)"
 	ddlSpace             string = " "
 	dmlInsertEnd         string = ")"
 	dmlInsertStart       string = " ("
@@ -84,8 +84,6 @@ const (
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	mysqlParameterName   string = "?"
-	postGreTableCatalog  string = "pg_tables"
-	mysqlTableCatalog    string = "information_schema.tables"
 	relationNotFound     int    = -1
 )
 
@@ -184,6 +182,10 @@ func (table *Table) IsActive() bool {
 
 func (table *Table) GetFieldCount() int {
 	return len(table.fields)
+}
+
+func (table *Table) GetEntityType() entitytype.EntityType {
+	return entitytype.Table
 }
 
 //******************************
@@ -322,7 +324,7 @@ func (table *Table) GetPrimaryKey() *Field {
 }
 
 func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tablespace) string {
-	var sql string
+	var query string
 	switch statement {
 	case ddlstatement.Create:
 		var fields []string
@@ -334,14 +336,15 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tabl
 			relationSql := table.relations[i].GetDdl(table.provider)
 			fields = append(fields, relationSql)
 		}
-		sql = fmt.Sprintf(createTableSql, table.physicalName, strings.Join(fields, ",\n"))
-		sql += table.getCreateOptions()
+		query = fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
+			strings.Join(fields, ",\n"))
+		query += table.getCreateOptions()
 		if tablespace != nil {
-			sql += ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+			query += ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
 		break
 	}
-	return sql
+	return query
 }
 
 func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) string {
@@ -825,7 +828,7 @@ func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) 
 	table.sqlCapacity += capacity
 }
 
-// used by metaquery to generate variable value
+// used by metaquery/ catalogue to generate variable value
 func (table *Table) getVariableName(index int) string {
 	result := ""
 	switch table.provider {
@@ -905,10 +908,9 @@ func (table *Table) create(schema *Schema) error {
 	var creationTime = time.Now()
 	var err error
 
+	metaQuery.Init(schema, table)
 	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil, nil))
-	fmt.Println(metaQuery.query)
-	metaQuery.setSchema(schema.name)
-	metaQuery.setTable(table.name)
+
 	// create table
 	err = metaQuery.create()
 	if err != nil {
@@ -916,62 +918,71 @@ func (table *Table) create(schema *Schema) error {
 		return err
 	}
 
-	// add primary key
-	var primaryKey = new(constraint)
-	primaryKey.Init(constrainttype.PrimaryKey, table)
-	primaryKey.create(schema)
-
 	// create indexes except for @meta & meta_id tables
+	table.createIndexes(schema)
+
+	// create field constraints
+	table.createConstraints(schema)
+
+	duration := time.Now().Sub(creationTime)
+	if table.tableType == tabletype.Business {
+		logger.info(17, 0, "Create "+entitytype.Table.String(), fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
+			table.id, table.physicalName, int(duration.Seconds()*1000)))
+	} else {
+		logger.info(17, 0, "Create "+entitytype.Table.String(), fmt.Sprintf("name=%s; execution_time=%d (ms)",
+			table.physicalName, int(duration.Seconds()*1000)))
+	}
+	return err
+}
+
+func (table *Table) createIndexes(schema *Schema) {
+	var logger = table.getLogger()
+
 	if table.tableType != tabletype.Meta && table.tableType != tabletype.MetaId {
 		for i := 0; i < len(table.indexes); i++ {
 			index := table.indexes[i]
-			err = index.create(schema)
+			err := index.create(schema)
 			if err != nil {
 				logger.error(-1, 0, err)
-				return err
 			}
 		}
 	}
+}
 
-	duration := time.Now().Sub(creationTime)
-	logger.info(17, 0, "Create Table", fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
-		table.id, table.physicalName, int(duration.Seconds()*1000)))
-	return err
+func (table *Table) createConstraints(schema *Schema) {
+	// add primary key
+	var primaryKey = new(constraint)
+	var logger = table.getLogger()
+
+	primaryKey.Init(constrainttype.PrimaryKey, table)
+	err := primaryKey.create(schema)
+	if err != nil {
+		logger.error(-1, 0, err)
+	}
+	var checkConstraint = new(constraint)
+	checkConstraint.Init(constrainttype.Check, table)
+	var notNullConstraint = new(constraint)
+	notNullConstraint.Init(constrainttype.NotNull, table)
+
+	for i := 0; i < len(table.fields); i++ {
+		field := table.fields[i]
+		checkConstraint.setField(field)
+		err = checkConstraint.create(schema)
+		if err != nil {
+			logger.error(-1, 0, err)
+		}
+		notNullConstraint.setField(field)
+		err = notNullConstraint.create(schema)
+		if err != nil {
+			logger.error(-1, 0, err)
+		}
+	}
 }
 
 // is table exists in the specified schema
 func (table *Table) exists(schema *Schema) bool {
-	var query strings.Builder
-	query.WriteString(dqlSelect)
-	query.WriteString("1")
-	query.WriteString(dqlFrom)
-	switch table.provider {
-	case databaseprovider.PostgreSql:
-		query.WriteString(postGreTableCatalog)
-		query.WriteString(dqlWhere)
-		query.WriteString("upper(tablename)=")
-		query.WriteString(table.getVariableName(0))
-		query.WriteString(filterSeparator)
-		query.WriteString("upper(schemaname)=")
-		query.WriteString(table.getVariableName(1))
-		break
-	case databaseprovider.MySql:
-		query.WriteString(mysqlTableCatalog)
-		query.WriteString(dqlWhere)
-		query.WriteString("upper(table_name)=?")
-		query.WriteString(filterSeparator)
-		query.WriteString("upper(table_schema)=?")
-		break
-	}
-	// execute query
-	var metaQuery = metaQuery{}
-	metaQuery.query = query.String()
-	metaQuery.setSchema(schema.name)
-	metaQuery.setTable(table.name)
-	metaQuery.addParam(strings.ToUpper(table.name))
-	metaQuery.addParam(strings.ToUpper(schema.GetPhysicalName()))
-	result, _ := metaQuery.exists()
-	return result
+	cata := new(catalogue)
+	return cata.exists(schema, table)
 }
 
 func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
@@ -1113,6 +1124,6 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	fields = append(fields, lineNumber)  //11
 
 	result.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
-		tabletype.MetaId, provider, "", false, false, true, true)
+		tabletype.Log, provider, "", false, false, true, true)
 	return result
 }

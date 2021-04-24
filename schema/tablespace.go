@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
+	"ring/schema/entitytype"
 )
 
 type Tablespace struct {
@@ -31,11 +32,17 @@ func (tablespace *Tablespace) Init(id int32, name string, description string, ta
 func (tablespace *Tablespace) GetId() int32 {
 	return tablespace.id
 }
+
 func (tablespace *Tablespace) GetName() string {
 	return tablespace.name
 }
+
 func (tablespace *Tablespace) GetDescription() string {
 	return tablespace.description
+}
+
+func (tablespace *Tablespace) GetEntityType() entitytype.EntityType {
+	return entitytype.Tablespace
 }
 
 //******************************

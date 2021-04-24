@@ -67,6 +67,9 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 		// 5> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
+			// create physical schema if it doesn't exist
+			createPhysicalSchema(metaSchema)
+
 			// generate meta tables first before getSchemaIdList()
 			createMetaTables(metaSchema)
 
@@ -178,6 +181,15 @@ func addSchema(schema *Schema) {
 			(*schemaById)[i-1] = currentSch
 		} else {
 			break
+		}
+	}
+}
+
+func createPhysicalSchema(schema *Schema) {
+	if schema.exists() == false {
+		err := schema.create()
+		if err != nil {
+			panic(err)
 		}
 	}
 }
