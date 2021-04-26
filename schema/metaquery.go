@@ -27,6 +27,7 @@ type metaQuery struct {
 const (
 	filterSeparator string = " AND "
 	operatorEqual   string = "="
+	operatorPlus    string = "+"
 )
 
 var (
@@ -36,6 +37,9 @@ var (
 func (query *metaQuery) Init(schema *Schema, table *Table) {
 	query.table = table
 	query.schema = schema
+	if query.resultCount == nil {
+		query.resultCount = new(int)
+	}
 }
 
 //******************************
@@ -43,7 +47,9 @@ func (query *metaQuery) Init(schema *Schema, table *Table) {
 //******************************
 func (query *metaQuery) setSchema(schemaName string) {
 	query.schema = GetSchemaByName(schemaName)
-	query.resultCount = new(int)
+	if query.resultCount == nil {
+		query.resultCount = new(int)
+	}
 }
 
 func (query *metaQuery) setTable(tableName string) {
@@ -52,7 +58,9 @@ func (query *metaQuery) setTable(tableName string) {
 		query.schema = GetSchemaByName(metaSchemaName)
 	}
 	query.table = query.schema.GetTableByName(tableName)
-	query.resultCount = new(int)
+	if query.resultCount == nil {
+		query.resultCount = new(int)
+	}
 	if query.table == nil {
 		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.name)
 	}
@@ -69,11 +77,10 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	var err error
 
 	if query.ddl == true {
-		var sqlResult sql.Result
 		ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancelfunc()
-		sqlResult, err = dbConnection.ExecContext(ctx, sqlQuery)
-		fmt.Println(sqlResult)
+		_, err = dbConnection.ExecContext(ctx, sqlQuery)
+		fmt.Println(sqlQuery)
 		return err
 	} else if query.dml == true {
 		fmt.Println(sqlQuery)
@@ -255,6 +262,15 @@ func (query *metaQuery) getMetaList() []Meta {
 	return nil
 }
 
+func (query *metaQuery) getInt64Value() int64 {
+	if *query.resultCount > 0 {
+		val, _ := strconv.ParseInt(((*query.result)[0].([]string))[0], 10, 64)
+		return val
+	} else {
+		return 0
+	}
+}
+
 func (query *metaQuery) getMetaIdList() []MetaId {
 	if query.table != nil && query.table.GetName() == metaIdTableName {
 
@@ -300,7 +316,9 @@ func (query *metaQuery) run() error {
 	result := make([]interface{}, 0, 4)
 	query.ddl = false
 	query.dml = false
-	query.query = query.getQuery()
+	if query.query == "" {
+		query.query = query.getQuery()
+	}
 	query.returnResultList = true
 	query.result = &result
 	queries := make([]Query, 1, 1)

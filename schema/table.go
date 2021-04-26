@@ -62,7 +62,6 @@ const (
 	metaDescription      string = "description"
 	metaFlags            string = "flags"
 	metaId               string = "id"
-	metaIdTableName      string = "@meta_id"
 	metaLogCallSite      string = "call_site"
 	metaLogEntryTime     string = "entry_time"
 	metaLogId            string = "id"
@@ -78,6 +77,8 @@ const (
 	metaReferenceId      string = "reference_id"
 	metaSchemaId         string = "schema_id"
 	metaTableName        string = "@meta"
+	metaIdTableName      string = "@meta_id"
+	metaLongTableName    string = "@long"
 	metaValue            string = "value"
 	metaMetaUkIndex      string = "pk_@meta"
 	metaMetaIdUkIndex    string = "pk_@meta_id"
@@ -100,7 +101,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadIndexes(indexes) //!!!! run at the end only
 	// initialize cacheId
 	table.cacheId = new(CacheId)
-	table.cacheId.Init()
+	table.cacheId.Init(id, schemaId, table.GetEntityType())
 	table.cacheId.CurrentId = 0
 	table.cacheId.MaxId = 0
 	table.cacheId.ReservedRange = 0
@@ -386,9 +387,6 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 		result.WriteString(table.physicalName)
 		result.WriteString(dqlWhere)
 		table.addPrimaryKeyFilter(&result, 0)
-		break
-	case dmlstatement.UpdateReturning:
-		result.Grow(len(table.physicalName) + 30)
 		break
 	}
 	return result.String()
@@ -926,11 +924,13 @@ func (table *Table) create(schema *Schema) error {
 
 	duration := time.Now().Sub(creationTime)
 	if table.tableType == tabletype.Business {
-		logger.info(17, 0, "Create "+entitytype.Table.String(), fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
-			table.id, table.physicalName, int(duration.Seconds()*1000)))
+		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
+			fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
+				table.id, table.physicalName, int(duration.Seconds()*1000)))
 	} else {
-		logger.info(17, 0, "Create "+entitytype.Table.String(), fmt.Sprintf("name=%s; execution_time=%d (ms)",
-			table.physicalName, int(duration.Seconds()*1000)))
+		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
+			fmt.Sprintf("name=%s; execution_time=%d (ms)",
+				table.physicalName, int(duration.Seconds()*1000)))
 	}
 	return err
 }
@@ -1125,5 +1125,23 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 
 	result.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.Log, provider, "", false, false, true, true)
+	return result
+}
+
+// table used to get result from aggregate queries
+func (table *Table) getLongTable() *Table {
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+	var result = new(Table)
+
+	// physical_name is built later
+	//  == metaId table
+	var value = Field{}
+	value.Init(4283, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
+	fields = append(fields, value) //1
+
+	result.Init(int32(tabletype.Log), metaLongTableName, "", fields, relations, indexes, physicaltype.Logical, 0, "",
+		tabletype.Logical, databaseprovider.NotDefined, "", false, false, true, true)
 	return result
 }

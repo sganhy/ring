@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
+	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/tabletype"
@@ -47,7 +48,9 @@ func Test__Index__Init(t *testing.T) {
 	if elemi.IsBitmap() != false {
 		t.Errorf("Index.Init() ==> IsBitmap() <> false")
 	}
-
+	if elemi.GetEntityType() != entitytype.Index {
+		t.Errorf("Index.Init() ==>  GetEntityType() <> entitytype.Index")
+	}
 	elemi.Init(21, "rel test", "hellkzae", nil, 0, false, true, true, true)
 	if elemi.GetFields() == nil {
 		t.Errorf("Index.Init() ==> fields cannot be null")

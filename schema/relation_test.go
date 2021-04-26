@@ -2,6 +2,7 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
+	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -46,6 +47,12 @@ func Test__Relation__Init(t *testing.T) {
 	}
 	if elemr0.GetToTable() != elemt {
 		t.Errorf("Relationeld.Init() ==> GetToTable() <> table pointer")
+	}
+	if elemr0.GetPhysicalName() != "arel test" {
+		t.Errorf("Relationeld.Init() ==> GetPhysicalName() <> 'arel test'")
+	}
+	if elemr0.GetEntityType() != entitytype.Relation {
+		t.Errorf("Relationeld.Init() ==> GetEntityType() <> entitytype.Relation")
 	}
 }
 

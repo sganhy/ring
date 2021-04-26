@@ -2,6 +2,7 @@ package schema
 
 import (
 	"ring/schema/databaseprovider"
+	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/searchabletype"
 	"ring/schema/tabletype"
@@ -59,6 +60,9 @@ func Test__Field__Init(t *testing.T) {
 	}
 	if elemf0.IsPrimaryKey() != false {
 		t.Errorf("Field.Init() ==> IsPrimaryKey() <> false")
+	}
+	if elemf0.GetEntityType() != entitytype.Field {
+		t.Errorf("Field.Init() ==>  GetEntityType() <> entitytype.Field")
 	}
 
 	// computed default value

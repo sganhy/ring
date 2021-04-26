@@ -6,4 +6,5 @@ const (
 	Table       PhysicalType = 1
 	View        PhysicalType = 3
 	Measurement PhysicalType = 5
+	Logical     PhysicalType = 11
 )

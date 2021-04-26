@@ -11,8 +11,8 @@ const (
 	Log                  TableType = 7
 	Lexicon              TableType = 8
 	LexiconItem          TableType = 9
-	User                 TableType = 10
 	SchemaDictionary     TableType = 22
 	TableDictionary      TableType = 24
 	TableSpaceDictionary TableType = 25
+	Logical              TableType = 27
 )

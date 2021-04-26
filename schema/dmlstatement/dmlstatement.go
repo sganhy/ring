@@ -5,10 +5,9 @@ type DmlStatement int8
 //!!! reserved value for unit testing {4, 5, 6} !!!
 
 const (
-	Insert          DmlStatement = 1
-	Update          DmlStatement = 2
-	Delete          DmlStatement = 3
-	UpdateReturning DmlStatement = 9
+	Insert DmlStatement = 1
+	Update DmlStatement = 2
+	Delete DmlStatement = 3
 )
 
 func (statement DmlStatement) String() string {

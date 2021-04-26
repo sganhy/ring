@@ -63,7 +63,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
 
 		// 4> initialize cache Id
-		InitCacheId(metaSchema, metaSchema.GetTableByName(metaIdTableName))
+		InitCacheId(metaSchema, metaSchema.GetTableByName(metaIdTableName), metaSchema.GetTableByName(metaLongTableName))
 
 		// 5> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
@@ -203,6 +203,10 @@ func createMetaTables(schema *Schema) {
 			panic(err)
 		}
 	}
+	// table @log is ready
+	schema.logger.isTableExists(true)
+
+	// create other meta tables
 	for _, table := range schema.tables {
 		if table.id != logTable.id && table.exists(schema) == false {
 			err := table.create(schema)

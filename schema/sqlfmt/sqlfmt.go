@@ -3,11 +3,15 @@ package sqlfmt
 import (
 	"ring/schema/databaseprovider"
 	"strings"
+	"unicode"
 )
 
 const (
-	doubleQuotes string = "\""
-	mysqlQuotes  string = "`"
+	doubleQuotes   string = "\""
+	mysqlQuotes    string = "`"
+	snakeSeparator rune   = '_'
+	kebabSeparator rune   = '-'
+	spaceSeparator rune   = ' '
 )
 
 var sqlKeyWords = map[string]bool{
@@ -676,4 +680,52 @@ func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName str
 		return sb.String()
 	}
 	return entityName
+}
+
+func ToSnakeCase(name string) string {
+	return ""
+}
+
+func ToCamelCase(name string) string {
+	var result strings.Builder
+	var letterBefore = false
+	var toUpperCaseMode = false
+
+	result.Grow(len(name))
+
+	for _, chr := range name {
+		if letterBefore == false && (chr == snakeSeparator || chr == kebabSeparator || chr == spaceSeparator) {
+			continue
+		}
+		if chr == snakeSeparator || chr == kebabSeparator || chr == spaceSeparator {
+			toUpperCaseMode = true
+			continue
+		}
+		if toUpperCaseMode == true {
+			result.WriteRune(unicode.ToUpper(chr))
+		} else {
+			result.WriteRune(unicode.ToLower(chr))
+		}
+		toUpperCaseMode = false
+		letterBefore = true
+	}
+
+	return result.String()
+}
+
+func ToPascalCase(name string) string {
+	var result strings.Builder
+	nameCamel := ToCamelCase(name)
+
+	if len(nameCamel) > 0 {
+		result.Grow(len(nameCamel))
+		result.WriteRune(unicode.ToUpper(rune(nameCamel[0])))
+		result.WriteString(nameCamel[1:])
+	}
+
+	return result.String()
+}
+
+func ToKebabCase(name string) string {
+	return ""
 }

@@ -6,6 +6,7 @@ import (
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
 	"ring/schema/sourcetype"
+	"ring/schema/sqlfmt"
 	"sort"
 	"strings"
 	"time"
@@ -251,7 +252,7 @@ func (schema *Schema) create() error {
 	}
 
 	duration := time.Now().Sub(creationTime)
-	logger.info(16, 0, "Create "+entitytype.Schema.String(), fmt.Sprintf("name=%s; execution_time=%d (ms)",
+	logger.info(16, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Schema.String()), fmt.Sprintf("name=%s; execution_time=%d (ms)",
 		schema.physicalName, int(duration.Seconds()*1000)))
 	return nil
 }
@@ -327,6 +328,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaTable = table.getMetaTable(provider, physicalName)
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
 	var metaLogTable = table.getLogTable(provider, physicalName)
+	var metaLongTable = table.getLongTable()
 
 	language.Init("EN")
 
@@ -334,6 +336,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, *metaTable)
 	tables = append(tables, *metaIdTable)
 	tables = append(tables, *metaLogTable)
+	tables = append(tables, *metaLongTable)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
 	result.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,

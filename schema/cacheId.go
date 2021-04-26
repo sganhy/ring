@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
+	"strings"
 	"sync"
 )
 
@@ -11,8 +12,12 @@ type CacheId struct {
 	MaxId         int64
 	ReservedRange int32
 	syncRoot      sync.Mutex
-	query         *metaQuery
+	metaquery     *metaQuery
 }
+
+const (
+	sqlPosgreSqlReturning string = "RETURNING"
+)
 
 var (
 	cacheIdSchema *Schema
@@ -20,17 +25,26 @@ var (
 	cacheIdQuery  string
 )
 
-func InitCacheId(schema *Schema, table *Table) {
+func InitCacheId(schema *Schema, table *Table, resultTable *Table) {
 	cacheIdSchema = schema
-	cacheIdTable = table
-	field := table.GetFieldByName(metaValue)
-	fields := []*Field{field}
-	cacheIdQuery = table.GetDml(dmlstatement.UpdateReturning, fields)
+	cacheIdTable = resultTable
+	cacheid := new(CacheId)
+	cacheIdQuery = cacheid.GetDml(dmlstatement.Update, table)
 }
 
-func (cacheId *CacheId) Init() {
-	cacheId.query = new(metaQuery)
-	cacheId.query.Init(cacheIdSchema, cacheIdTable)
+func (cacheId *CacheId) Init(objid int32, schemaId int32, entityType entitytype.EntityType) {
+	cacheId.metaquery = new(metaQuery)
+	cacheId.metaquery.Init(cacheIdSchema, cacheIdTable)
+
+	// added cacheIdSchema check to avoid unitesting crash!
+	if cacheIdSchema != nil {
+		cacheId.metaquery.query = cacheIdQuery
+		// SET value=value+$1 WHERE id=$2 AND schema_id=$3 AND object_type=$4 RETURNING $5
+		cacheId.metaquery.addParam(int64(1))
+		cacheId.metaquery.addParam(objid)
+		cacheId.metaquery.addParam(schemaId)
+		cacheId.metaquery.addParam(int8(entityType))
+	}
 }
 
 //******************************
@@ -40,7 +54,38 @@ func (cacheId *CacheId) Init() {
 //******************************
 // public methods
 //******************************
-func (cacheId *CacheId) ToMetaId(objectType entitytype.EntityType, objectId int32, schemaId int32) *MetaId {
+func (cacheId *CacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) string {
+	var result strings.Builder
+
+	if dmlType == dmlstatement.Update {
+		//TODO manage query for Mysql
+		var field = table.GetFieldByName(metaValue)
+		result.Grow(int(table.sqlCapacity))
+		result.WriteString(dmlType.String())
+		result.WriteString(dmlSpace)
+		result.WriteString(table.physicalName)
+		result.WriteString(dmlUpdateSet)
+		result.WriteString(field.GetPhysicalName(table.provider))
+		result.WriteString(operatorEqual)
+		result.WriteString(field.GetPhysicalName(table.provider))
+		result.WriteString(operatorPlus)
+		result.WriteString(table.getVariableName(0))
+		result.WriteString(dqlWhere)
+		table.addPrimaryKeyFilter(&result, 1)
+		// returning for postgresql ==> RETURNING value
+		result.WriteString(dmlSpace)
+		result.WriteString(sqlPosgreSqlReturning)
+		result.WriteString(dmlSpace)
+		result.WriteString(field.GetPhysicalName(table.provider))
+	}
+
+	return result.String()
+}
+
+//******************************
+// private methods
+//******************************
+func (cacheId *CacheId) toMetaId(objectType entitytype.EntityType, objectId int32, schemaId int32) *MetaId {
 	metaId := new(MetaId)
 	metaId.id = objectId
 	metaId.schemaId = schemaId
@@ -53,14 +98,11 @@ func (cacheId *CacheId) ToMetaId(objectType entitytype.EntityType, objectId int3
 	return metaId
 }
 
-//******************************
-// private methods
-//******************************
 func (cacheId *CacheId) create(objectType entitytype.EntityType, objectId int32, schemaId int32) error {
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaIdTableName)
-	return query.insertMetaId(cacheId.ToMetaId(objectType, objectId, schemaId))
+	return query.insertMetaId(cacheId.toMetaId(objectType, objectId, schemaId))
 }
 
 func (cacheId *CacheId) exists(objectType entitytype.EntityType, objectId int32, schemaId int32) bool {
@@ -77,12 +119,8 @@ func (cacheId *CacheId) exists(objectType entitytype.EntityType, objectId int32,
 	return result
 }
 
-func (cacheId *CacheId) getNewId(objectType entitytype.EntityType, objectId int32, schemaId int32) bool {
-
-	cacheId.query.addFilter(metaId, operatorEqual, objectId)
-	cacheId.query.addFilter(metaSchemaId, operatorEqual, schemaId)
-	cacheId.query.addFilter(metaObjectType, operatorEqual, int8(objectType))
-
-	result, _ := cacheId.query.exists()
-	return result
+func (cacheId *CacheId) GetNewId() bool {
+	cacheId.metaquery.run()
+	cacheId.CurrentId = cacheId.metaquery.getInt64Value()
+	return true
 }

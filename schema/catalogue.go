@@ -14,12 +14,14 @@ type catalogue struct {
 
 var (
 	postgreSqlCatalogue = map[entitytype.EntityType]catalogue{
-		entitytype.Table:  {fieldEntityName: "tablename", fieldSchemaName: "schemaname", viewName: "pg_tables"},
-		entitytype.Schema: {fieldEntityName: "", fieldSchemaName: "nspname", viewName: "pg_catalog.pg_namespace"},
+		entitytype.Table:      {fieldEntityName: "tablename", fieldSchemaName: "schemaname", viewName: "pg_tables"},
+		entitytype.Schema:     {fieldEntityName: "", fieldSchemaName: "nspname", viewName: "pg_catalog.pg_namespace"},
+		entitytype.Tablespace: {fieldEntityName: "spcname", fieldSchemaName: "", viewName: "pg_tablespace"},
 	}
 	mySqlCatalogue = map[entitytype.EntityType]catalogue{
-		entitytype.Table:  {fieldEntityName: "table_schema", fieldSchemaName: "table_name", viewName: "information_schema.tables"},
-		entitytype.Schema: {fieldEntityName: "", fieldSchemaName: "schema_name", viewName: "information_schema.schemata"},
+		entitytype.Table:      {fieldEntityName: "table_schema", fieldSchemaName: "table_name", viewName: "information_schema.tables"},
+		entitytype.Schema:     {fieldEntityName: "", fieldSchemaName: "schema_name", viewName: "information_schema.schemata"},
+		entitytype.Tablespace: {fieldEntityName: "", fieldSchemaName: "", viewName: ""},
 	}
 	catalogTable *Table
 )
