@@ -102,9 +102,6 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	// initialize cacheId
 	table.cacheId = new(CacheId)
 	table.cacheId.Init(id, schemaId, table.GetEntityType())
-	table.cacheId.CurrentId = 0
-	table.cacheId.MaxId = 0
-	table.cacheId.ReservedRange = 0
 	table.tableType = tableType
 	table.schemaId = schemaId
 	table.tableType = tableType

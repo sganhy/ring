@@ -33,16 +33,21 @@ const (
 )
 
 var (
-	logSchema     *Schema
-	logTable      *Table
-	logTableExist bool
+	logSchema      *Schema
+	logTable       *Table
+	metaTableExist bool
 )
 
 func (logger *log) Init(schemaId int32, disableDbLogs bool) {
 	logger.schemaId = schemaId
 	logger.active = !disableDbLogs
 
-	logTableExist = false
+	metaTableExist = false
+
+	if disableDbLogs == true {
+		// return here to avoid crash during unitests
+		return
+	}
 
 	// get metas chema to fetch current JobId
 	if schemaId == 0 {
@@ -97,8 +102,8 @@ func (logger *log) setThreadId(threadId int) {
 	logger.threadId = int32(threadId & 2147483647)
 }
 
-func (logger *log) isTableExists(exist bool) {
-	logTableExist = exist
+func (logger *log) isMetaTables(exist bool) {
+	metaTableExist = exist
 }
 
 //******************************
@@ -141,7 +146,7 @@ func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages .
 
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
-	if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true && logTableExist == true {
+	if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
 		fmt.Println("logger.writeToDb(newLog) ==> " + description)
 		logger.writeToDb(newLog)
 	} else if logger.active == true {

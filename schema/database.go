@@ -62,10 +62,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		// 3> initialize logger
 		initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
 
-		// 4> initialize cache Id
-		InitCacheId(metaSchema, metaSchema.GetTableByName(metaIdTableName), metaSchema.GetTableByName(metaLongTableName))
-
-		// 5> load other schemas if connection pool is not disable
+		// 4> load other schemas if connection pool is not disable
 		if disableConnectionPool == false {
 			// create physical schema if it doesn't exist
 			createPhysicalSchema(metaSchema)
@@ -203,9 +200,6 @@ func createMetaTables(schema *Schema) {
 			panic(err)
 		}
 	}
-	// table @log is ready
-	schema.logger.isTableExists(true)
-
 	// create other meta tables
 	for _, table := range schema.tables {
 		if table.id != logTable.id && table.exists(schema) == false {
@@ -215,6 +209,8 @@ func createMetaTables(schema *Schema) {
 			}
 		}
 	}
+	// now we can start sync logging
+	schema.logger.isMetaTables(true)
 }
 
 func createMetaSequences(schema *Schema) {
@@ -236,7 +232,7 @@ func getSchemaIdList() []Schema {
 	// generate meta query
 	query.setTable(metaTableName)
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Schema))
-	err := query.run()
+	err := query.run(0)
 
 	if err != nil {
 		panic(err)
@@ -272,7 +268,7 @@ func getMetaList(schemaId int32) []Meta {
 
 	query.setTable(metaTableName)
 	query.addFilter(metaSchemaId, operatorEqual, schemaId)
-	err := query.run()
+	err := query.run(0)
 	if err != nil {
 		panic(err)
 	}
@@ -285,7 +281,7 @@ func getMetaIdList(schemaId int32) []MetaId {
 
 	query.setTable(metaIdTableName)
 	query.addFilter(metaSchemaId, operatorEqual, schemaId)
-	err := query.run()
+	err := query.run(0)
 	if err != nil {
 		panic(err)
 	}

@@ -66,6 +66,10 @@ func (query *metaQuery) setTable(tableName string) {
 	}
 }
 
+func (query *metaQuery) setParamValue(param interface{}, index int) {
+	(*query.params)[index] = param
+}
+
 //******************************
 // public methods
 //******************************
@@ -312,18 +316,26 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 }
 
 // launch select query with result list
-func (query *metaQuery) run() error {
-	result := make([]interface{}, 0, 4)
+//    resultCount==0 for unknown expected result count
+func (query *metaQuery) run(resultCount int) error {
+	if query.result == nil {
+		if resultCount == 0 {
+			result := make([]interface{}, 0, 4)
+			query.result = &result
+		} else {
+			result := make([]interface{}, 0, resultCount)
+			query.result = &result
+		}
+		if query.query == "" {
+			query.query = query.getQuery()
+		}
+	} else {
+		*query.result = (*query.result)[:0]
+	}
 	query.ddl = false
 	query.dml = false
-	if query.query == "" {
-		query.query = query.getQuery()
-	}
 	query.returnResultList = true
-	query.result = &result
-	queries := make([]Query, 1, 1)
-	queries[0] = *query
-	return query.schema.Execute(queries)
+	return query.schema.execute(query)
 }
 
 // is table exist
@@ -333,17 +345,12 @@ func (query *metaQuery) exists() (bool, error) {
 		query.query = query.getQuery()
 	}
 	query.returnResultList = false
-	queries := make([]Query, 1, 1)
 	query.ddl = false
 	query.dml = false
 	if query.resultCount == nil {
 		query.resultCount = new(int)
 	}
-	//fmt.Println(query.query)
-	queries[0] = *query
-	query.schema.Execute(queries)
-	//fmt.Println("query count() ==> ")
-	//fmt.Println(*query.resultCount)
+	query.schema.execute(query)
 	return *query.resultCount > 0, nil
 }
 
@@ -351,9 +358,7 @@ func (query *metaQuery) exists() (bool, error) {
 func (query *metaQuery) create() error {
 	query.ddl = true
 	query.dml = false
-	queries := make([]Query, 1, 1)
-	queries[0] = *query
-	return query.schema.Execute(queries)
+	return query.schema.execute(query)
 }
 
 // insert log
@@ -363,9 +368,7 @@ func (query *metaQuery) insert(params []interface{}) error {
 	query.params = &params
 	query.dml = true
 	query.ddl = false
-	queries := make([]Query, 1, 1)
-	queries[0] = *query
-	return query.schema.Execute(queries)
+	return query.schema.execute(query)
 }
 
 func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, error) {

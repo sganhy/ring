@@ -30,6 +30,10 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 	runtime.LockOSThread()
+	var test5555 = 0
+
+	test5555 <<= 1
+	fmt.Println(test5555)
 
 	rcd := new(data.Record)
 
@@ -38,8 +42,14 @@ func main() {
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 
 	cacheId := new(schema.CacheId)
-	cacheId.Init(0, 0, entitytype.Sequence)
-	cacheId.GetNewId()
+	cacheId.Init(1, 0, entitytype.Sequence)
+	//cacheId.SetReserveRange(true)
+	fmt.Println("=== cacheId.GetNewId() ===")
+	fmt.Println(cacheId.GetNewRangeId(2))
+	fmt.Println(cacheId.GetNewRangeId(2))
+	fmt.Println(cacheId.GetNewRangeId(2))
+	fmt.Println(cacheId.GetNewRangeId(2))
+	fmt.Println(cacheId.GetNewRangeId(2))
 
 	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
 

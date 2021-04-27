@@ -70,9 +70,10 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.poolInitialized = true
 	schema.loadTables(tables)
 	schema.loadTablespaces(tableSpaces)
-	schema.loadSequences()
 	schema.baseline = baseline
 	schema.active = active
+	// at end only sequences
+	schema.loadSequences()
 }
 
 //******************************
@@ -218,6 +219,7 @@ func (schema *Schema) Execute(queries []Query) error {
 			return err
 		}
 	}
+
 	schema.connections.put(connection)
 	duration := time.Now().Sub(connection.lastGet)
 	fmt.Println("Execution Time:")
@@ -236,6 +238,24 @@ func (schema *Schema) GetDdl(statement ddlstatement.DdlStatement) string {
 //******************************
 // private methods
 //******************************
+// copy of Execute() method (used only by metaQuery)
+func (schema *Schema) execute(query Query) error {
+	var conn = schema.connections.get()
+	var err error
+
+	conn.lastGet = time.Now()
+	err = query.Execute(conn.dbConnection)
+	if err != nil {
+		schema.connections.put(conn)
+		return err
+	}
+	schema.connections.put(conn)
+	duration := time.Now().Sub(conn.lastGet)
+	fmt.Println("Execution Time:")
+	fmt.Println(duration.Milliseconds())
+	return nil
+}
+
 func (schema *Schema) create() error {
 	var metaQuery = metaQuery{}
 	var creationTime = time.Now()
@@ -296,6 +316,10 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 func (schema *Schema) loadSequences() {
 	var seq = Sequence{}
 	if schema.name == metaSchemaName {
+		// initialize cache id before instance sequences
+		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
+		InitCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
+
 		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getLanguageId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
@@ -348,7 +372,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 func (schema *Schema) getJobIdValue() int64 {
 	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
 	if jobIdSequence != nil {
-		return jobIdSequence.value.CurrentId
+		return jobIdSequence.GetValue()
 	}
 	return -1
 }

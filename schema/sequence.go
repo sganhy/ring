@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/entitytype"
 	"strconv"
 )
@@ -64,10 +65,6 @@ func (sequence *Sequence) GetMaxValue() int64 {
 	return sequence.maxValue
 }
 
-func (sequence *Sequence) GetValue() *CacheId {
-	return sequence.value
-}
-
 func (sequence *Sequence) GetEntityType() entitytype.EntityType {
 	return entitytype.Sequence
 }
@@ -75,6 +72,17 @@ func (sequence *Sequence) GetEntityType() entitytype.EntityType {
 //******************************
 // public methods
 //******************************
+func (sequence *Sequence) GetValue() int64 {
+	if sequence.value.IsInitialized() == false {
+		sequence.NextValue()
+	}
+	return sequence.value.currentId
+}
+func (sequence *Sequence) NextValue() {
+	fmt.Println("*Sequence.NextValue()")
+	_ = sequence.value.GetNewId()
+}
+
 //******************************
 // private methods
 //******************************
@@ -101,42 +109,43 @@ func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue,
 		true, true)
-	result.value.CurrentId = 101007 // assign min value
+	result.value.Init(0, schemaId, entitytype.Sequence)
+	result.value.SetCurrentId(101007) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getLexiconId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(1, sequenceLexId, "Unique lexicon number assigned based on auto-numbering definition", schemaId, maxLexIdValue, true, true)
-	result.value.CurrentId = 103 // assign min value
+	result.value.SetCurrentId(103) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getLanguageId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(2, sequenceLangId, "Unique language number assigned based on auto-numbering definition", schemaId, maxLangIdValue, true, true)
-	result.value.CurrentId = 1 // assign min value
+	result.value.SetCurrentId(1) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getUserId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(3, sequenceUserId, "Unique user number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.CurrentId = 1003 // assign min value
+	result.value.SetCurrentId(1003) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getIndexId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(4, sequenceIndexId, "Unique index number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.CurrentId = 1105
+	result.value.SetCurrentId(1105)
 	return result
 }
 
 func (sequence *Sequence) getEventId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(5, sequenceEventId, "Unique event number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.CurrentId = 198
+	result.value.SetCurrentId(198)
 	return result
 }
 
