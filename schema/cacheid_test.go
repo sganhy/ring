@@ -23,3 +23,23 @@ func Test__CacheId__GetDdl(t *testing.T) {
 		t.Errorf("cacheId.GetDml() ==> query must be equal to " + expectedSql)
 	}
 }
+
+//test setters/ getters
+func Test__CacheId__setters(t *testing.T) {
+	cacheId := new(CacheId)
+	schema := new(Schema)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+
+	InitCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
+	cacheId.Init(1, 0, entitytype.Table)
+
+	cacheId.SetCache(true)
+	if cacheId.reservedRange != 1 {
+		t.Errorf("cacheId.SetCache() ==> reservedRange must be equal to 1")
+	}
+	cacheId.SetCache(false)
+	if cacheId.reservedRange != 0 {
+		t.Errorf("cacheId.SetCache() ==> reservedRange must be equal to 0")
+	}
+
+}

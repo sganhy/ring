@@ -80,8 +80,6 @@ const (
 	metaIdTableName      string = "@meta_id"
 	metaLongTableName    string = "@long"
 	metaValue            string = "value"
-	metaMetaUkIndex      string = "pk_@meta"
-	metaMetaIdUkIndex    string = "pk_@meta_id"
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	mysqlParameterName   string = "?"
@@ -631,14 +629,14 @@ func (table *Table) getUniqueFieldList() string {
 		b.WriteString(table.GetPrimaryKey().GetPhysicalName(table.provider))
 		break
 	case tabletype.Meta:
-		var ukIndex = table.GetIndexByName(metaMetaUkIndex)
+		var ukIndex = table.GetIndexByName(metaTableName)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			b.WriteString(fieldListSeparator)
 		}
 		break
 	case tabletype.MetaId:
-		var ukIndex = table.GetIndexByName(metaMetaIdUkIndex)
+		var ukIndex = table.GetIndexByName(metaIdTableName)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			b.WriteString(fieldListSeparator)
@@ -863,7 +861,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 	//tableType    tabletype.TableType
 	switch table.tableType {
 	case tabletype.Meta:
-		var ukIndex = table.GetIndexByName(metaMetaUkIndex)
+		var ukIndex = table.GetIndexByName(metaTableName)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			query.WriteString(operatorEqual)
@@ -876,7 +874,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 		}
 		break
 	case tabletype.MetaId:
-		var ukIndex = table.GetIndexByName(metaMetaIdUkIndex)
+		var ukIndex = table.GetIndexByName(metaIdTableName)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			query.WriteString(operatorEqual)
@@ -1003,7 +1001,7 @@ func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, s
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
 	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
-	uk.Init(1, metaMetaIdUkIndex, "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, metaIdTableName, "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
 
 	fields = append(fields, id)
 	fields = append(fields, schemaId)
@@ -1054,7 +1052,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, metaMetaUkIndex, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
+	uk.Init(1, metaTableName, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2

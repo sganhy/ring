@@ -348,7 +348,7 @@ func Test__Field__getDateTimeIso8601(t *testing.T) {
 	var ti *time.Time
 	_, offset := time.Now().Zone()
 
-	// test ==> fieldtype.DateTime
+	//*** test ==> fieldtype.DateTime
 	// sample #1
 	ti, _ = elemf0.getDateTimeIso8601("2016-12-12")
 	*ti = ti.Add(time.Second * time.Duration(offset)) // adapt to local time for date time
@@ -376,7 +376,7 @@ func Test__Field__getDateTimeIso8601(t *testing.T) {
 		t.Errorf("Field.getDateTimeIso8601() ==> getDateTimeIso8601('2016-11-12 12:13:14') must return '2016-11-12'")
 	}
 
-	// test ==> fieldtype.ShortDateTime
+	//*** test ==> fieldtype.ShortDateTime
 
 }
 
@@ -429,7 +429,7 @@ func Test__Field__GetValue(t *testing.T) {
 	elemf0 := new(Field)
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Int, 5, "test default", true, false, false, true, true)
 
-	// test 1
+	//*** test 1
 	value, err := elemf0.GetValue("2222")
 	if value != "2222" {
 		t.Errorf("Field.GetValue() ==> GetValue('2222') must be equal to '2222'")
@@ -437,7 +437,7 @@ func Test__Field__GetValue(t *testing.T) {
 	if err != nil {
 		t.Errorf("Field.GetValue() ==> GetValue('2222') error must be equal to null")
 	}
-	// test 2
+	//*** test 2
 	value, err = elemf0.GetValue("22222222222222")
 	if value != invalidValue {
 		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') must be equal to invalidValue")
@@ -445,21 +445,33 @@ func Test__Field__GetValue(t *testing.T) {
 	if err.Error() != errorInvalidValueType {
 		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') error must be equal to null to '%s'", errorInvalidValueType)
 	}
-	// test 3
+	//*** test 3
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Long, 5, "test default", true, false, false, true, true)
 	value, err = elemf0.GetValue("-9223372036854775808")
 	if value != "-9223372036854775808" {
 		t.Errorf("Field.GetValue() ==> GetValue('-9223372036854775808') must be equal to '-9223372036854775808'")
 	}
-	// test 4
+	//*** test 4
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Boolean, 5, "test default", true, false, false, true, true)
 	value, err = elemf0.GetValue("true")
 	if value != "true" {
 		t.Errorf("Field.GetValue() ==> GetValue('true') must be equal to 'true'")
 	}
-	// test 5
+	//*** test 5
 	value, err = elemf0.GetValue("22222")
 	if value != invalidValue {
 		t.Errorf("Field.GetValue() ==> GetValue('22222') must be equal to invalidValue")
 	}
+
+	//*** test 6
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.String, 10, "test default", true, false, false, true, true)
+	value, err = elemf0.GetValue("01234567890")
+	if value != "0123456789" {
+		t.Errorf("Field.GetValue() ==> GetValue('01234567890') must be equal to '0123456789'")
+	}
+	value, err = elemf0.GetValue("0123456789")
+	if value != "0123456789" {
+		t.Errorf("Field.GetValue() ==> GetValue('0123456789') must be equal to '0123456789'")
+	}
+
 }
