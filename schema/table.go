@@ -1078,6 +1078,8 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	var relations []Relation
 	var indexes []Index
 	var result = new(Table)
+	var idxEntryTime = Index{}
+	var idxJobId = Index{}
 
 	// physical_name is built later
 	//  == metaId table
@@ -1118,6 +1120,14 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	fields = append(fields, description) //10
 	fields = append(fields, lineNumber)  //11
 
+	// indexes
+	var indexedFields = []string{entryTime.name}
+	idxEntryTime.Init(1, entryTime.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)
+	indexedFields = []string{jobId.name}
+	idxJobId.Init(2, jobId.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)
+	indexes = append(indexes, idxEntryTime)
+	indexes = append(indexes, idxJobId)
+
 	result.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.Log, provider, "", false, false, true, true)
 	return result
@@ -1136,7 +1146,7 @@ func (table *Table) getLongTable() *Table {
 	value.Init(4283, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	fields = append(fields, value) //1
 
-	result.Init(int32(tabletype.Log), metaLongTableName, "", fields, relations, indexes, physicaltype.Logical, 0, "",
+	result.Init(int32(tabletype.Logical), metaLongTableName, "", fields, relations, indexes, physicaltype.Logical, 0, "",
 		tabletype.Logical, databaseprovider.NotDefined, "", false, false, true, true)
 	return result
 }

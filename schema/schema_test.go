@@ -46,6 +46,15 @@ func Test__Schema__Init(t *testing.T) {
 	if schema.GetEntityType() != entitytype.Schema {
 		t.Errorf("Schema.Init() ==> GetEntityType() <> entitytype.Schema")
 	}
+
+	if schema.GetTableCount() != 0 {
+		t.Errorf("Schema.GetTableCount() ==> GetTableCount() <> 0")
+	}
+	//
+	var schema2 *Schema
+	if schema2.GetTableCount() != 0 {
+		t.Errorf("Schema.GetTableCount() ==> GetTableCount() <> 0")
+	}
 }
 
 // test GetTableByName, GetTableById

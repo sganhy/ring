@@ -1,23 +1,29 @@
 package fieldtype
 
+import (
+	"strings"
+)
+
 type FieldType int8
 
 //!!! reserved value for unit testing {4, 5, 6} !!!
 
 const (
-	strLong          string = "Long"
-	strInt           string = "Int"
-	strShort         string = "Short"
-	strByte          string = "Byte"
-	strFloat         string = "Float"
-	strDouble        string = "Double"
-	strString        string = "String"
-	strShortDateTime string = "Short DateTime"
-	strDateTime      string = "DateTime"
-	strLongDateTime  string = "Long DateTime"
-	strArray         string = "Array"
-	strBoolean       string = "Boolean"
-	strNotDefined    string = "Not Defined"
+	strLong           string = "Long"
+	strInt            string = "Int"
+	strShort          string = "Short"
+	strByte           string = "Byte"
+	strFloat          string = "Float"
+	strDouble         string = "Double"
+	strString         string = "String"
+	strShortDateTime  string = "Short DateTime"
+	strShortDateTime2 string = "ShortDateTime"
+	strDateTime       string = "DateTime"
+	strLongDateTime   string = "Long DateTime"
+	strLongDateTime2  string = "LongDateTime"
+	strArray          string = "Array"
+	strBoolean        string = "Boolean"
+	strNotDefined     string = "Not Defined"
 )
 
 const (
@@ -67,4 +73,32 @@ func (fieldType FieldType) String() string {
 		return strNotDefined
 	}
 	return ""
+}
+
+func GetFieldType(value string) FieldType {
+	switch strings.ToLower(value) {
+	case strings.ToLower(strLong):
+		return Long
+	case strings.ToLower(strInt):
+		return Int
+	case strings.ToLower(strShort):
+		return Short
+	case strings.ToLower(strByte):
+		return Byte
+	case strings.ToLower(strFloat):
+		return Float
+	case strings.ToLower(strDouble):
+		return Double
+	case strings.ToLower(strString):
+		return String
+	case strings.ToLower(strShortDateTime), strings.ToLower(strShortDateTime2):
+		return ShortDateTime
+	case strings.ToLower(strDateTime):
+		return DateTime
+	case strings.ToLower(strLongDateTime), strings.ToLower(strLongDateTime2):
+		return LongDateTime
+	case strings.ToLower(strBoolean):
+		return Boolean
+	}
+	return NotDefined
 }

@@ -41,5 +41,29 @@ func Test__CacheId__setters(t *testing.T) {
 	if cacheId.reservedRange != 0 {
 		t.Errorf("cacheId.SetCache() ==> reservedRange must be equal to 0")
 	}
+	if cacheId.IsInitialized() != false {
+		t.Errorf("cacheId.IsInitialized() ==> isInitialized must be equal to FALSE")
+	}
+	if cacheId.GetCurrentId() != 0 {
+		t.Errorf("cacheId.GetCurrentId() ==> GetCurrentId must be equal to 0")
+	}
+}
 
+func Test__CacheId__toMetaId(t *testing.T) {
+	cacheId := new(CacheId)
+	schema := new(Schema)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+	InitCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
+	cacheId.Init(1, 0, entitytype.Table)
+	metaId := cacheId.toMetaId(entitytype.Sequence, 11, 111)
+
+	if metaId.schemaId != 111 {
+		t.Errorf("cacheId.toMetaId() ==> schemaId must be equal to 111")
+	}
+	if metaId.id != 11 {
+		t.Errorf("cacheId.toMetaId() ==> schemaId must be equal to 11")
+	}
+	if metaId.objectType != int8(entitytype.Sequence) {
+		t.Errorf("cacheId.toMetaId() ==> schemaId must be equal to int8(entitytype.Sequence)")
+	}
 }

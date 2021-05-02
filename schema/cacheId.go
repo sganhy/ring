@@ -19,7 +19,7 @@ const (
 	sqlPosgreSqlReturning string = "RETURNING"
 	maxReservedRange      int32  = 1073741824           // 2^30
 	maxExtReservedRange   uint32 = 2147483647           // 2^32 - max external defined Reserve value
-	initialMaxId          int64  = -9223372036854775808 // 2^32 - max external defined Reserve value
+	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
 var (
@@ -187,11 +187,7 @@ func (cacheId *CacheId) toMetaId(objectType entitytype.EntityType, objectId int3
 	metaId.id = objectId
 	metaId.schemaId = schemaId
 	metaId.objectType = int8(objectType)
-	if cacheId.currentId == 0 {
-		metaId.value = 1
-	} else {
-		metaId.value = cacheId.currentId
-	}
+	metaId.value = cacheId.currentId
 	return metaId
 }
 

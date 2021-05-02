@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
+	"ring/schema/tabletype"
 	"runtime"
 	"strings"
 )
@@ -202,7 +203,8 @@ func createMetaTables(schema *Schema) {
 	}
 	// create other meta tables
 	for _, table := range schema.tables {
-		if table.id != logTable.id && table.exists(schema) == false {
+		if table.id != logTable.id && table.tableType != tabletype.Logical &&
+			table.exists(schema) == false {
 			err := table.create(schema)
 			if err != nil {
 				panic(err)

@@ -32,6 +32,12 @@ func main() {
 	runtime.LockOSThread()
 	var test5555 = 0
 
+	var importFile = schema.Import{}
+	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
+
+	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
+	importFile.Load()
+
 	test5555 <<= 1
 	fmt.Println(test5555)
 
@@ -68,11 +74,6 @@ func main() {
 	fmt.Println(rcd.GetField("entry_time"))
 	rcd.SetField("entry_time", time.Now())
 	fmt.Println(rcd.GetField("entry_time"))
-
-	var importFile = schema.Import{}
-	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
-	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
-	//importFile.Load()
 
 	// Create an empty user and make the sql query (using $1 for the parameter)
 	var br = new(data.BulkRetrieve)
