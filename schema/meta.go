@@ -125,7 +125,7 @@ func (meta *Meta) GetRelationType() relationtype.RelationType {
 
 func (meta *Meta) String() string {
 	// used for debug only
-	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; line_number:%d; description: %s",
+	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; line_number: %d; description: %s",
 		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.lineNumber, meta.description)
 }
 

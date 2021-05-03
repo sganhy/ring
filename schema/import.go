@@ -74,7 +74,13 @@ func (importFile *Import) Load() {
 		importFile.loadXml()
 		for i := 0; i < len(importFile.metaList); i++ {
 			meta := importFile.metaList[i]
-			fmt.Println(meta.String())
+			if meta.objectType == 0 {
+				fmt.Println("TABLE ==> " + meta.name)
+			}
+			if meta.objectType == 1 {
+				var field = meta.toField()
+				fmt.Println(field.String())
+			}
 		}
 	}
 }
@@ -145,6 +151,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		*indexId = 0
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Table, 0, 0, reflect.ValueOf(d).Elem().FieldByName("line").Int())
 		meta.flags = importFile.getTableFlags(&ty.Attr)
+		meta.description = importFile.getDescription(&ty.Attr)
 		*referenceId = meta.id
 	}
 	// FIELDS
@@ -153,24 +160,26 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		line := reflect.ValueOf(d).Elem().FieldByName("line").Int()
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Field, *referenceId, *fieldId, line)
 		meta.flags = importFile.getFieldFlags(&ty.Attr)
+		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// RELATIONS
 	if strings.ToLower(ty.Name.Local) == importRelationTag {
 		(*relationId)++
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Relation, *referenceId, *relationId,
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
+		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// INDEXES
 	if strings.ToLower(ty.Name.Local) == importIndexTag {
 		(*indexId)++
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Relation, *referenceId, *indexId,
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
+		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// DESCRIPTION
 	if strings.ToLower(ty.Name.Local) == importDescriptionTag {
 		importFile.addDescription(d, ty)
 	}
-
 	return meta
 }
 
@@ -307,6 +316,20 @@ func (importFile *Import) getFieldFlags(attributes *[]xml.Attr) uint64 {
 	return meta.flags
 }
 
+// Get description from element attribute
+func (importFile *Import) getDescription(attributes *[]xml.Attr) string {
+	result := ""
+	if attributes != nil {
+		for i := 0; i < len(*attributes); i++ {
+			var attribute = (*attributes)[i]
+			if strings.ToLower(attribute.Name.Local) == importDescriptionTag {
+				result = attribute.Value
+			}
+		}
+	}
+	return result
+}
+
 func (importFile *Import) getFieldSize(value string) uint32 {
 	result, err := strconv.ParseInt(value, 10, 32)
 	if err != nil {
@@ -316,16 +339,27 @@ func (importFile *Import) getFieldSize(value string) uint32 {
 }
 
 func (importFile *Import) addDescription(d *xml.Decoder, ty *xml.StartElement) {
-	var desc interface{}
-	err := d.DecodeElement(desc, ty)
-	fmt.Println("==> addDescription(d *xml.Decoder, ty *xml.StartElement)")
-	if err != nil {
-		fmt.Println(desc)
-	} else {
-		fmt.Println("ERROR: ")
-		fmt.Println(err)
+	for {
+		tok, err := d.Token()
+		if tok == nil || err == io.EOF {
+			// EOF means we're done.
+			break
+		} else if err != nil {
+			importFile.errorList = append(importFile.errorList, err)
+			return
+		}
+		switch ty := tok.(type) {
+		case xml.CharData:
+			if len(importFile.metaList) > 0 {
+				lastMeta := importFile.metaList[len(importFile.metaList)-1]
+				bytes := xml.CharData(ty)
+				lastMeta.description = string([]byte(bytes))
+			}
+			break
+		case xml.EndElement:
+			return
+		}
 	}
-
 }
 
 func (importFile *Import) loadTableDico() error {

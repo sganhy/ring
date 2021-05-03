@@ -59,7 +59,7 @@ const (
 	postgreVarcharMaxSize      uint16 = 65535
 	mySqlVarcharMaxSize        uint16 = 65535
 	sqliteVarcharMaxSize       int64  = 1000000000
-	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; active=%t"
+	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
 )
 
 var (
@@ -300,7 +300,7 @@ func (field *Field) String() string {
 		fieldTyp += fmt.Sprintf("(%d)", field.size)
 	}
 	return fmt.Sprintf(fieldToStringFormat, field.name, field.description, fieldTyp, field.defaultValue, field.baseline,
-		field.notNull, field.caseSensitive, field.active)
+		field.notNull, field.caseSensitive, field.multilingual, field.active)
 }
 
 func (field *Field) GetDateTimeString(t time.Time) string {
