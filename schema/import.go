@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
+	"ring/schema/relationtype"
 	"ring/schema/sourcetype"
 	"strconv"
 	"strings"
@@ -49,6 +50,8 @@ const (
 	importXmlBoolFalseValue2      = "0"
 	importXmlAttributeSize        = "size"
 	importXmlAttributeReadonly    = "readonly"
+	importXmlAttributeUnique      = "unique"
+	importXmlAttributeBitmap      = "bitmap"
 	importXmlAttributeNotNull     = "not_null"
 	importXmlAttributeSensitive   = "case_sensitive"
 	importXmlAttributeMultiLang   = "multilingual"
@@ -77,8 +80,8 @@ func (importFile *Import) Load() {
 			if meta.objectType == 0 {
 				fmt.Println("TABLE ==> " + meta.name)
 			}
-			if meta.objectType == 1 {
-				var field = meta.toField()
+			if meta.objectType == 3 {
+				var field = meta.toIndex()
 				fmt.Println(field.String())
 			}
 		}
@@ -167,13 +170,15 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		(*relationId)++
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Relation, *referenceId, *relationId,
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
+		meta.flags = importFile.getRelationFlags(&ty.Attr)
 		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// INDEXES
 	if strings.ToLower(ty.Name.Local) == importIndexTag {
 		(*indexId)++
-		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Relation, *referenceId, *indexId,
+		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Index, *referenceId, *indexId,
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
+		meta.flags = importFile.getIndexFlags(&ty.Attr)
 		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// DESCRIPTION
@@ -279,6 +284,34 @@ func (importFile *Import) getTableFlags(attributes *[]xml.Attr) uint64 {
 	return meta.flags
 }
 
+func (importFile *Import) getRelationFlags(attributes *[]xml.Attr) uint64 {
+	meta := Meta{}
+	count := len(*attributes)
+	meta.setFieldCaseSensitive(true)
+	meta.setFieldSize(0)
+	for i := 0; i < count; i++ {
+		var attribute = (*attributes)[i]
+		var attributeValue = strings.Trim(attribute.Value, " ")
+
+		if strings.EqualFold(attributeValue, importXmlBoolTrueValue1) || strings.EqualFold(attributeValue, importXmlBoolTrueValue2) {
+			switch strings.ToLower(attribute.Name.Local) {
+			case importXmlAttributeBaseline:
+				// BASELINE
+				meta.setEntityBaseline(true)
+				break
+			case importXmlAttributeNotNull:
+				meta.setRelationNotNull(true)
+				break
+			}
+		}
+		if strings.ToLower(attribute.Name.Local) == importXmlAttributeTypeTag {
+			meta.setRelationType(relationtype.GetRelationType(attributeValue))
+		}
+
+	}
+	return meta.flags
+}
+
 func (importFile *Import) getFieldFlags(attributes *[]xml.Attr) uint64 {
 	meta := Meta{}
 	count := len(*attributes)
@@ -312,6 +345,37 @@ func (importFile *Import) getFieldFlags(attributes *[]xml.Attr) uint64 {
 		if strings.ToLower(attribute.Name.Local) == importXmlAttributeSize {
 			meta.setFieldSize(importFile.getFieldSize(attributeValue))
 		}
+	}
+	return meta.flags
+}
+
+func (importFile *Import) getIndexFlags(attributes *[]xml.Attr) uint64 {
+	meta := Meta{}
+	count := len(*attributes)
+	meta.flags = 0
+
+	for i := 0; i < count; i++ {
+		var attribute = (*attributes)[i]
+		var attributeValue = strings.Trim(attribute.Value, " ")
+
+		if strings.EqualFold(attributeValue, importXmlBoolTrueValue1) || strings.EqualFold(attributeValue, importXmlBoolTrueValue2) {
+			switch strings.ToLower(attribute.Name.Local) {
+			case importXmlAttributeBaseline:
+				// BASELINE
+				meta.setEntityBaseline(true)
+				break
+			case importXmlAttributeUnique:
+				meta.setIndexUnique(true)
+				break
+			case importXmlAttributeBitmap:
+				meta.setIndexBitmap(true)
+				break
+			}
+		}
+		if strings.ToLower(attribute.Name.Local) == importXmlAttributeTypeTag {
+			meta.setRelationType(relationtype.GetRelationType(attributeValue))
+		}
+
 	}
 	return meta.flags
 }

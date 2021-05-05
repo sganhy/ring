@@ -26,6 +26,7 @@ type Index struct {
 const (
 	createIndexPostGreSql string = "%s%s %s %s ON %s USING btree (%s) %s"
 	physicalIndexPrefix   string = "idx_"
+	indexToStringFormat   string = "name=%s; description=%s; bitmap=%t; unique=%t; baseline=%t"
 )
 
 func (index *Index) Init(id int32, name string, description string, fields []string, tableId int32, bitmap bool,
@@ -131,6 +132,11 @@ func (index *Index) GetPhysicalName(table *Table) string {
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 3))
 	}
 	return result.String()
+}
+
+func (index *Index) String() string {
+	//	indexToStringFormat   string = "name=%s; description=%s; bitmap=%s; unique=%s; baseline=%s"
+	return fmt.Sprintf(indexToStringFormat, index.name, index.description, index.bitmap, index.unique, index.baseline)
 }
 
 //******************************

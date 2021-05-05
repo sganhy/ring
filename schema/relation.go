@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/relationtype"
@@ -20,6 +21,10 @@ type Relation struct {
 	baseline            bool
 	active              bool
 }
+
+const (
+	relationToStringFormat string = "name=%s; description=%s; type=%s; to=%s; baseline=%t; not_null=%t; inverse_relation=%s"
+)
 
 func (relation *Relation) Init(id int32, name string, description string, inverseRelationName string,
 	mtmTable string, toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool) {
@@ -128,9 +133,22 @@ func (relation *Relation) Clone() *Relation {
 	return newRelation
 }
 
+func (relation *Relation) String() string {
+	//"name=%s; description=%s; type=%s; "
+	return fmt.Sprintf(relationToStringFormat, relation.name, relation.description, relation.relationType.String(),
+		relation.getToTableName(), relation.baseline, relation.notNull, relation.GetInverseRelationName())
+}
+
 //******************************
 // private methods
 //******************************
+func (relation *Relation) getToTableName() string {
+	if relation.toTable == nil {
+		return ""
+	}
+	return relation.toTable.name
+}
+
 func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
 	return sqlfmt.FormatEntityName(provider, relation.name)
 }
