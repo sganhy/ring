@@ -683,7 +683,30 @@ func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName str
 }
 
 func ToSnakeCase(name string) string {
-	return ""
+	var result strings.Builder
+	var letterBefore = false
+	var prevRune rune
+
+	result.Grow(len(name) + 10)
+	prevRune = snakeSeparator
+	name = strings.ReplaceAll(name, " ", string(snakeSeparator))
+
+	for _, chr := range name {
+		if letterBefore == true {
+			if chr == snakeSeparator && prevRune != snakeSeparator {
+				result.WriteRune(snakeSeparator)
+			} else {
+				splitSnake(&result, chr, prevRune, &letterBefore)
+			}
+		} else {
+			if unicode.IsUpper(chr) || unicode.IsLower(chr) {
+				result.WriteRune(unicode.ToLower(chr))
+				letterBefore = true
+			}
+		}
+		prevRune = chr
+	}
+	return result.String()
 }
 
 func ToCamelCase(name string) string {
@@ -728,4 +751,18 @@ func ToPascalCase(name string) string {
 
 func ToKebabCase(name string) string {
 	return ""
+}
+
+func splitSnake(result *strings.Builder, currentChr rune, previousChr rune, letterBefore *bool) {
+	if unicode.IsUpper(currentChr) {
+		if unicode.IsUpper(previousChr) == false && previousChr != snakeSeparator {
+			result.WriteRune(snakeSeparator)
+		}
+		result.WriteRune(unicode.ToLower(currentChr))
+		*letterBefore = true
+	}
+	if unicode.IsLower(currentChr) {
+		result.WriteRune(unicode.ToLower(currentChr))
+		*letterBefore = true
+	}
 }

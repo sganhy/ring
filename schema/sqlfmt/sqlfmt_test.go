@@ -64,5 +64,42 @@ func Test__Sqlfmt__ToCamelCase(t *testing.T) {
 	if ToPascalCase("") != "" {
 		t.Errorf("Sqlfmt.ToPascalCase() ==> result must be empty")
 	}
+	//======================
+	//==== testing Snake convention
+	//======================
+	expectedResult = "table_testa"
+	if ToSnakeCase("TableTesta") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("tableTesta") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("table Testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("_TableTesta") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("Table_Testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("Table____Testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("Table  Testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("Table      Testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("TABLE_TESTA") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("Table_testa") != expectedResult {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be equal to %s", expectedResult)
+	}
+	if ToSnakeCase("") != "" {
+		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be empty")
+	}
 
 }

@@ -36,6 +36,8 @@ const (
 	bitPositionRelationNotNull      uint8  = 4  // max value bit pos for relation =17 !!!
 	bitPositionTableCached          uint8  = 9
 	bitPositionTableReadonly        uint8  = 10
+	bitPositionTablespaceIndex      uint8  = 11
+	bitPositionTablespaceTable      uint8  = 12
 	metaMaxInt32                    int64  = 2147483647
 	metaMaxInt8                     int64  = 127
 	metaIndexSeparator              string = ";"
@@ -78,6 +80,14 @@ func (meta *Meta) IsTableCached() bool {
 
 func (meta *Meta) IsTableReadonly() bool {
 	return meta.readFlag(bitPositionTableReadonly)
+}
+
+func (meta *Meta) IsTablespaceIndex() bool {
+	return meta.readFlag(bitPositionTablespaceIndex)
+}
+
+func (meta *Meta) IsTablespaceTable() bool {
+	return meta.readFlag(bitPositionTablespaceTable)
 }
 
 func (meta *Meta) GetFieldType() fieldtype.FieldType {
@@ -168,6 +178,16 @@ func (meta *Meta) toIndex() *Index {
 	return nil
 }
 
+func (meta *Meta) toTablespace() *Tablespace {
+	if entitytype.EntityType(meta.objectType) == entitytype.Tablespace {
+		var tablespace = new(Tablespace)
+		// Init(id int32, name string, description string, fileName string, table bool, index bool) {
+		tablespace.Init(meta.id, meta.name, meta.description, meta.value, meta.IsTablespaceTable(), meta.IsTablespaceIndex())
+		return tablespace
+	}
+	return nil
+}
+
 // loosing schemaId and databaseprovider
 func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index) *Table {
 	if entitytype.EntityType(meta.objectType) == entitytype.Table {
@@ -234,6 +254,12 @@ func (meta *Meta) setTableCached(value bool) {
 }
 func (meta *Meta) setTableReadonly(value bool) {
 	meta.writeFlag(bitPositionTableReadonly, value)
+}
+func (meta *Meta) setTablespaceIndex(value bool) {
+	meta.writeFlag(bitPositionTablespaceIndex, value)
+}
+func (meta *Meta) setTablespaceTable(value bool) {
+	meta.writeFlag(bitPositionTablespaceTable, value)
 }
 
 func (meta *Meta) setRelationType(relationType relationtype.RelationType) {

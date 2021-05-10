@@ -20,6 +20,7 @@ type Import struct {
 	fileName    string
 	source      sourcetype.SourceType
 	initialized bool
+	jobId       int64
 	schema      *Schema
 	tables      map[string]int32
 	errorList   []error
@@ -31,9 +32,13 @@ const (
 	importTableTag1               = "object"
 	importTableTag2               = "table"
 	importFieldTag                = "field"
+	importTablespaceTag           = "tablespace"
+	importSchemaTag               = "schema"
 	importDescriptionTag          = "description"
 	importRelationTag             = "relation"
 	importIndexTag                = "index"
+	importIndexFieldTag           = "index_field"
+	importXmlAttributeFileTag     = "file"
 	importXmlAttributeNameTag     = "name"
 	importXmlAttributeSubjectTag  = "suject"
 	importXmlAttributeTypeTag     = "type"
@@ -80,8 +85,8 @@ func (importFile *Import) Load() {
 			if meta.objectType == 0 {
 				fmt.Println("TABLE ==> " + meta.name)
 			}
-			if meta.objectType == 3 {
-				var field = meta.toIndex()
+			if meta.objectType == 18 {
+				var field = meta.toTablespace()
 				fmt.Println(field.String())
 			}
 		}
@@ -147,6 +152,15 @@ func (importFile *Import) loadXml() {
 
 func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fieldId *int32, relationId *int32, indexId *int32, referenceId *int32) *Meta {
 	var meta *Meta
+
+	// SCHEMA
+	if strings.ToLower(ty.Name.Local) == importSchemaTag {
+		meta = importFile.getXmlMetaSchema(&ty.Attr, reflect.ValueOf(d).Elem().FieldByName("line").Int())
+	}
+	// TABLESPACE
+	if strings.ToLower(ty.Name.Local) == importTablespaceTag {
+		meta = importFile.getXmlMetaTablespace(&ty.Attr, reflect.ValueOf(d).Elem().FieldByName("line").Int())
+	}
 	// TABLE
 	if strings.ToLower(ty.Name.Local) == importTableTag1 || strings.ToLower(ty.Name.Local) == importTableTag2 {
 		*fieldId = 0
@@ -179,6 +193,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Index, *referenceId, *indexId,
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
 		meta.flags = importFile.getIndexFlags(&ty.Attr)
+		meta.value = importFile.getIndexValue(d, ty)
 		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// DESCRIPTION
@@ -186,6 +201,37 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		importFile.addDescription(d, ty)
 	}
 	return meta
+}
+
+func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *Meta {
+	var result = new(Meta)
+	result.flags = 0
+	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
+	result.objectType = int8(entitytype.Schema)
+	result.refId = 0
+	result.id = 0
+	result.lineNumber = line
+
+	return result
+}
+
+func (importFile *Import) getXmlMetaTablespace(attributes *[]xml.Attr, line int64) *Meta {
+	var result = new(Meta)
+	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
+	result.objectType = int8(entitytype.Tablespace)
+	result.refId = 0
+	result.id = 0
+	result.lineNumber = line
+	result.value = importFile.getXmlAttribute(attributes, importXmlAttributeFileTag)
+	var isIndex = strings.ToLower(importFile.getXmlAttribute(attributes, importIndexTag))
+	if isIndex == importXmlBoolTrueValue1 || isIndex == importXmlBoolTrueValue2 {
+		result.setTablespaceIndex(true)
+	}
+	var isTable = strings.ToLower(importFile.getXmlAttribute(attributes, importTableTag2))
+	if isTable == importXmlBoolTrueValue1 || isTable == importXmlBoolTrueValue2 {
+		result.setTablespaceTable(true)
+	}
+	return result
 }
 
 func (importFile *Import) getXmlMeta(attributes *[]xml.Attr, entityType entitytype.EntityType, referenceId int32, defaultId int32, line int64) *Meta {
@@ -255,7 +301,9 @@ func (importFile *Import) getDataType(entityType entitytype.EntityType, attribut
 }
 
 func (importFile *Import) getValue(entityType entitytype.EntityType, value string) string {
-	if entityType == entitytype.Field || entityType == entitytype.Relation || entityType == entitytype.Table {
+	if entityType == entitytype.Field || entityType == entitytype.Relation || entityType == entitytype.Table ||
+		entityType == entitytype.Schema {
+		// get Field: default, Relation: inverse relationship name,Table: Subject
 		return value
 	}
 	return ""
@@ -287,8 +335,8 @@ func (importFile *Import) getTableFlags(attributes *[]xml.Attr) uint64 {
 func (importFile *Import) getRelationFlags(attributes *[]xml.Attr) uint64 {
 	meta := Meta{}
 	count := len(*attributes)
-	meta.setFieldCaseSensitive(true)
-	meta.setFieldSize(0)
+	meta.flags = 0
+
 	for i := 0; i < count; i++ {
 		var attribute = (*attributes)[i]
 		var attributeValue = strings.Trim(attribute.Value, " ")
@@ -375,9 +423,38 @@ func (importFile *Import) getIndexFlags(attributes *[]xml.Attr) uint64 {
 		if strings.ToLower(attribute.Name.Local) == importXmlAttributeTypeTag {
 			meta.setRelationType(relationtype.GetRelationType(attributeValue))
 		}
-
 	}
 	return meta.flags
+}
+
+func (importFile *Import) getIndexValue(d *xml.Decoder, ty *xml.StartElement) string {
+	//importIndexFieldTag
+	var result strings.Builder
+
+	for {
+		tok, err := d.Token()
+		if tok == nil || err == io.EOF {
+			// EOF means we're done.
+			break
+		} else if err != nil {
+			importFile.errorList = append(importFile.errorList, err)
+			return ""
+		}
+		switch ty := tok.(type) {
+		case xml.StartElement:
+			if strings.ToLower(ty.Name.Local) == importIndexFieldTag {
+				fieldName := importFile.getXmlAttribute(&ty.Attr, importXmlAttributeNameTag)
+				result.WriteString(fieldName)
+				result.WriteString(metaIndexSeparator)
+			}
+			break
+		case xml.EndElement:
+			if strings.ToLower(ty.Name.Local) == importIndexTag {
+				return strings.Trim(result.String(), metaIndexSeparator)
+			}
+		}
+	}
+	return ""
 }
 
 // Get description from element attribute

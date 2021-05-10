@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
@@ -16,11 +17,15 @@ type Tablespace struct {
 	index       bool
 }
 
-func (tablespace *Tablespace) Init(id int32, name string, description string, tableName string, table bool, index bool) {
+const (
+	tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
+)
+
+func (tablespace *Tablespace) Init(id int32, name string, description string, fileName string, table bool, index bool) {
 	tablespace.id = id
 	tablespace.name = name
 	tablespace.description = description
-	tablespace.tableName = tableName
+	tablespace.filName = fileName
 	tablespace.table = table
 	tablespace.index = index
 }
@@ -61,4 +66,10 @@ func (tablespace *Tablespace) GetDdl(statement ddlstatement.DdlStatement, provid
 		return "TABLESPACE " + tablespace.name
 	}
 	return ""
+}
+
+func (tablespace *Tablespace) String() string {
+	// tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
+	return fmt.Sprintf(tablespaceToStringFormat, tablespace.name, tablespace.description, tablespace.filName,
+		tablespace.table, tablespace.index)
 }

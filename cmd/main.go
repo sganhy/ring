@@ -14,8 +14,10 @@ import (
 	"ring/schema/relationtype"
 	"ring/schema/searchabletype"
 	"ring/schema/sourcetype"
+	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +31,10 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+	teeeet := sqlfmt.ToSnakeCase("Table_Testa")
+	teeeet = "Table____Testa"
+
+	fmt.Println(strings.ReplaceAll(teeeet, "__", "_"))
 	runtime.LockOSThread()
 	var test5555 = 0
 
@@ -40,8 +46,6 @@ func main() {
 
 	test5555 <<= 1
 	fmt.Println(test5555)
-
-	rcd := new(data.Record)
 
 	frame := test4()
 	fmt.Println(frame.File)
@@ -60,6 +64,15 @@ func main() {
 	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
 
 	//ss.LogWarn(1, 544, "hello", "World")
+
+	rcd := new(data.Record)
+	//func LogTest(id int32, jobId int64, messages ...interface{})
+	sInt := "97f"
+	_, err := strconv.ParseInt(sInt, 10, 64)
+	if err != nil {
+		fmt.Println("sInt := '97f'")
+		schema.LogTest(23, 554, err)
+	}
 
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)

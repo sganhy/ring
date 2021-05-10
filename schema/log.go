@@ -38,11 +38,13 @@ var (
 	metaTableExist bool
 )
 
+func init() {
+	metaTableExist = false
+}
+
 func (logger *log) Init(schemaId int32, disableDbLogs bool) {
 	logger.schemaId = schemaId
 	logger.active = !disableDbLogs
-
-	metaTableExist = false
 
 	if disableDbLogs == true {
 		// return here to avoid crash during unitests
@@ -103,6 +105,7 @@ func (logger *log) setThreadId(threadId int) {
 }
 
 func (logger *log) isMetaTables(exist bool) {
+	fmt.Println("isMetaTables(exist bool)")
 	metaTableExist = exist
 }
 
@@ -147,11 +150,11 @@ func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages .
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
 	if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
-		fmt.Println("logger.writeToDb(newLog) ==> " + description)
+		//fmt.Println("logger.writeToDb(newLog) ==> " + description)
 		logger.writeToDb(newLog)
 	} else if logger.active == true {
 		// connection pool not yet ready
-		fmt.Println("go logger.writeDeferToDb(newLog) ==> " + description)
+		//fmt.Println("go logger.writeDeferToDb(newLog) ==> " + description)
 		go logger.writeDeferToDb(newLog)
 	} else {
 		//do nothing?
@@ -170,7 +173,7 @@ func (logger *log) writeDeferToDb(newLog *log) {
 	// max try 10 times
 
 	for i := 0; i < 5; i++ {
-		fmt.Println("writeDeferToDb")
+		//fmt.Println("writeDeferToDb")
 		time.Sleep(2 * time.Second)
 		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
 			// retrieve current jobId
@@ -251,9 +254,18 @@ func (logger *log) getMessage(params []interface{}) string {
 		switch param.(type) {
 		case string:
 			return param.(string)
+		case error:
+			var err = param.(error)
+			return err.Error()
 		}
 	}
 	return ""
+}
+
+func LogTest(id int32, jobId int64, messages ...interface{}) {
+	logTest := new(log)
+	logTest.Init(0, false)
+	logTest.writePartialLog(id, levelError, jobId, messages...)
 }
 
 func (logger *log) getDescription(params []interface{}) string {
@@ -264,5 +276,33 @@ func (logger *log) getDescription(params []interface{}) string {
 			return param.(string)
 		}
 	}
+	if len(params) > 0 {
+		param := params[0]
+		switch param.(type) {
+		case error:
+			return logger.getStackTrace()
+		}
+	}
 	return ""
+}
+
+func (logger *log) getStackTrace() string {
+	stackBuf := make([]uintptr, 50)
+	length := runtime.Callers(3, stackBuf[:])
+	stack := stackBuf[:length]
+	frameCount := 0
+
+	trace := ""
+	frames := runtime.CallersFrames(stack)
+	for {
+		frame, more := frames.Next()
+		if frameCount > 1 {
+			trace = trace + fmt.Sprintf("File: %s, Line: %d. Function: %s \n", frame.File, frame.Line, frame.Function)
+		}
+		if !more {
+			break
+		}
+		frameCount++
+	}
+	return trace
 }
