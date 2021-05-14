@@ -24,12 +24,12 @@ type log struct {
 }
 
 const (
-	levelError     int8   = 1
-	levelInfo      int8   = 2
-	levelWarning   int8   = 3
-	levelFatal     int8   = 4
-	levelDebug     int8   = 5
-	tagLoggerFrame string = "schema.(*Schema).Log"
+	levelError       int8  = 1
+	levelInfo        int8  = 2
+	levelWarning     int8  = 3
+	levelFatal       int8  = 4
+	levelDebug       int8  = 5
+	schemaNotDefined int32 = -2
 )
 
 var (
@@ -51,13 +51,15 @@ func (logger *log) Init(schemaId int32, disableDbLogs bool) {
 		return
 	}
 
-	// get metas chema to fetch current JobId
-	if schemaId == 0 {
-		logger.info(0, 0, "Baseline Logger Initialized", "")
-	} else {
-		metaSchema := GetSchemaById(0)
-		jobId := metaSchema.getJobIdValue()
-		logger.info(0, jobId, "Logger Initialized", "")
+	if schemaId != schemaNotDefined {
+		// get metas chema to fetch current JobId
+		if schemaId == 0 {
+			logger.info(0, 0, "Baseline Logger Initialized", "")
+		} else {
+			metaSchema := GetSchemaById(0)
+			jobId := metaSchema.getJobIdNextValue()
+			logger.info(0, jobId, "Logger Initialized", "")
+		}
 	}
 }
 
@@ -178,7 +180,7 @@ func (logger *log) writeDeferToDb(newLog *log) {
 		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
-			newLog.jobId = metaSchema.getJobIdValue()
+			newLog.jobId = metaSchema.getJobIdNextValue()
 			logger.writeToDb(newLog)
 			break
 		}
@@ -208,9 +210,11 @@ func (logger *log) getCallerInfo() (string, string, int32) {
 	frame := logger.getFrame(4) // or 5
 
 	// reach another frame?
+	/*tagLoggerFrame   string = "schema.(*Schema).Log"
 	if strings.Contains(frame.Function, tagLoggerFrame) == true {
 		frame = logger.getFrame(5)
 	}
+	*/
 	method := frame.Function
 	callSite := frame.Function
 	lastIndex := strings.LastIndex(frame.Function, ".")
@@ -264,8 +268,8 @@ func (logger *log) getMessage(params []interface{}) string {
 
 func LogTest(id int32, jobId int64, messages ...interface{}) {
 	logTest := new(log)
-	logTest.Init(0, false)
-	logTest.writePartialLog(id, levelError, jobId, messages...)
+	logTest.Init(schemaNotDefined, false)
+	logTest.writePartialLog(id, levelError, jobId, messages)
 }
 
 func (logger *log) getDescription(params []interface{}) string {

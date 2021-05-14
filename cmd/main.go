@@ -8,13 +8,11 @@ import (
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
-	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/searchabletype"
 	"ring/schema/sourcetype"
-	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"runtime"
 	"strconv"
@@ -31,38 +29,15 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
-	teeeet := sqlfmt.ToSnakeCase("Table_Testa")
-	teeeet = "Table____Testa"
-
-	fmt.Println(strings.ReplaceAll(teeeet, "__", "_"))
-	runtime.LockOSThread()
-	var test5555 = 0
+	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 
 	var importFile = schema.Import{}
-	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
+	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema2.xml")
 
 	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
 	importFile.Load()
 
-	test5555 <<= 1
-	fmt.Println(test5555)
-
-	frame := test4()
-	fmt.Println(frame.File)
-	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-
-	cacheId := new(schema.CacheId)
-	cacheId.Init(1, 0, entitytype.Sequence)
-	//cacheId.SetReserveRange(true)
-	fmt.Println("=== cacheId.GetNewId() ===")
-	fmt.Println(cacheId.GetNewRangeId(2))
-	fmt.Println(cacheId.GetNewRangeId(2))
-	fmt.Println(cacheId.GetNewRangeId(2))
-	fmt.Println(cacheId.GetNewRangeId(2))
-	fmt.Println(cacheId.GetNewRangeId(2))
-
 	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
-
 	//ss.LogWarn(1, 544, "hello", "World")
 
 	rcd := new(data.Record)
@@ -202,6 +177,7 @@ func main() {
 	fmt.Println(strings.Join(reg, ","))
 	//time.Sleep(20 * time.Second)
 	fmt.Println("Finished!")
+	test4()
 }
 
 func test2() string {
@@ -212,8 +188,10 @@ func test3() int {
 	return getFrame(1).Line
 }
 
-func test4() runtime.Frame {
-	return getFrame(1)
+func test4() {
+	metaSchema := schema.GetSchemaByName("@meta")
+	metaSchema.LogFatal(545, "testte", "ytest")
+
 }
 
 func getFrame(skipFrames int) runtime.Frame {

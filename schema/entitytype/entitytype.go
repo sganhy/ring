@@ -14,6 +14,7 @@ const (
 	Language   EntityType = 17
 	Tablespace EntityType = 18
 	Constraint EntityType = 101 // not stored in @meta table
+	Parameter  EntityType = 102 // not stored in @meta table
 	NotDefined EntityType = 127
 )
 

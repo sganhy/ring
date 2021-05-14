@@ -23,47 +23,51 @@ type Import struct {
 	jobId       int64
 	schema      *Schema
 	tables      map[string]int32
-	errorList   []error
+	errorCount  int32
 	metaList    []*Meta
+	logger      *log
 }
 
 const (
-	errorImportFileNotInitialized = "Import File object is not initialized."
-	importTableTag1               = "object"
-	importTableTag2               = "table"
-	importFieldTag                = "field"
-	importTablespaceTag           = "tablespace"
-	importSchemaTag               = "schema"
-	importDescriptionTag          = "description"
-	importRelationTag             = "relation"
-	importIndexTag                = "index"
-	importIndexFieldTag           = "index_field"
-	importXmlAttributeFileTag     = "file"
-	importXmlAttributeNameTag     = "name"
-	importXmlAttributeSubjectTag  = "suject"
-	importXmlAttributeTypeTag     = "type"
-	importXmlAttributeDefaultTag  = "default"
-	importXmlAttributeIdTag1      = "id"
-	importXmlAttributeIdTag2      = "type_id"
-	importXmlAttributeToTag       = "to"
-	importXmlAttributeInverseTag  = "inverse_relation"
-	importXmlAttributeBaseline    = "baseline"
-	importXmlAttributeCached      = "cached"
-	importXmlBoolTrueValue1       = "true"
-	importXmlBoolTrueValue2       = "1"
-	importXmlBoolFalseValue1      = "false"
-	importXmlBoolFalseValue2      = "0"
-	importXmlAttributeSize        = "size"
-	importXmlAttributeReadonly    = "readonly"
-	importXmlAttributeUnique      = "unique"
-	importXmlAttributeBitmap      = "bitmap"
-	importXmlAttributeNotNull     = "not_null"
-	importXmlAttributeSensitive   = "case_sensitive"
-	importXmlAttributeMultiLang   = "multilingual"
+	errorImportFileNotInitialized string = "Import File object is not initialized."
+	importTableTag1               string = "object"
+	importTableTag2               string = "table"
+	importFieldTag                string = "field"
+	importTablespaceTag           string = "tablespace"
+	importSchemaTag               string = "schema"
+	importDescriptionTag          string = "description"
+	importRelationTag             string = "relation"
+	importIndexTag                string = "index"
+	importIndexFieldTag           string = "index_field"
+	importXmlAttributeFileTag     string = "file"
+	importXmlAttributeNameTag     string = "name"
+	importXmlAttributeSubjectTag  string = "suject"
+	importXmlAttributeTypeTag     string = "type"
+	importXmlAttributeDefaultTag  string = "default"
+	importXmlAttributeIdTag1      string = "id"
+	importXmlAttributeIdTag2      string = "type_id"
+	importXmlAttributeToTag       string = "to"
+	importXmlAttributeInverseTag  string = "inverse_relation"
+	importXmlAttributeBaseline    string = "baseline"
+	importXmlAttributeCached      string = "cached"
+	importXmlBoolTrueValue1       string = "true"
+	importXmlBoolTrueValue2       string = "1"
+	importXmlBoolFalseValue1      string = "false"
+	importXmlBoolFalseValue2      string = "0"
+	importXmlAttributeSize        string = "size"
+	importXmlAttributeReadonly    string = "readonly"
+	importXmlAttributeUnique      string = "unique"
+	importXmlAttributeBitmap      string = "bitmap"
+	importXmlAttributeNotNull     string = "not_null"
+	importXmlAttributeSensitive   string = "case_sensitive"
+	importXmlAttributeMultiLang   string = "multilingual"
+	importMinId                   int64  = -2147483648
+	importMaxId                   int64  = 2147483647
 )
 
 var (
-	currentSchemaImportId = 1
+	currentSchemaImportId int   = 1
+	baseErrorId           int32 = 11
 )
 
 func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
@@ -72,9 +76,15 @@ func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
 	importFile.fileName = fileName
 	importFile.initialized = true
 	importFile.source = source
+	importFile.logger = new(log)
 }
 
 func (importFile *Import) Load() {
+	var metaSchema = GetSchemaByName(metaSchemaName)
+
+	importFile.errorCount = 0
+	importFile.jobId = metaSchema.getJobIdNextValue()
+
 	if importFile.initialized == false {
 		errors.New(errorImportFileNotInitialized)
 	}
@@ -110,20 +120,19 @@ func (importFile *Import) loadXml() {
 	*fieldId = 0
 	*relationId = 0
 	*indexId = 0
-	importFile.errorList = make([]error, 2)
 	importFile.metaList = make([]*Meta, 0, 20)
 
 	// pass 1 build --> dico<lower(table_name),table_id>
 	err := importFile.loadTableDico()
 	if err != nil {
-		importFile.errorList = append(importFile.errorList, err)
+		importFile.logError(err)
 		return
 	}
 
 	// pass 2 build --> get []Meta
 	f, err = os.Open(importFile.fileName)
 	if err != nil {
-		importFile.errorList = append(importFile.errorList, err)
+		importFile.logError(err)
 		return
 	}
 	defer f.Close()
@@ -134,7 +143,7 @@ func (importFile *Import) loadXml() {
 			// EOF means we're done.
 			break
 		} else if err != nil {
-			importFile.errorList = append(importFile.errorList, err)
+			importFile.logError(err)
 			return
 		}
 		switch ty := tok.(type) {
@@ -176,7 +185,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		(*fieldId)++
 		line := reflect.ValueOf(d).Elem().FieldByName("line").Int()
 		meta = importFile.getXmlMeta(&ty.Attr, entitytype.Field, *referenceId, *fieldId, line)
-		meta.flags = importFile.getFieldFlags(&ty.Attr)
+		meta.flags = importFile.getFieldFlags(&ty.Attr, line)
 		meta.description = importFile.getDescription(&ty.Attr)
 	}
 	// RELATIONS
@@ -252,7 +261,7 @@ func (importFile *Import) getXmlMeta(attributes *[]xml.Attr, entityType entityty
 			break
 		case importXmlAttributeIdTag1, importXmlAttributeIdTag2:
 			// ID
-			result.id = importFile.getXmlAttributeId(attribute.Value)
+			result.id = importFile.getXmlAttributeId(attribute.Value, line)
 			break
 		case importXmlAttributeTypeTag, importXmlAttributeToTag:
 			// DATA_TYPE
@@ -280,11 +289,16 @@ func (importFile *Import) getXmlAttribute(attributes *[]xml.Attr, attributeName 
 	return ""
 }
 
-func (importFile *Import) getXmlAttributeId(attributeValue string) int32 {
-	result, err := strconv.ParseInt(attributeValue, 10, 32)
+func (importFile *Import) getXmlAttributeId(attributeValue string, line int64) int32 {
+	result, err := strconv.ParseInt(attributeValue, 10, 64)
 	if err == nil {
-		return int32(result)
+		if result >= importMinId && result <= importMaxId {
+			return int32(result)
+		}
+		importFile.logFileError("Invalid {id}", "", line)
+		return -2
 	}
+	importFile.logFileError("Invalid {id}", err.Error(), line)
 	return -1
 }
 
@@ -355,12 +369,11 @@ func (importFile *Import) getRelationFlags(attributes *[]xml.Attr) uint64 {
 		if strings.ToLower(attribute.Name.Local) == importXmlAttributeTypeTag {
 			meta.setRelationType(relationtype.GetRelationType(attributeValue))
 		}
-
 	}
 	return meta.flags
 }
 
-func (importFile *Import) getFieldFlags(attributes *[]xml.Attr) uint64 {
+func (importFile *Import) getFieldFlags(attributes *[]xml.Attr, line int64) uint64 {
 	meta := Meta{}
 	count := len(*attributes)
 	meta.setFieldCaseSensitive(true)
@@ -391,7 +404,7 @@ func (importFile *Import) getFieldFlags(attributes *[]xml.Attr) uint64 {
 			}
 		}
 		if strings.ToLower(attribute.Name.Local) == importXmlAttributeSize {
-			meta.setFieldSize(importFile.getFieldSize(attributeValue))
+			meta.setFieldSize(importFile.getFieldSize(attributeValue, line))
 		}
 	}
 	return meta.flags
@@ -437,7 +450,7 @@ func (importFile *Import) getIndexValue(d *xml.Decoder, ty *xml.StartElement) st
 			// EOF means we're done.
 			break
 		} else if err != nil {
-			importFile.errorList = append(importFile.errorList, err)
+			importFile.logError(err)
 			return ""
 		}
 		switch ty := tok.(type) {
@@ -471,10 +484,10 @@ func (importFile *Import) getDescription(attributes *[]xml.Attr) string {
 	return result
 }
 
-func (importFile *Import) getFieldSize(value string) uint32 {
+func (importFile *Import) getFieldSize(value string, line int64) uint32 {
 	result, err := strconv.ParseInt(value, 10, 32)
 	if err != nil {
-		importFile.errorList = append(importFile.errorList, err)
+		importFile.logFileError("Invalid field size", err.Error(), line)
 	}
 	return uint32(result)
 }
@@ -486,7 +499,7 @@ func (importFile *Import) addDescription(d *xml.Decoder, ty *xml.StartElement) {
 			// EOF means we're done.
 			break
 		} else if err != nil {
-			importFile.errorList = append(importFile.errorList, err)
+			importFile.logError(err)
 			return
 		}
 		switch ty := tok.(type) {
@@ -503,6 +516,16 @@ func (importFile *Import) addDescription(d *xml.Decoder, ty *xml.StartElement) {
 	}
 }
 
+func (importFile *Import) logError(err error) {
+	importFile.errorCount++
+	importFile.logger.writePartialLog(baseErrorId+importFile.errorCount, levelError, importFile.jobId, "", err)
+}
+
+func (importFile *Import) logFileError(message string, description string, lineNumber int64) {
+	importFile.logger.writePartialLog(baseErrorId+importFile.errorCount, levelError, importFile.jobId, message, description)
+	importFile.errorCount++
+}
+
 func (importFile *Import) loadTableDico() error {
 	importFile.tables = make(map[string]int32)
 	f, err := os.Open(importFile.fileName)
@@ -510,7 +533,7 @@ func (importFile *Import) loadTableDico() error {
 	var tableId int32
 
 	if err != nil {
-		importFile.errorList = append(importFile.errorList, err)
+		importFile.logError(err)
 		return err
 	}
 	defer f.Close()
@@ -521,14 +544,14 @@ func (importFile *Import) loadTableDico() error {
 			// EOF means we're done.
 			break
 		} else if err != nil {
-			importFile.errorList = append(importFile.errorList, err)
+			importFile.logError(err)
 			return err
 		}
 		switch ty := tok.(type) {
 		case xml.StartElement:
 			if strings.ToLower(ty.Name.Local) == importTableTag1 || strings.ToLower(ty.Name.Local) == importTableTag2 {
 				tableName = importFile.getXmlAttribute(&ty.Attr, importXmlAttributeNameTag)
-				tableId = importFile.getXmlAttributeId(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeIdTag1))
+				tableId = importFile.getXmlAttributeId(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeIdTag1), -1)
 				importFile.tables[strings.ToLower(tableName)] = tableId
 			}
 			continue

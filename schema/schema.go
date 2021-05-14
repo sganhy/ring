@@ -180,29 +180,38 @@ func (schema *Schema) Clone() *Schema {
 	return newSchema
 }
 
+//go:noinline
 func (schema *Schema) LogWarn(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.warn(id, 0, messages...)
+		schema.logger.writePartialLog(id, levelWarning, 0, messages...)
 	}
 }
+
+//go:noinline
 func (schema *Schema) LogInfo(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.info(id, 0, messages...)
+		schema.logger.writePartialLog(id, levelInfo, 0, messages...)
 	}
 }
+
+//go:noinline
 func (schema *Schema) LogError(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.error(id, 0, messages...)
+		schema.logger.writePartialLog(id, levelError, 0, messages...)
 	}
 }
+
+//go:noinline
 func (schema *Schema) LogDebug(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.debug(id, 0, messages...)
+		schema.logger.writePartialLog(id, levelDebug, 0, messages...)
 	}
 }
+
+//go:noinline
 func (schema *Schema) LogFatal(id int32, messages ...interface{}) {
 	if schema.logger != nil {
-		schema.logger.fatal(id, 0, messages...)
+		schema.logger.writePartialLog(id, levelFatal, 0, messages...)
 	}
 }
 
@@ -372,6 +381,16 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 func (schema *Schema) getJobIdValue() int64 {
 	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
 	if jobIdSequence != nil {
+		return jobIdSequence.GetValue()
+
+	}
+	return -1
+}
+
+func (schema *Schema) getJobIdNextValue() int64 {
+	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
+	if jobIdSequence != nil {
+		jobIdSequence.NextValue()
 		return jobIdSequence.GetValue()
 	}
 	return -1
