@@ -83,7 +83,6 @@ func (index *Index) GetTableId() int32 {
 
 func (index *Index) GetEntityType() entitytype.EntityType {
 	return entitytype.Index
-
 }
 
 //******************************

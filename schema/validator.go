@@ -1,11 +1,36 @@
 package schema
 
+import (
+	"errors"
+	"fmt"
+	"ring/schema/entitytype"
+	"strconv"
+	"strings"
+)
+
+const (
+	mssgDuplicateTableId      string = "Duplicate table Id '%d'"
+	descDuplicateTableId      string = "table id '%d' is already in use in tables %s."
+	mssgDuplicateTableName    string = "Duplicate table name '%s'"
+	descDuplicateTableName    string = "table name '%s' is already in use.\n at line %d and %d"
+	mssgEmptyEntityName       string = "Invalid %s name"
+	descEmptyEntityName       string = "%s name cannot be empty." + validatorAtLine + "%d"
+	mssgMaxLengthEntityName   string = mssgEmptyEntityName
+	descMaxLengthEntityName   string = "%s name '%s' is too long (max length=%d)." + validatorAtLine + "%d"
+	validatorCharSeparator    string = ", "
+	validatorAtLine           string = "\n at line "
+	joinOperationByName       int    = 1
+	joinOperationByLineNumber int    = 2
+	prefixedEntityMaxLength   int    = 28
+	unPrefixedEntityMaxLength int    = 30
+)
+
 type validator struct {
-	importFile *Import
+	errorCount int
 }
 
-func (valid *validator) Init(importFile *Import) {
-	valid.importFile = importFile
+func (valid *validator) Init() {
+	valid.errorCount = 0
 }
 
 //******************************
@@ -15,3 +40,136 @@ func (valid *validator) Init(importFile *Import) {
 //******************************
 // public methods
 //******************************
+
+func (valid *validator) ValidateImport(importFile *Import) bool {
+	fmt.Println("Start validation import ==> ")
+	if importFile.metaList == nil || len(importFile.metaList) <= 0 {
+		importFile.logError(errors.New("empty metaList"))
+		importFile.errorCount++
+		valid.errorCount++
+		return false
+	}
+
+	valid.tableIdUnique(importFile)
+	valid.tableNameUnique(importFile)
+	valid.entityNameValid(importFile)
+	valid.entityNameUnique(importFile)
+
+	return true
+}
+
+//******************************
+// private methods
+//******************************
+func (valid *validator) tableIdUnique(importFile *Import) {
+	var metaList = importFile.metaList
+	var dico map[int32][]*Meta
+	var ok bool
+	var val []*Meta
+
+	dico = make(map[int32][]*Meta)
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Table {
+			if val, ok = dico[meta.id]; ok {
+			} else {
+				// new slice
+				val = make([]*Meta, 0, 2)
+			}
+			val = append(val, meta)
+			dico[meta.id] = val
+		}
+	}
+	for key, arr := range dico {
+		if len(arr) > 1 {
+			var message = fmt.Sprintf(mssgDuplicateTableId, key)
+			var description = fmt.Sprintf(descDuplicateTableId, key, valid.joinMeta(arr, joinOperationByName))
+			description += validatorAtLine + valid.joinMeta(arr, joinOperationByLineNumber)
+			importFile.logErrorStr(703, message, description)
+		}
+	}
+}
+
+func (valid *validator) tableNameUnique(importFile *Import) {
+	var metaList = importFile.metaList
+	var dico map[string]*Meta
+	dico = make(map[string]*Meta)
+
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Table {
+			name := strings.ToUpper(meta.name)
+			if val, ok := dico[name]; ok {
+				var message = fmt.Sprintf(mssgDuplicateTableName, meta.name)
+				var description = fmt.Sprintf(descDuplicateTableName, meta.name, val.lineNumber, meta.lineNumber)
+				importFile.logErrorStr(704, message, description)
+			} else {
+				dico[name] = meta
+			}
+		}
+	}
+}
+
+func (valid *validator) entityNameValid(importFile *Import) {
+	var metaList = importFile.metaList
+
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		metaType := meta.GetEntityType()
+
+		// is meta.name empty?
+		if len(meta.name) == 0 {
+			var message = fmt.Sprintf(mssgEmptyEntityName, strings.ToLower(metaType.String()))
+			var description = fmt.Sprintf(descEmptyEntityName, strings.ToLower(metaType.String()), meta.lineNumber)
+			importFile.logErrorStr(502, message, description)
+		} else {
+			// is meta.name len > 28
+			if len(meta.name) > prefixedEntityMaxLength && (metaType == entitytype.Table || metaType == entitytype.Field) {
+				var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
+				var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
+					prefixedEntityMaxLength, meta.lineNumber)
+				importFile.logErrorStr(503, message, description)
+			}
+			// is meta.name len > 30
+			if len(meta.name) > unPrefixedEntityMaxLength && metaType != entitytype.Table && metaType != entitytype.Field {
+				var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
+				var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
+					unPrefixedEntityMaxLength, meta.lineNumber)
+				importFile.logErrorStr(504, message, description)
+			}
+		}
+	}
+}
+
+func (valid *validator) entityNameUnique(importFile *Import) {
+	var metaList = importFile.metaList
+	var dicoTable map[int32]string
+	dicoTable = make(map[int32]string)
+	// (1) build table dictionary
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Table {
+			dicoTable[meta.id] = meta.name
+		}
+	}
+	// (2) build dictionary entity & check
+
+}
+
+func (valid *validator) joinMeta(metaList []*Meta, operation int) string {
+	var result strings.Builder
+	for i := 0; i < len(metaList); i++ {
+		switch operation {
+		case joinOperationByName:
+			result.WriteString(metaList[i].name)
+			break
+		case joinOperationByLineNumber:
+			result.WriteString(strconv.FormatInt(metaList[i].lineNumber, 10))
+			break
+		}
+		if i < len(metaList)-1 {
+			result.WriteString(validatorCharSeparator)
+		}
+	}
+	return result.String()
+}

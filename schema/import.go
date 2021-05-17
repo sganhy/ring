@@ -16,20 +16,24 @@ import (
 )
 
 type Import struct {
-	id          int
-	fileName    string
-	source      sourcetype.SourceType
-	initialized bool
-	jobId       int64
-	schema      *Schema
-	tables      map[string]int32
-	errorCount  int32
-	metaList    []*Meta
-	logger      *log
+	id           int
+	fileName     string
+	schemaId     int32
+	schemaName   string
+	source       sourcetype.SourceType
+	initialized  bool
+	jobId        int64
+	loadedSchema *Schema
+	tables       map[string]int32
+	errorCount   int32
+	metaList     []*Meta
+	logger       *log
 }
 
 const (
 	errorImportFileNotInitialized string = "Import File object is not initialized."
+	errorImportInvalidId          string = "Invalid attribute {id}"
+	errorImportFieldSize          string = "Invalid field size"
 	importTableTag1               string = "object"
 	importTableTag2               string = "table"
 	importFieldTag                string = "field"
@@ -39,6 +43,7 @@ const (
 	importRelationTag             string = "relation"
 	importIndexTag                string = "index"
 	importIndexFieldTag           string = "index_field"
+	importXmlAttributeVersionTag  string = "version"
 	importXmlAttributeFileTag     string = "file"
 	importXmlAttributeNameTag     string = "name"
 	importXmlAttributeSubjectTag  string = "suject"
@@ -77,21 +82,41 @@ func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
 	importFile.initialized = true
 	importFile.source = source
 	importFile.logger = new(log)
+	importFile.logger.Init(schemaNotDefined, false)
 }
 
+//******************************
+// getters / setters
+//******************************
+func (importFile *Import) GetJobId() int64 {
+	return importFile.jobId
+}
+
+//******************************
+// public methods
+//******************************
 func (importFile *Import) Load() {
 	var metaSchema = GetSchemaByName(metaSchemaName)
-
 	importFile.errorCount = 0
 	importFile.jobId = metaSchema.getJobIdNextValue()
+	importFile.loadSchemaInfo()
+	importFile.logInfo("Load schema", "import_file: "+importFile.fileName)
 
+	if importFile.schemaName == "" {
+		// no schema information
+		return
+	}
 	if importFile.initialized == false {
 		errors.New(errorImportFileNotInitialized)
 	}
 	if importFile.source == sourcetype.XmlDocument {
 		importFile.loadXml()
+		valid := new(validator)
+		valid.Init()
+		valid.ValidateImport(importFile)
 		for i := 0; i < len(importFile.metaList); i++ {
 			meta := importFile.metaList[i]
+
 			if meta.objectType == 0 {
 				fmt.Println("TABLE ==> " + meta.name)
 			}
@@ -107,7 +132,6 @@ func (importFile *Import) Load() {
 // private methods
 //******************************
 func (importFile *Import) loadXml() {
-
 	referenceId := new(int32)
 	//var schemaId int32 = 0
 	fieldId := new(int32)
@@ -123,9 +147,9 @@ func (importFile *Import) loadXml() {
 	importFile.metaList = make([]*Meta, 0, 20)
 
 	// pass 1 build --> dico<lower(table_name),table_id>
-	err := importFile.loadTableDico()
+	err := importFile.loadTableInfo()
 	if err != nil {
-		importFile.logError(err)
+		// unable to open file
 		return
 	}
 
@@ -220,7 +244,6 @@ func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *
 	result.refId = 0
 	result.id = 0
 	result.lineNumber = line
-
 	return result
 }
 
@@ -295,10 +318,10 @@ func (importFile *Import) getXmlAttributeId(attributeValue string, line int64) i
 		if result >= importMinId && result <= importMaxId {
 			return int32(result)
 		}
-		importFile.logFileError("Invalid {id}", "", line)
+		importFile.logFileError(errorImportInvalidId, "", line)
 		return -2
 	}
-	importFile.logFileError("Invalid {id}", err.Error(), line)
+	importFile.logFileError(errorImportInvalidId, err.Error(), line)
 	return -1
 }
 
@@ -485,11 +508,16 @@ func (importFile *Import) getDescription(attributes *[]xml.Attr) string {
 }
 
 func (importFile *Import) getFieldSize(value string, line int64) uint32 {
-	result, err := strconv.ParseInt(value, 10, 32)
+	result, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		importFile.logFileError("Invalid field size", err.Error(), line)
+		importFile.logFileError(errorImportFieldSize, err.Error(), line)
+		return 0
 	}
-	return uint32(result)
+	if result >= importMinId && result <= importMaxId {
+		return uint32(result)
+	}
+	importFile.logFileError(errorImportFieldSize, "", line)
+	return 0
 }
 
 func (importFile *Import) addDescription(d *xml.Decoder, ty *xml.StartElement) {
@@ -516,17 +544,31 @@ func (importFile *Import) addDescription(d *xml.Decoder, ty *xml.StartElement) {
 	}
 }
 
-func (importFile *Import) logError(err error) {
-	importFile.errorCount++
-	importFile.logger.writePartialLog(baseErrorId+importFile.errorCount, levelError, importFile.jobId, "", err)
+//go:noinline
+func (importFile *Import) logInfo(message string, description string) {
+	importFile.logger.writePartialLog(9, levelInfo, importFile.jobId, message, description)
 }
 
+//go:noinline
+func (importFile *Import) logError(err error) {
+	importFile.logger.writePartialLog(baseErrorId+importFile.errorCount, levelError, importFile.jobId, err)
+	importFile.errorCount++
+}
+
+//go:noinline
+func (importFile *Import) logErrorStr(id int32, message string, description string) {
+	importFile.logger.writePartialLog(id, levelError, importFile.jobId, message, description)
+	importFile.errorCount++
+}
+
+//go:noinline
 func (importFile *Import) logFileError(message string, description string, lineNumber int64) {
+	description += "\n at line " + strconv.FormatInt(lineNumber, 10)
 	importFile.logger.writePartialLog(baseErrorId+importFile.errorCount, levelError, importFile.jobId, message, description)
 	importFile.errorCount++
 }
 
-func (importFile *Import) loadTableDico() error {
+func (importFile *Import) loadTableInfo() error {
 	importFile.tables = make(map[string]int32)
 	f, err := os.Open(importFile.fileName)
 	var tableName string
@@ -558,4 +600,44 @@ func (importFile *Import) loadTableDico() error {
 		}
 	}
 	return nil
+}
+
+func (importFile *Import) loadSchemaInfo() {
+	f, err := os.Open(importFile.fileName)
+
+	if err != nil {
+		importFile.logError(err)
+		return
+	}
+	defer f.Close()
+	d := xml.NewDecoder(f)
+	for {
+		tok, err := d.Token()
+		if tok == nil || err == io.EOF {
+			// EOF means we're done.
+			break
+		} else if err != nil {
+			importFile.logError(err)
+			return
+		}
+		switch ty := tok.(type) {
+		case xml.StartElement:
+			if strings.ToLower(ty.Name.Local) == importSchemaTag {
+				importFile.schemaName = importFile.getXmlAttribute(&ty.Attr, importXmlAttributeNameTag)
+				importFile.schemaId = getSchemaId(importFile.schemaName)
+				importFile.logger.setSchemaId(importFile.schemaId)
+				// add @version parameter
+				var metaParam = importFile.getSchemaVersion(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeVersionTag))
+				importFile.metaList = append(importFile.metaList, metaParam)
+				return
+			}
+			continue
+		}
+	}
+}
+
+func (importFile *Import) getSchemaVersion(value string) *Meta {
+	parameter := new(parameter)
+	var schemaVersion = parameter.getVersionParameter(entitytype.Schema, value)
+	return schemaVersion.toMeta()
 }

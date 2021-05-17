@@ -25,6 +25,8 @@ var (
 	schemaIndexByName   *[]*database // assign secondly  --> sorted by name
 	defaultSchemaName   string
 	databaseInitialized = false
+	schemaCacheId       *CacheId         // used to generate new schema Id
+	schemaReservedId    map[string]int32 // [schema_name] schema_id
 )
 
 func init() {
@@ -32,6 +34,9 @@ func init() {
 	schemaById = &lstById
 	lstByName := make([]*database, 0, initialSliceCount)
 	schemaIndexByName = &lstByName
+	schemaCacheId = new(CacheId)
+	schemaCacheId.currentId = 0
+	schemaReservedId = make(map[string]int32)
 }
 
 //******************************
@@ -105,7 +110,7 @@ func GetTableBySchemaName(recordType string) *Table {
 
 func GetSchemaByName(name string) *Schema {
 	var currentSchemaById = schemaById
-	var schemaName = strings.ToUpper(name)
+	var schemaName = formatSchemaName(name)
 	var currentSchemaByName = schemaIndexByName
 	var index = -1
 	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(*currentSchemaByName) - 1, 0, 0
@@ -151,11 +156,42 @@ func GetSchemaById(id int32) *Schema {
 //******************************
 // private methods
 //******************************
+func formatSchemaName(name string) string {
+	var result = strings.ToUpper(name)
+	result = strings.ReplaceAll(result, " ", "")
+	result = strings.ReplaceAll(result, "_", "")
+	result = strings.ReplaceAll(result, "-", "")
+	return result
+}
+
+func getSchemaId(schemaName string) int32 {
+	var result int32
+	// must be greater than 0
+	schemaCacheId.syncRoot.Lock()
+
+	// schema already exist ?
+	schema := GetSchemaByName(schemaName)
+	if schema != nil {
+		result = schema.id
+	} else {
+		name := formatSchemaName(schemaName)
+		if val, ok := schemaReservedId[name]; ok {
+			result = val
+		} else {
+			schemaCacheId.currentId++
+			result = int32(schemaCacheId.currentId)
+			schemaReservedId[name] = result
+		}
+	}
+	schemaCacheId.syncRoot.Unlock()
+	return result
+}
+
 // not thread safe !! slow!! Used only during initialization
 func addSchema(schema *Schema) {
 	metaDb := new(database)
 	metaDb.index = len(*schemaById)
-	metaDb.name = strings.ToUpper(schema.name)
+	metaDb.name = formatSchemaName(schema.name)
 	*schemaIndexByName = append(*schemaIndexByName, metaDb)
 	*schemaById = append(*schemaById, schema)
 	var currentDb *database
@@ -255,6 +291,10 @@ func loadSchemaById(schema Schema) {
 	var metaList = getMetaList(schema.id)
 	var metaIdList = getMetaIdList(schema.id)
 	var tables = getTables(schema, metaList) //from: meta.go
+
+	if int64(schema.id) > schemaCacheId.currentId {
+		schemaCacheId.currentId = int64(schema.id)
+	}
 
 	//var schema = new(Schema)
 

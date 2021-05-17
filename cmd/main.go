@@ -15,7 +15,6 @@ import (
 	"ring/schema/sourcetype"
 	"ring/schema/tabletype"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -31,31 +30,25 @@ const minint32 string = "-2147483648"
 func main() {
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 
+	var metaSchema = schema.GetSchemaByName("@META")
+	fmt.Println(metaSchema.GetId())
+
 	var importFile = schema.Import{}
-	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema2.xml")
+	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
+	importFile.Load()
 
 	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
-	importFile.Load()
 
 	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
 	//ss.LogWarn(1, 544, "hello", "World")
 
 	rcd := new(data.Record)
-	//func LogTest(id int32, jobId int64, messages ...interface{})
-	sInt := "97f"
-	_, err := strconv.ParseInt(sInt, 10, 64)
-	if err != nil {
-		fmt.Println("sInt := '97f'")
-		schema.LogTest(23, 554, err)
-	}
 
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)
 	zone, offset := ttt.Zone()
 	fmt.Println(offset)
 	fmt.Println(zone)
-
-	fmt.Println(test3())
 
 	rcd.SetRecordType("@log")
 	rcd.SetField("entry_time", "2014-04-15T21:14:55")
@@ -173,45 +166,4 @@ func main() {
 		fmt.Println(elemt2.GetPhysicalName())
 	*/
 
-	reg := []string{"a", "b", "c"}
-	fmt.Println(strings.Join(reg, ","))
-	//time.Sleep(20 * time.Second)
-	fmt.Println("Finished!")
-	test4()
-}
-
-func test2() string {
-	return getFrame(1).Function
-}
-
-func test3() int {
-	return getFrame(1).Line
-}
-
-func test4() {
-	metaSchema := schema.GetSchemaByName("@meta")
-	metaSchema.LogFatal(545, "testte", "ytest")
-
-}
-
-func getFrame(skipFrames int) runtime.Frame {
-	// We need the frame at index skipFrames+2, since we never want runtime.Callers and getFrame
-	targetFrameIndex := skipFrames + 2
-
-	// Set size to targetFrameIndex+2 to ensure we have room for one more caller than we need
-	programCounters := make([]uintptr, targetFrameIndex+2)
-	n := runtime.Callers(0, programCounters)
-
-	frame := runtime.Frame{Function: "unknown"}
-	if n > 0 {
-		frames := runtime.CallersFrames(programCounters[:n])
-		for more, frameIndex := true, 0; more && frameIndex <= targetFrameIndex; frameIndex++ {
-			var frameCandidate runtime.Frame
-			frameCandidate, more = frames.Next()
-			if frameIndex == targetFrameIndex {
-				frame = frameCandidate
-			}
-		}
-	}
-	return frame
 }

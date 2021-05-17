@@ -920,11 +920,11 @@ func (table *Table) create(schema *Schema) error {
 	duration := time.Now().Sub(creationTime)
 	if table.tableType == tabletype.Business {
 		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
-			fmt.Sprintf("id=%d; name=%s; execution_time=%d (ms)",
+			fmt.Sprintf("id=%d | name=%s | time=%dms",
 				table.id, table.physicalName, int(duration.Seconds()*1000)))
 	} else {
 		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
-			fmt.Sprintf("name=%s; execution_time=%d (ms)",
+			fmt.Sprintf("name=%s | time=%dms",
 				table.physicalName, int(duration.Seconds()*1000)))
 	}
 	return err

@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"ring/schema/entitytype"
 	"strconv"
 )
@@ -79,7 +78,6 @@ func (sequence *Sequence) GetValue() int64 {
 	return sequence.value.currentId
 }
 func (sequence *Sequence) NextValue() {
-	fmt.Println("*Sequence.NextValue()")
 	_ = sequence.value.GetNewId()
 }
 

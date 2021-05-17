@@ -111,6 +111,10 @@ func (logger *log) isMetaTables(exist bool) {
 	metaTableExist = exist
 }
 
+func (logger *log) setSchemaId(id int32) {
+	logger.schemaId = id
+}
+
 //******************************
 // public methods
 //******************************
@@ -198,6 +202,7 @@ func (logger *log) getNewLog(id int32, level int8, schemaId int32, jobId int64, 
 	newLog.setThreadId(logger.getThreadId())
 	newLog.callSite = callsite
 	newLog.jobId = jobId
+	newLog.setSchemaId(schemaId)
 	newLog.setMethod(method)
 	newLog.lineNumber = lineNumber
 	newLog.setMessage(message)
