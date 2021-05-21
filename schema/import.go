@@ -44,6 +44,7 @@ const (
 	importIndexTag                string = "index"
 	importIndexFieldTag           string = "index_field"
 	importXmlAttributeVersionTag  string = "version"
+	importXmlAttributeLangTag     string = "default_language"
 	importXmlAttributeFileTag     string = "file"
 	importXmlAttributeNameTag     string = "name"
 	importXmlAttributeSubjectTag  string = "suject"
@@ -121,8 +122,8 @@ func (importFile *Import) Load() {
 				fmt.Println("TABLE ==> " + meta.name)
 			}
 			if meta.objectType == 18 {
-				var field = meta.toTablespace()
-				fmt.Println(field.String())
+				//var field = meta.toTablespace()
+				fmt.Println(meta.String())
 			}
 		}
 	}
@@ -628,7 +629,9 @@ func (importFile *Import) loadSchemaInfo() {
 				importFile.logger.setSchemaId(importFile.schemaId)
 				// add @version parameter
 				var metaParam = importFile.getSchemaVersion(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeVersionTag))
+				var metaLanguage = importFile.getSchemaLanguage(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeLangTag))
 				importFile.metaList = append(importFile.metaList, metaParam)
+				importFile.metaList = append(importFile.metaList, metaLanguage)
 				return
 			}
 			continue
@@ -639,5 +642,16 @@ func (importFile *Import) loadSchemaInfo() {
 func (importFile *Import) getSchemaVersion(value string) *Meta {
 	parameter := new(parameter)
 	var schemaVersion = parameter.getVersionParameter(entitytype.Schema, value)
-	return schemaVersion.toMeta()
+	var meta = schemaVersion.toMeta()
+	meta.refId = importFile.schemaId
+	return meta
+}
+
+func (importFile *Import) getSchemaLanguage(value string) *Meta {
+	meta := new(Meta)
+	meta.id = 1
+	meta.refId = importFile.schemaId
+	meta.objectType = int8(entitytype.Language)
+	meta.name = value
+	return meta
 }

@@ -6,6 +6,7 @@ import (
 	"ring/schema/entitytype"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -15,6 +16,8 @@ const (
 	descDuplicateTableName    string = "table name '%s' is already in use.\n at line %d and %d"
 	mssgEmptyEntityName       string = "Invalid %s name"
 	descEmptyEntityName       string = "%s name cannot be empty." + validatorAtLine + "%d"
+	mssgInvalidEntityName     string = mssgEmptyEntityName
+	descInvalidEntityName     string = "invalid %s name '%s'. A name can consist of any combination of letters(A to Z a to z), decimal digits(0 to 9) or underscore (_)." + validatorAtLine + "%d"
 	mssgMaxLengthEntityName   string = mssgEmptyEntityName
 	descMaxLengthEntityName   string = "%s name '%s' is too long (max length=%d)." + validatorAtLine + "%d"
 	validatorCharSeparator    string = ", "
@@ -123,21 +126,33 @@ func (valid *validator) entityNameValid(importFile *Import) {
 			var description = fmt.Sprintf(descEmptyEntityName, strings.ToLower(metaType.String()), meta.lineNumber)
 			importFile.logErrorStr(502, message, description)
 		} else {
-			// is meta.name len > 28
-			if len(meta.name) > prefixedEntityMaxLength && (metaType == entitytype.Table || metaType == entitytype.Field) {
-				var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
-				var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
-					prefixedEntityMaxLength, meta.lineNumber)
-				importFile.logErrorStr(503, message, description)
-			}
-			// is meta.name len > 30
-			if len(meta.name) > unPrefixedEntityMaxLength && metaType != entitytype.Table && metaType != entitytype.Field {
-				var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
-				var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
-					unPrefixedEntityMaxLength, meta.lineNumber)
-				importFile.logErrorStr(504, message, description)
-			}
+			valid.checkEntityName(importFile, meta, metaType)
 		}
+	}
+}
+
+func (valid *validator) checkEntityName(importFile *Import, meta *Meta, metaType entitytype.EntityType) {
+	// is name valid
+	if valid.isValidName(meta.name) == false &&
+		(metaType == entitytype.Table || metaType == entitytype.Field || metaType == entitytype.Index ||
+			metaType == entitytype.Relation || metaType == entitytype.Tablespace) {
+		var message = fmt.Sprintf(mssgInvalidEntityName, strings.ToLower(metaType.String()))
+		var description = fmt.Sprintf(descInvalidEntityName, strings.ToLower(metaType.String()), meta.name, meta.lineNumber)
+		importFile.logErrorStr(501, message, description)
+	}
+	// is meta.name len > 28
+	if len(meta.name) > prefixedEntityMaxLength && (metaType == entitytype.Table || metaType == entitytype.Field) {
+		var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
+		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
+			prefixedEntityMaxLength, meta.lineNumber)
+		importFile.logErrorStr(503, message, description)
+	}
+	// is meta.name len > 30
+	if len(meta.name) > unPrefixedEntityMaxLength && metaType != entitytype.Table && metaType != entitytype.Field {
+		var message = fmt.Sprintf(mssgMaxLengthEntityName, strings.ToLower(metaType.String()))
+		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
+			unPrefixedEntityMaxLength, meta.lineNumber)
+		importFile.logErrorStr(504, message, description)
 	}
 }
 
@@ -172,4 +187,13 @@ func (valid *validator) joinMeta(metaList []*Meta, operation int) string {
 		}
 	}
 	return result.String()
+}
+
+func (valid *validator) isValidName(name string) bool {
+	for _, c := range name {
+		if unicode.IsLetter(c) == false && unicode.IsDigit(c) == false && c != '_' {
+			return false
+		}
+	}
+	return true
 }
