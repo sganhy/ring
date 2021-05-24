@@ -81,6 +81,15 @@ func (sequence *Sequence) NextValue() {
 	_ = sequence.value.GetNewId()
 }
 
+func (sequence *Sequence) Clone() *Sequence {
+	// id int32, name string, description string, schemaId int32, maxValue int64, baseline bool, active bool
+	newSequence := new(Sequence)
+	newSequence.Init(sequence.id, sequence.name, sequence.description, sequence.schemaId, 0, sequence.baseline, sequence.active)
+	// reference copy
+	newSequence.value = sequence.value
+	return sequence
+}
+
 //******************************
 // private methods
 //******************************

@@ -152,7 +152,7 @@ func Test__Field__GetDdl(t *testing.T) {
 // GetSearchableValue
 func Test__Field__GetSearchableValue(t *testing.T) {
 	var lang = Language{}
-	lang.Init("FR")
+	lang.Init(1, "FR")
 
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType

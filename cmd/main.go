@@ -29,9 +29,12 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	var lang = new(schema.Language)
+	lang.Init(1, "eu-ES")
+	fmt.Println(lang.DisplayValue("eu-ES"))
 
-	var metaSchema = schema.GetSchemaByName("@META")
-	fmt.Println(metaSchema.GetId())
+	//var metaSchema = schema.GetSchemaByName("@META")
+	//fmt.Println(metaSchema.GetId())
 
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
@@ -101,8 +104,6 @@ func main() {
 	elemf := schema.Field{}
 	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
 
-	var lang = schema.Language{}
-	lang.Init("FR")
 	fmt.Println(elemf.IsNumeric())
 	var sss = elemf.GetSearchableValue("a", searchabletype.None)
 	var sss2 = "A"

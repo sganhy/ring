@@ -79,6 +79,9 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 			// generate meta sequences
 			createMetaSequences(metaSchema)
 
+			// generate meta parameters
+			createMetaParameters(metaSchema)
+
 			var schemas = getSchemaIdList()
 			for i := 0; i < len(schemas); i++ {
 				loadSchemaById(schemas[i])
@@ -259,6 +262,17 @@ func createMetaSequences(schema *Schema) {
 		if sequence.value.exists(entitytype.Sequence, sequence.id, schema.id) == false {
 			sequence.value.create(entitytype.Sequence, sequence.id, schema.id)
 		}
+	}
+}
+
+func createMetaParameters(schema *Schema) {
+	for _, parameter := range schema.parameters {
+		if parameter.exists(schema) == false {
+			parameter.create(schema)
+		}
+	}
+	if schema.language.exists(schema) == false {
+		schema.language.create(schema)
 	}
 }
 

@@ -15,9 +15,12 @@ func Test__Schema__Init(t *testing.T) {
 	var tables = []Table{}
 	var language = Language{}
 	var tablespaces = []Tablespace{}
+	var sequences = []Sequence{}
+	var parameters = []parameter{}
 	var schema = Schema{}
 
-	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
+	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", language, tables, tablespaces, sequences,
+		parameters, databaseprovider.Influx, 0, 0, true, true, true)
 
 	if schema.GetName() != "test name" {
 		t.Errorf("Schema.Init() ==> name <> GetName()")
@@ -64,7 +67,10 @@ func Test__Schema__GetTableByName(t *testing.T) {
 	var fields = []Field{}
 	var tables = []Table{}
 	var tablespaces = []Tablespace{}
+	var sequences = []Sequence{}
+	var parameters = []parameter{}
 	var tablespace = Tablespace{}
+
 	var schema = Schema{}
 	var language = Language{}
 	const TABLE_COUNT = 20000
@@ -94,7 +100,8 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		id int32, name string, description string, connectionString string, language Language, tables []Table,
 		tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, baseline bool, active bool
 	*/
-	schema.Init(212, "test", "test", "phys test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
+	schema.Init(212, "test", "test", "phys test", "", language, tables, tablespaces, sequences, parameters,
+		databaseprovider.Influx, 0, 0, true, true, true)
 	// GetTableByName()
 	for i := 0; i < len(tables); i++ {
 		tableName := tables[i].name

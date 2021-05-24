@@ -57,6 +57,7 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 	valid.tableNameUnique(importFile)
 	valid.entityNameValid(importFile)
 	valid.entityNameUnique(importFile)
+	valid.languageCodeValid(importFile)
 
 	return true
 }
@@ -196,4 +197,21 @@ func (valid *validator) isValidName(name string) bool {
 		}
 	}
 	return true
+}
+
+func (valid *validator) languageCodeValid(importFile *Import) {
+	var metaList = importFile.metaList
+	lang := new(Language)
+
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		metaType := meta.GetEntityType()
+
+		if metaType == entitytype.Language {
+			_, err := lang.IsCodeValid(meta.value)
+			if err != nil {
+				importFile.logErrorStr(549, "Invalid language code", err.Error())
+			}
+		}
+	}
 }

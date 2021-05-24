@@ -641,7 +641,7 @@ func (importFile *Import) loadSchemaInfo() {
 
 func (importFile *Import) getSchemaVersion(value string) *Meta {
 	parameter := new(parameter)
-	var schemaVersion = parameter.getVersionParameter(entitytype.Schema, value)
+	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, entitytype.Schema, value)
 	var meta = schemaVersion.toMeta()
 	meta.refId = importFile.schemaId
 	return meta

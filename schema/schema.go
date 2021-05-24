@@ -17,11 +17,12 @@ type Schema struct {
 	name            string
 	physicalName    string
 	description     string
-	language        Language
+	language        Language // default language
 	tables          map[string]*Table
 	tablesById      map[int32]*Table
 	tableSpaces     []*Tablespace
 	sequences       []*Sequence
+	parameters      []*parameter
 	connections     *connectionPool
 	source          sourcetype.SourceType
 	logger          *log
@@ -41,8 +42,8 @@ var (
 )
 
 func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
-	tableSpaces []Tablespace, provider databaseprovider.DatabaseProvider, minConnection uint16, maxConnection uint16, baseline bool,
-	active bool, disablePool bool) {
+	tableSpaces []Tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
+	minConnection uint16, maxConnection uint16, baseline bool, active bool, disablePool bool) {
 
 	logger := new(log)
 	schema.id = id // first assign the id !!!!
@@ -53,7 +54,9 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.source = sourcetype.NativeDataBase // default value
 	schema.logger = logger
 	schema.sequences = make([]*Sequence, 0, 1)
+	schema.parameters = make([]*parameter, 0, 1)
 	schema.connections = new(connectionPool)
+	schema.language = language
 
 	if disablePool == false {
 		// load sequences ==> before log init
@@ -72,8 +75,10 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.loadTablespaces(tableSpaces)
 	schema.baseline = baseline
 	schema.active = active
+
 	// at end only sequences
-	schema.loadSequences()
+	schema.loadSequences(sequences)
+	schema.loadParameters(parameters)
 }
 
 //******************************
@@ -144,6 +149,7 @@ func (schema *Schema) GetSequenceByName(name string) *Sequence {
 	}
 	return nil
 }
+
 func (schema *Schema) GetTableById(id int32) *Table {
 	if val, ok := schema.tablesById[id]; ok {
 		return val
@@ -162,7 +168,10 @@ func (schema *Schema) Clone() *Schema {
 	newSchema := new(Schema)
 	var tables []Table
 	var tableSpaces []Tablespace
+	var sequences []Sequence
+	var parameters []parameter
 	var disabledPool = false
+
 	for _, v := range schema.tables {
 		var table = (*v).Clone()
 		tables = append(tables, *table)
@@ -171,10 +180,19 @@ func (schema *Schema) Clone() *Schema {
 		var tablespace = *schema.tableSpaces[i]
 		tableSpaces = append(tableSpaces, *tablespace.Clone())
 	}
+	for i := 0; i < len(schema.sequences); i++ {
+		var sequence = *schema.sequences[i]
+		sequences = append(sequences, *sequence.Clone())
+	}
+	for i := 0; i < len(schema.parameters); i++ {
+		var parameter = *schema.parameters[i]
+		parameters = append(parameters, *parameter.Clone())
+	}
 	if schema.connections.poolId == -1 {
 		disabledPool = true
 	}
-	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), schema.language, tables, tableSpaces,
+	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), schema.language, tables,
+		tableSpaces, sequences, parameters,
 		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
 		schema.baseline, schema.active, disabledPool)
 	return newSchema
@@ -247,6 +265,23 @@ func (schema *Schema) GetDdl(statement ddlstatement.DdlStatement) string {
 //******************************
 // private methods
 //******************************
+func (schema *Schema) getParameterByName(name string) *parameter {
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(schema.sequences) - 1, 0, 0
+	for indexerLeft <= indexerRight {
+		indexerMiddle = indexerLeft + indexerRight
+		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
+		indexerCompare = strings.Compare(name, schema.parameters[indexerMiddle].name)
+		if indexerCompare == 0 {
+			return schema.parameters[indexerMiddle]
+		} else if indexerCompare > 0 {
+			indexerLeft = indexerMiddle + 1
+		} else {
+			indexerRight = indexerMiddle - 1
+		}
+	}
+	return nil
+}
+
 // copy of Execute() method (used only by metaQuery)
 func (schema *Schema) execute(query Query) error {
 	var conn = schema.connections.get()
@@ -322,23 +357,45 @@ func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
 	}
 }
 
-func (schema *Schema) loadSequences() {
+func (schema *Schema) loadSequences(sequences []Sequence) {
+	schema.sequences = make([]*Sequence, 0, len(sequences))
 	var seq = Sequence{}
+
 	if schema.name == metaSchemaName {
 		// initialize cache id before instance sequences
 		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
 		InitCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
-
 		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getLanguageId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getIndexId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getEventId(schema.id))
+	} else {
+
+		for i := 0; i < len(sequences); i++ {
+			var seq = sequences[i]
+			schema.sequences = append(schema.sequences, &seq)
+		}
 	}
+	// add @job_id for all schema
 	schema.sequences = append(schema.sequences, seq.getJobId(schema.id))
+
 	// sort sequences
 	sort.Slice(schema.sequences, func(i, j int) bool {
 		return schema.sequences[i].name < schema.sequences[j].name
+	})
+}
+
+func (schema *Schema) loadParameters(parameters []parameter) {
+	schema.parameters = make([]*parameter, 0, len(parameters))
+
+	for i := 0; i < len(parameters); i++ {
+		schema.parameters = append(schema.parameters, &parameters[i])
+	}
+
+	// sort parameters
+	sort.Slice(schema.parameters, func(i, j int) bool {
+		return schema.parameters[i].name < schema.parameters[j].name
 	})
 }
 
@@ -351,19 +408,22 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 }
 
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
+	const schemaId int32 = 0
 	var table = new(Table)
 	var tables []Table
 	var tablespaces []Tablespace
+	var sequences []Sequence
+	var parameters []parameter
 	var result = new(Schema)
 	var language = Language{}
 	var physicalName = result.getPhysicalName(provider, metaSchemaName)
-
 	var metaTable = table.getMetaTable(provider, physicalName)
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
 	var metaLogTable = table.getLogTable(provider, physicalName)
 	var metaLongTable = table.getLongTable()
+	var param = new(parameter)
 
-	language.Init("EN")
+	language.Init(1, "en-US")
 
 	//TODO meta schema name hardcoded ("information_schema")
 	tables = append(tables, *metaTable)
@@ -371,8 +431,13 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, *metaLogTable)
 	tables = append(tables, *metaLongTable)
 
+	parameters = append(parameters, *param.getCreationTimeParameter(0, entitytype.Schema))
+	parameters = append(parameters, *param.getVersionParameter(0, entitytype.Schema, ""))
+	parameters = append(parameters, *param.getLastUpgradeParameter(0, entitytype.Schema))
+
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	result.Init(0, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables, tablespaces, provider, minConnection, maxConnection, true, true,
+	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables,
+		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
 	return result

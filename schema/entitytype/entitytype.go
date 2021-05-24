@@ -13,8 +13,8 @@ const (
 	Sequence   EntityType = 15
 	Language   EntityType = 17
 	Tablespace EntityType = 18
+	Parameter  EntityType = 23
 	Constraint EntityType = 101 // not stored in @meta table
-	Parameter  EntityType = 102 // not stored in @meta table
 	NotDefined EntityType = 127
 )
 
