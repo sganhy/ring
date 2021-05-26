@@ -173,7 +173,7 @@ func Test__Field__GetSearchableValue(t *testing.T) {
 }
 
 //test mappers Meta to Field, and Index to Meta
-func Test__Field__ToMeta(t *testing.T) {
+func Test__Field__toMeta(t *testing.T) {
 
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType

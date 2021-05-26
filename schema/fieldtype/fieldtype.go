@@ -102,3 +102,15 @@ func GetFieldType(value string) FieldType {
 	}
 	return NotDefined
 }
+
+func GetFieldTypeById(entityId int) FieldType {
+	if entityId <= 127 && entityId >= -128 {
+		var newId = FieldType(entityId)
+		if newId == Long || newId == Int || newId == Short || newId == Byte || newId == Float ||
+			newId == Double || newId == String || newId == ShortDateTime || newId == DateTime || newId == LongDateTime ||
+			newId == Array || newId == Boolean || newId == LongString {
+			return newId
+		}
+	}
+	return NotDefined
+}

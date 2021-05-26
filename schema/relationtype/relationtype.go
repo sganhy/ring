@@ -56,3 +56,14 @@ func GetRelationType(value string) RelationType {
 	}
 	return NotDefined
 }
+
+func GetRelationTypeById(entityId int) RelationType {
+	if entityId <= 127 && entityId >= -128 {
+		var newId = RelationType(entityId)
+		if newId == Otop || newId == Otm || newId == Mtm || newId == Mto || newId == Otof {
+			return newId
+		}
+	}
+	return NotDefined
+
+}

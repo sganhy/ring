@@ -15,13 +15,13 @@ const (
 	mssgDuplicateTableName    string = "Duplicate table name '%s'"
 	descDuplicateTableName    string = "table name '%s' is already in use.\n at line %d and %d"
 	mssgEmptyEntityName       string = "Invalid %s name"
-	descEmptyEntityName       string = "%s name cannot be empty." + validatorAtLine + "%d"
+	descEmptyEntityName       string = "%s name cannot be empty." + validatorAtLine
 	mssgInvalidEntityName     string = mssgEmptyEntityName
-	descInvalidEntityName     string = "invalid %s name '%s'. A name can consist of any combination of letters(A to Z a to z), decimal digits(0 to 9) or underscore (_)." + validatorAtLine + "%d"
+	descInvalidEntityName     string = "invalid %s name '%s'. A name can consist of any combination of letters(A to Z a to z), decimal digits(0 to 9) or underscore (_)." + validatorAtLine
 	mssgMaxLengthEntityName   string = mssgEmptyEntityName
-	descMaxLengthEntityName   string = "%s name '%s' is too long (max length=%d)." + validatorAtLine + "%d"
+	descMaxLengthEntityName   string = "%s name '%s' is too long (max length=%d)." + validatorAtLine
 	validatorCharSeparator    string = ", "
-	validatorAtLine           string = "\n at line "
+	validatorAtLine           string = "\n at line %d"
 	joinOperationByName       int    = 1
 	joinOperationByLineNumber int    = 2
 	prefixedEntityMaxLength   int    = 28
@@ -58,6 +58,11 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 	valid.entityNameValid(importFile)
 	valid.entityNameUnique(importFile)
 	valid.languageCodeValid(importFile)
+
+	// final check if all is ok
+	if importFile.errorCount == 0 {
+		valid.duplicateMetaKey(importFile)
+	}
 
 	return true
 }
@@ -154,6 +159,32 @@ func (valid *validator) checkEntityName(importFile *Import, meta *Meta, metaType
 		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
 			unPrefixedEntityMaxLength, meta.lineNumber)
 		importFile.logErrorStr(504, message, description)
+	}
+}
+
+func (valid *validator) duplicateMetaKey(importFile *Import) {
+	var metaList = importFile.metaList
+	var dicoEntities map[string]bool
+	dicoEntities = make(map[string]bool, len(metaList))
+
+	// check on db unique key (pk_@meta) ==> id|schema_id|object_type|reference_id
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+
+		metaKey := strconv.FormatInt(int64(meta.id), 16) + "-" +
+			strconv.FormatInt(int64(meta.refId), 16) + "-" +
+			strconv.FormatInt(int64(meta.objectType), 16)
+
+		if _, ok := dicoEntities[metaKey]; ok {
+			// error duplicate meta key
+			var message = fmt.Sprintf("Duplicate meta key")
+			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d", strings.ToLower(meta.GetEntityType().String()),
+				meta.refId, meta.id)
+
+			importFile.logErrorStr(527, message, description)
+		} else {
+			dicoEntities[metaKey] = true
+		}
 	}
 }
 

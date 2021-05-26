@@ -32,6 +32,25 @@ func (entityType EntityType) String() string {
 		return "SCHEMA"
 	case Sequence:
 		return "SEQUENCE"
+	case Tablespace:
+		return "TABLESPACE"
+	case Parameter:
+		return "PARAMETER"
+	case Language:
+		return "LANGUAGE"
+	case Constraint:
+		return "CONSTRAINT"
 	}
 	return ""
+}
+
+func GetEntityTypeById(entityId int) EntityType {
+	if entityId <= 127 && entityId >= -128 {
+		var newId = EntityType(entityId)
+		if newId == Table || newId == Field || newId == Relation || newId == Index || newId == Schema || newId == Sequence ||
+			newId == Language || newId == Tablespace || newId == Parameter || newId == Constraint {
+			return newId
+		}
+	}
+	return NotDefined
 }

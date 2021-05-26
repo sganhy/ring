@@ -32,6 +32,7 @@ func main() {
 	var lang = new(schema.Language)
 	lang.Init(1, "eu-ES")
 	fmt.Println(lang.DisplayValue("eu-ES"))
+	_, _ = lang.IsCodeValid("en-US")
 
 	//var metaSchema = schema.GetSchemaByName("@META")
 	//fmt.Println(metaSchema.GetId())

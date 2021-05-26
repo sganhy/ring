@@ -25,22 +25,23 @@ type Meta struct {
 }
 
 const (
-	bitPositionFieldCaseSensitive   uint8  = 2
-	bitPositionFieldNotNull         uint8  = 3
-	bitPositionFieldMultilingual    uint8  = 4
-	bitPositionIndexBitmap          uint8  = 9
-	bitPositionIndexUnique          uint8  = 10
-	bitPositionEntityBaseline       uint8  = 14
-	bitPositionFirstPositionSize    uint8  = 17 // max value bit pos for field=16 !!!
-	bitPositionFirstPositionRelType uint8  = 18 // max value bit pos for field=17 !!!
-	bitPositionRelationNotNull      uint8  = 4  // max value bit pos for relation =17 !!!
-	bitPositionTableCached          uint8  = 9
-	bitPositionTableReadonly        uint8  = 10
-	bitPositionTablespaceIndex      uint8  = 11
-	bitPositionTablespaceTable      uint8  = 12
-	metaMaxInt32                    int64  = 2147483647
-	metaMaxInt8                     int64  = 127
-	metaIndexSeparator              string = ";"
+	bitPositionFieldCaseSensitive    uint8  = 2
+	bitPositionFieldNotNull          uint8  = 3
+	bitPositionFieldMultilingual     uint8  = 4
+	bitPositionIndexBitmap           uint8  = 9
+	bitPositionIndexUnique           uint8  = 10
+	bitPositionEntityBaseline        uint8  = 14
+	bitPositionFirstPositionSize     uint8  = 17 // max value bit pos for field=16 !!!
+	bitPositionFirstPositionRelType  uint8  = 18 // max value bit pos for field=17 !!!
+	bitPositionRelationNotNull       uint8  = 4  // max value bit pos for relation =17 !!!
+	bitPositionFirstPositionDataType uint8  = 14 // max value bit pos for field=16 !!!
+	bitPositionTableCached           uint8  = 9
+	bitPositionTableReadonly         uint8  = 10
+	bitPositionTablespaceIndex       uint8  = 11
+	bitPositionTablespaceTable       uint8  = 12
+	metaMaxInt32                     int64  = 2147483647
+	metaMaxInt8                      int64  = 127
+	metaIndexSeparator               string = ";"
 )
 
 //******************************
@@ -91,46 +92,14 @@ func (meta *Meta) IsTablespaceTable() bool {
 }
 
 func (meta *Meta) GetFieldType() fieldtype.FieldType {
-	var result = fieldtype.FieldType(meta.dataType & 127)
-	if result != fieldtype.Array &&
-		result != fieldtype.Boolean &&
-		result != fieldtype.Byte &&
-		result != fieldtype.DateTime &&
-		result != fieldtype.Double &&
-		result != fieldtype.Float &&
-		result != fieldtype.Int &&
-		result != fieldtype.Long &&
-		result != fieldtype.LongDateTime &&
-		result != fieldtype.Short &&
-		result != fieldtype.ShortDateTime &&
-		result != fieldtype.String {
-		result = fieldtype.NotDefined
-	}
-	return result
+	return fieldtype.GetFieldTypeById(int(meta.dataType & 127))
 }
 func (meta *Meta) GetEntityType() entitytype.EntityType {
-	var result = entitytype.EntityType(meta.objectType & 127)
-	if result != entitytype.Field &&
-		result != entitytype.Relation &&
-		result != entitytype.Index &&
-		result != entitytype.Schema &&
-		result != entitytype.Sequence &&
-		result != entitytype.Table {
-		result = entitytype.NotDefined
-	}
-	return result
+	return entitytype.GetEntityTypeById(int(meta.objectType & 127))
 }
 
 func (meta *Meta) GetRelationType() relationtype.RelationType {
-	var result = relationtype.RelationType((meta.flags >> bitPositionFirstPositionRelType) & 127)
-	if result != relationtype.Mtm &&
-		result != relationtype.Mto &&
-		result != relationtype.Otm &&
-		result != relationtype.Otof &&
-		result != relationtype.Otop {
-		result = relationtype.NotDefined
-	}
-	return result
+	return relationtype.GetRelationTypeById(int((meta.flags >> bitPositionFirstPositionRelType) & 127))
 }
 
 func (meta *Meta) String() string {
@@ -139,13 +108,17 @@ func (meta *Meta) String() string {
 		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.lineNumber, meta.description)
 }
 
+func (meta *Meta) GetParameterType() fieldtype.FieldType {
+	return fieldtype.GetFieldTypeById(int((meta.flags >> bitPositionFirstPositionDataType) & 127))
+}
+
 //******************************
 // private methods
 //******************************
 
 // mappers
 func (meta *Meta) toField() *Field {
-	if entitytype.EntityType(meta.objectType) == entitytype.Field {
+	if meta.GetEntityType() == entitytype.Field {
 		var field = new(Field)
 		field.Init(meta.id, meta.name, meta.description,
 			meta.GetFieldType(), meta.GetFieldSize(), meta.value,
@@ -157,7 +130,7 @@ func (meta *Meta) toField() *Field {
 }
 
 func (meta *Meta) toRelation(table *Table) *Relation {
-	if entitytype.EntityType(meta.objectType) == entitytype.Relation {
+	if meta.GetEntityType() == entitytype.Relation {
 		var relation = new(Relation)
 		relation.Init(meta.id, meta.name, meta.description,
 			meta.value, meta.value, table, meta.GetRelationType(),
@@ -168,7 +141,7 @@ func (meta *Meta) toRelation(table *Table) *Relation {
 }
 
 func (meta *Meta) toIndex() *Index {
-	if entitytype.EntityType(meta.objectType) == entitytype.Index {
+	if meta.GetEntityType() == entitytype.Index {
 		var index = new(Index)
 		var arr = strings.Split(meta.value, metaIndexSeparator)
 		index.Init(meta.id, meta.name, meta.description, arr, meta.refId, meta.IsIndexBitmap(), meta.IsIndexUnique(),
@@ -179,7 +152,7 @@ func (meta *Meta) toIndex() *Index {
 }
 
 func (meta *Meta) toTablespace() *Tablespace {
-	if entitytype.EntityType(meta.objectType) == entitytype.Tablespace {
+	if meta.GetEntityType() == entitytype.Tablespace {
 		var tablespace = new(Tablespace)
 		// Init(id int32, name string, description string, fileName string, table bool, index bool) {
 		tablespace.Init(meta.id, meta.name, meta.description, meta.value, meta.IsTablespaceTable(), meta.IsTablespaceIndex())
@@ -190,7 +163,7 @@ func (meta *Meta) toTablespace() *Tablespace {
 
 // loosing schemaId and databaseprovider
 func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index) *Table {
-	if entitytype.EntityType(meta.objectType) == entitytype.Table {
+	if meta.GetEntityType() == entitytype.Table {
 		var table = new(Table)
 		/*
 			t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
@@ -207,12 +180,26 @@ func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index)
 
 // Build partial schema object
 func (meta *Meta) toSchema() *Schema {
-	if entitytype.EntityType(meta.objectType) == entitytype.Schema {
+	if meta.GetEntityType() == entitytype.Schema {
 		var schema = new(Schema)
 		schema.id = meta.id
 		schema.name = meta.name
 		schema.description = meta.description
 		return schema
+	}
+	return nil
+}
+
+func (meta *Meta) toParameter() *parameter {
+	if meta.GetEntityType() == entitytype.Parameter {
+
+		var param = new(parameter)
+		var entityType = entitytype.GetEntityTypeById(int(meta.dataType))
+		var fieldType = meta.GetParameterType()
+
+		param.Init(meta.id, meta.name, meta.description, entityType, fieldType, meta.value)
+
+		return param
 	}
 	return nil
 }
@@ -236,6 +223,14 @@ func (meta *Meta) setFieldSize(size uint32) {
 	//temp = meta.flags & temp // reset size to 0;
 	meta.flags += temp
 }
+
+func (meta *Meta) setParameterDataType(fieldType fieldtype.FieldType) {
+	var temp = uint64(fieldType)
+	temp <<= bitPositionFirstPositionDataType
+	meta.flags &= 65535
+	meta.flags += temp
+}
+
 func (meta *Meta) setEntityBaseline(value bool) {
 	meta.writeFlag(bitPositionEntityBaseline, value)
 }

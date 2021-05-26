@@ -16,18 +16,19 @@ import (
 )
 
 type Import struct {
-	id           int
-	fileName     string
-	schemaId     int32
-	schemaName   string
-	source       sourcetype.SourceType
-	initialized  bool
-	jobId        int64
-	loadedSchema *Schema
-	tables       map[string]int32
-	errorCount   int32
-	metaList     []*Meta
-	logger       *log
+	id              int
+	fileName        string
+	schemaId        int32
+	schemaName      string
+	source          sourcetype.SourceType
+	initialized     bool
+	jobId           int64
+	loadedSchema    *Schema
+	tables          map[string]int32
+	errorCount      int32
+	metaList        []*Meta
+	logger          *log
+	tablespaceCount int32
 }
 
 const (
@@ -98,6 +99,9 @@ func (importFile *Import) GetJobId() int64 {
 //******************************
 func (importFile *Import) Load() {
 	var metaSchema = GetSchemaByName(metaSchemaName)
+
+	importFile.tablespaceCount = 0
+	importFile.metaList = make([]*Meta, 0, 20)
 	importFile.errorCount = 0
 	importFile.jobId = metaSchema.getJobIdNextValue()
 	importFile.loadSchemaInfo()
@@ -121,7 +125,7 @@ func (importFile *Import) Load() {
 			if meta.objectType == 0 {
 				fmt.Println("TABLE ==> " + meta.name)
 			}
-			if meta.objectType == 18 {
+			if meta.objectType == 23 {
 				//var field = meta.toTablespace()
 				fmt.Println(meta.String())
 			}
@@ -138,6 +142,7 @@ func (importFile *Import) loadXml() {
 	fieldId := new(int32)
 	relationId := new(int32)
 	indexId := new(int32)
+
 	var meta *Meta
 	var f *os.File
 
@@ -145,7 +150,6 @@ func (importFile *Import) loadXml() {
 	*fieldId = 0
 	*relationId = 0
 	*indexId = 0
-	importFile.metaList = make([]*Meta, 0, 20)
 
 	// pass 1 build --> dico<lower(table_name),table_id>
 	err := importFile.loadTableInfo()
@@ -250,10 +254,12 @@ func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *
 
 func (importFile *Import) getXmlMetaTablespace(attributes *[]xml.Attr, line int64) *Meta {
 	var result = new(Meta)
+	importFile.tablespaceCount++
+
 	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
 	result.objectType = int8(entitytype.Tablespace)
 	result.refId = 0
-	result.id = 0
+	result.id = importFile.tablespaceCount
 	result.lineNumber = line
 	result.value = importFile.getXmlAttribute(attributes, importXmlAttributeFileTag)
 	var isIndex = strings.ToLower(importFile.getXmlAttribute(attributes, importIndexTag))
@@ -264,6 +270,7 @@ func (importFile *Import) getXmlMetaTablespace(attributes *[]xml.Attr, line int6
 	if isTable == importXmlBoolTrueValue1 || isTable == importXmlBoolTrueValue2 {
 		result.setTablespaceTable(true)
 	}
+
 	return result
 }
 
@@ -641,17 +648,16 @@ func (importFile *Import) loadSchemaInfo() {
 
 func (importFile *Import) getSchemaVersion(value string) *Meta {
 	parameter := new(parameter)
+
 	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, entitytype.Schema, value)
-	var meta = schemaVersion.toMeta()
+	var meta = schemaVersion.toMeta(importFile.schemaId)
 	meta.refId = importFile.schemaId
+
 	return meta
 }
 
 func (importFile *Import) getSchemaLanguage(value string) *Meta {
-	meta := new(Meta)
-	meta.id = 1
-	meta.refId = importFile.schemaId
-	meta.objectType = int8(entitytype.Language)
-	meta.name = value
-	return meta
+	lang := new(Language)
+	lang.Init(1, value)
+	return lang.toMeta()
 }

@@ -74,24 +74,27 @@ func Test__Meta__GetFieldType(t *testing.T) {
 }
 
 //test ToField, ToRelation, ToIndex, ToTable, and ToSchema
-func Test__Meta__ToField(t *testing.T) {
+func Test__Meta__toField(t *testing.T) {
 	var meta = new(Meta)
 
 	// testing nil return
 	meta.objectType = 4
 	if meta.toField() != nil {
-		t.Errorf("Meta.ToField() ==> objectType==4 must return nil")
+		t.Errorf("Meta.toField() ==> objectType==4 must return nil")
 	}
 	if meta.toRelation(nil) != nil {
-		t.Errorf("Meta.ToRelation() ==> objectType==4 must return nil")
+		t.Errorf("Meta.toRelation() ==> objectType==4 must return nil")
 	}
 	if meta.toIndex() != nil {
-		t.Errorf("Meta.ToIndex() ==> objectType==4 must return nil")
+		t.Errorf("Meta.toIndex() ==> objectType==4 must return nil")
 	}
 	if meta.toTable(nil, nil, nil) != nil {
-		t.Errorf("Meta.ToTable() ==> objectType==4 must return nil")
+		t.Errorf("Meta.toTable() ==> objectType==4 must return nil")
 	}
 	if meta.toSchema() != nil {
-		t.Errorf("Meta.ToSchema() ==> objectType==4 must return nil")
+		t.Errorf("Meta.toSchema() ==> objectType==4 must return nil")
+	}
+	if meta.toParameter() != nil {
+		t.Errorf("Meta.toParameter() ==> objectType==4 must return nil")
 	}
 }

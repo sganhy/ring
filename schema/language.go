@@ -755,7 +755,3 @@ func (language *Language) getLanguage(code string) *Language {
 	}
 	return nil
 }
-
-func (language *Language) getDefaultLanguage(code string) *Language {
-	return nil
-}
