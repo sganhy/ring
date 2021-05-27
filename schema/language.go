@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"ring/schema/entitytype"
-	"strconv"
 	"strings"
 )
 
@@ -19,19 +18,19 @@ type Language struct {
 }
 
 type country struct {
-	id   uint16
+	id   int32
 	code string
 	name string
 }
 
 const (
-	languageName                string = "@language"
-	languageErrorEmpty          string = "empty code"
-	languageErrorInvalidCountry string = "invalid country code '%s'"
-	languageErrorInvalidLang    string = "invalid language code '%s'"
+	languageName                 string = "@language"
+	languageErrorEmpty           string = "empty code"
+	languageErrorInvalidCountry  string = "invalid country code '%s'"
+	languageErrorInvalidLang     string = "invalid language code '%s'"
+	languageErrorInvalidCounLang string = "the combination of language code and country '%s' does not exist"
 )
 
-//TODO add countries
 var languages = map[string]Language{
 	"aa": {id: 11110, code: "aa", name: "Afar", nativeName: "Afaraf"},
 	"ab": {id: 11210, code: "ab", name: "Abkhaz", nativeName: "аҧсуа бызшәа"},
@@ -471,7 +470,7 @@ var countries = map[string]country{
 	"ZW": {id: 3590, code: "ZW", name: "Zimbabwe"},
 }
 
-var countryLanguage = map[string]bool{
+var languageCountry = map[string]bool{
 	"af-za": true,
 	"ar-ae": true,
 	"ar-bh": true,
@@ -618,9 +617,6 @@ func (language *Language) Init(id int32, code string) {
 	lang := language.getLanguage(code)
 	language.id = id
 	if lang != nil {
-		if id <= 0 {
-			language.id = lang.id
-		}
 		language.code = lang.code
 		language.name = lang.name
 		language.nativeName = lang.nativeName
@@ -630,6 +626,10 @@ func (language *Language) Init(id int32, code string) {
 //******************************
 // getters and setters
 //******************************
+func (language *Language) GetId() int32 {
+	return language.id
+}
+
 func (language *Language) GetCode() string {
 	return language.code
 }
@@ -659,11 +659,6 @@ func (language *Language) GetDescription() string {
 	return result
 }
 
-func (language *Language) DisplayValue(code string) string {
-	var result = languages[string(code[0:2])].id
-	return strconv.Itoa(int(result))
-}
-
 func (language *Language) IsCodeValid(code string) (bool, error) {
 	var codeFormat = strings.ReplaceAll(code, " ", "")
 	if len(code) == 0 {
@@ -675,8 +670,11 @@ func (language *Language) IsCodeValid(code string) (bool, error) {
 		if country == nil {
 			return false, errors.New(fmt.Sprintf(languageErrorInvalidCountry, code))
 		}
-		// lang country combination exists
-		// ...
+		// language, country combination exists
+		if _, ok := languageCountry[strings.ToLower(codeFormat)]; !ok {
+			return false, errors.New(fmt.Sprintf(languageErrorInvalidCounLang, code))
+		}
+
 	} else {
 		var lang = language.getLanguage(code)
 		// just language
@@ -745,10 +743,9 @@ func (language *Language) getCountry(code string) *country {
 
 func (language *Language) getLanguage(code string) *Language {
 	var formattedCode = strings.ReplaceAll(code, " ", "")
-	var index = strings.Index(formattedCode, "-")
 
-	if index > 0 && index+1 < len(formattedCode) {
-		var languageCode = formattedCode[:index]
+	if len(formattedCode) >= 2 {
+		var languageCode = formattedCode[:2]
 		if val, ok := languages[strings.ToLower(languageCode)]; ok {
 			return &val
 		}

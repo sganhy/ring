@@ -91,7 +91,7 @@ func Test__Field__Init(t *testing.T) {
 // getDefaultPrimaryKey
 func Test__Field__getDefaultPrimaryKey(t *testing.T) {
 	field := new(Field)
-	field.fieldType = fieldtype.Short
+	field.setType(fieldtype.Short)
 	elemf0 := field.getDefaultPrimaryKey()
 
 	if elemf0.IsValid() != true {
@@ -100,19 +100,19 @@ func Test__Field__getDefaultPrimaryKey(t *testing.T) {
 	if elemf0.IsPrimaryKey() != true {
 		t.Errorf("Field.getDefaultPrimaryKey() ==> IsPrimaryKey() <> true")
 	}
-	if elemf0.fieldType != fieldtype.Short {
+	if elemf0.GetType() != fieldtype.Short {
 		t.Errorf("Field.getDefaultPrimaryKey() ==> fieldType <> fieldtype.Short")
 	}
 
-	field.fieldType = fieldtype.Int
+	field.setType(fieldtype.Int)
 	elemf1 := field.getDefaultPrimaryKey()
-	if elemf1.fieldType != fieldtype.Int {
+	if elemf1.GetType() != fieldtype.Int {
 		t.Errorf("Field.getDefaultPrimaryKey() ==> fieldType <> fieldtype.Int")
 	}
 
-	field.fieldType = fieldtype.Double
+	field.setType(fieldtype.Double)
 	elemf2 := field.getDefaultPrimaryKey()
-	if elemf2.fieldType != fieldtype.Long {
+	if elemf2.GetType() != fieldtype.Long {
 		t.Errorf("Field.getDefaultPrimaryKey() ==> fieldType <> fieldtype.Long")
 	}
 }
@@ -225,7 +225,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 	var field = new(Field)
 	// ========== POSITIVE tests
 	// INT
-	field.fieldType = fieldtype.Int
+	field.setType(fieldtype.Int)
 	if field.isValidInteger("55451") == false {
 		t.Errorf("Field.isValidInteger() ==> 55451 is a valid integer (32 bits)")
 	}

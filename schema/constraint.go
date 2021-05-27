@@ -62,7 +62,7 @@ func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tablespace 
 // private methods
 //******************************
 func (constr *constraint) create(schema *Schema) error {
-	if constr.constType == constrainttype.NotNull && constr.table.tableType == tabletype.Business {
+	if constr.constType == constrainttype.NotNull && constr.table.GetType() == tabletype.Business {
 		// do nothing for busines tables
 		return nil
 	}
@@ -90,26 +90,26 @@ func (constr *constraint) getPhysicalName() string {
 	result := ""
 	switch constr.constType {
 	case constrainttype.PrimaryKey:
-		result = constraintPkPrefix + constr.table.name
+		result = constraintPkPrefix + constr.table.GetName()
 		break
 	case constrainttype.Check:
 		result = constr.getCheckName()
 		break
 
 	}
-	return sqlfmt.FormatEntityName(constr.table.provider, result)
+	return sqlfmt.FormatEntityName(constr.table.GetDatabaseProvider(), result)
 }
 
 func (constr *constraint) getCheckName() string {
 	result := ""
-	switch constr.table.tableType {
+	switch constr.table.GetType() {
 	case tabletype.Business:
-		result = constraintCkPrefix + strconv.Itoa(int(constr.table.id)) + "_" +
-			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.id)), "0", 4)
+		result = constraintCkPrefix + strconv.Itoa(int(constr.table.GetId())) + "_" +
+			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break
 	case tabletype.Meta, tabletype.MetaId, tabletype.Log:
-		result = constraintCkPrefix + constr.table.name + "_" +
-			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.id)), "0", 4)
+		result = constraintCkPrefix + constr.table.GetName() + "_" +
+			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break
 
 	}
@@ -119,13 +119,13 @@ func (constr *constraint) getCheckName() string {
 func (constr *constraint) getDdlPrimaryKey(tablespace *Tablespace) string {
 	var sqlTablespace = ""
 	var fields = constr.table.getUniqueFieldList()
-	var provider = constr.table.provider
+	var provider = constr.table.GetDatabaseProvider()
 
 	// unique fields ?
 	if fields != "" {
 		if tablespace != nil && provider == databaseprovider.PostgreSql {
 			// postgresql only ==>
-			sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, constr.table.provider)
+			sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, constr.table.GetDatabaseProvider())
 		}
 
 		switch provider {
@@ -139,25 +139,25 @@ func (constr *constraint) getDdlPrimaryKey(tablespace *Tablespace) string {
 
 func (constr *constraint) getDdlNotNull() string {
 	if constr.field != nil && constr.field.IsNotNull() {
-		provider := constr.table.provider
+		provider := constr.table.GetDatabaseProvider()
 		switch provider {
 		case databaseprovider.PostgreSql:
 			return strings.Trim(fmt.Sprintf(createNnPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
 				constr.table.GetPhysicalName(), constr.field.GetPhysicalName(provider)), ddlSpace)
 		case databaseprovider.MySql:
 			return strings.Trim(fmt.Sprintf(createNnMySql, ddlstatement.Alter.String(), entitytype.Table.String(),
-				constr.table.GetPhysicalName(), constr.field.GetDdl(provider, constr.table.tableType)), ddlSpace)
+				constr.table.GetPhysicalName(), constr.field.GetDdl(provider, constr.table.GetType())), ddlSpace)
 		}
 	}
 	return ""
 }
 
 func (constr *constraint) getDdlCheck() string {
-	var provider = constr.table.provider
+	var provider = constr.table.GetDatabaseProvider()
 	// "%s %s %s ADD CONSTRAINT %s CHECK (%s>-129 AND %s<128)"
-	if provider == databaseprovider.PostgreSql && constr.field != nil && constr.field.fieldType == fieldtype.Byte {
+	if provider == databaseprovider.PostgreSql && constr.field != nil && constr.field.GetType() == fieldtype.Byte {
 		return strings.Trim(fmt.Sprintf(createCkPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
-			constr.table.GetPhysicalName(), constr.getPhysicalName(), constr.field.GetPhysicalName(constr.table.provider)),
+			constr.table.GetPhysicalName(), constr.getPhysicalName(), constr.field.GetPhysicalName(constr.table.GetDatabaseProvider())),
 			ddlSpace)
 	}
 	return ""

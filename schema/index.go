@@ -115,9 +115,9 @@ func (index *Index) GetPhysicalName(table *Table) string {
 	result.Grow(30)
 	result.WriteString(physicalIndexPrefix)
 
-	switch table.tableType {
+	switch table.GetType() {
 	case tabletype.Business:
-		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(table.id)), "0", 4))
+		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(table.GetId())), "0", 4))
 		result.WriteString("_")
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
@@ -126,7 +126,7 @@ func (index *Index) GetPhysicalName(table *Table) string {
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	default:
-		result.WriteString(table.name[1:])
+		result.WriteString(table.GetName()[1:])
 		result.WriteString("_")
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 3))
 	}
@@ -177,7 +177,7 @@ func (index *Index) loadFields(fields []string) {
 }
 
 func (index *Index) getDdlDrop(table *Table) string {
-	if table == nil || table.provider == databaseprovider.NotDefined {
+	if table == nil || table.GetDatabaseProvider() == databaseprovider.NotDefined {
 		return ""
 	}
 	var query strings.Builder
@@ -195,22 +195,23 @@ func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 	var sqlUnique = ""
 	var sqlTablespace = ""
 	var fields strings.Builder
+	var provider = table.GetDatabaseProvider()
 
 	if index.unique == true {
 		sqlUnique = " UNIQUE"
 	}
 	if tablespace != nil {
-		sqlTablespace = tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+		sqlTablespace = tablespace.GetDdl(ddlstatement.NotDefined, provider)
 	}
 	if len(index.fields) > 0 {
 		for i := 0; i < len(index.fields); i++ {
-			fields.WriteString(sqlfmt.FormatEntityName(table.provider, index.fields[i]))
+			fields.WriteString(sqlfmt.FormatEntityName(provider, index.fields[i]))
 			if i < len(index.fields)-1 {
 				fields.WriteString(",")
 			}
 		}
 	}
-	switch table.provider {
+	switch table.GetDatabaseProvider() {
 	case databaseprovider.PostgreSql:
 		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
 			index.GetPhysicalName(table), table.GetPhysicalName(), fields.String(), sqlTablespace), ddlSpace)

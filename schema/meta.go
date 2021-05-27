@@ -192,14 +192,20 @@ func (meta *Meta) toSchema() *Schema {
 
 func (meta *Meta) toParameter() *parameter {
 	if meta.GetEntityType() == entitytype.Parameter {
-
 		var param = new(parameter)
 		var entityType = entitytype.GetEntityTypeById(int(meta.dataType))
 		var fieldType = meta.GetParameterType()
-
 		param.Init(meta.id, meta.name, meta.description, entityType, fieldType, meta.value)
-
 		return param
+	}
+	return nil
+}
+
+func (meta *Meta) toLanguage() *Language {
+	if meta.GetEntityType() == entitytype.Language {
+		var lang = new(Language)
+		lang.Init(meta.id, meta.value)
+		return lang
 	}
 	return nil
 }

@@ -81,18 +81,19 @@ func (cacheId *CacheId) SetCache(value bool) {
 //******************************
 func (cacheId *CacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) string {
 	var result strings.Builder
+	var provider = table.GetDatabaseProvider()
 
 	if dmlType == dmlstatement.Update {
 		//TODO manage query for Mysql
 		var field = table.GetFieldByName(metaValue)
-		result.Grow(int(table.sqlCapacity))
+		result.Grow(int(table.getSqlCapacity()))
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
-		result.WriteString(table.physicalName)
+		result.WriteString(table.GetPhysicalName())
 		result.WriteString(dmlUpdateSet)
-		result.WriteString(field.GetPhysicalName(table.provider))
+		result.WriteString(field.GetPhysicalName(provider))
 		result.WriteString(operatorEqual)
-		result.WriteString(field.GetPhysicalName(table.provider))
+		result.WriteString(field.GetPhysicalName(provider))
 		result.WriteString(operatorPlus)
 		result.WriteString(table.getVariableName(0))
 		result.WriteString(dqlWhere)
@@ -101,7 +102,7 @@ func (cacheId *CacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) 
 		result.WriteString(dmlSpace)
 		result.WriteString(sqlPosgreSqlReturning)
 		result.WriteString(dmlSpace)
-		result.WriteString(field.GetPhysicalName(table.provider))
+		result.WriteString(field.GetPhysicalName(provider))
 	}
 
 	return result.String()

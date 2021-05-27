@@ -46,7 +46,7 @@ func (cata *catalogue) GetDql(provider databaseprovider.DatabaseProvider, entity
 	var variableIndex = 0
 
 	table := new(Table)
-	table.provider = provider // SET provider
+	table.setDatabaseProvider(provider) // SET provider
 
 	result.WriteString(dqlSelect)
 	result.WriteString("1")

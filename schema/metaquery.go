@@ -226,7 +226,7 @@ func (query *metaQuery) getMetaList() []Meta {
 			record = (*query.result)[i].([]string)
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
-				switch field.name {
+				switch field.GetName() {
 				case metaId:
 					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
 					result[i].id = int32(tempMeta)
@@ -290,7 +290,7 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 			record = (*query.result)[i].([]string)
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
-				switch field.name {
+				switch field.GetName() {
 				case metaId:
 					tempMetaId, _ = strconv.ParseInt(record[j], 10, 32)
 					result[i].id = int32(tempMetaId)

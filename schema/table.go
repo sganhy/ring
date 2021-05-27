@@ -184,6 +184,22 @@ func (table *Table) GetEntityType() entitytype.EntityType {
 	return entitytype.Table
 }
 
+func (table *Table) setId(id int32) {
+	table.id = id
+}
+
+func (table *Table) setName(name string) {
+	table.name = name
+}
+
+func (table *Table) setDatabaseProvider(provider databaseprovider.DatabaseProvider) {
+	table.provider = provider
+}
+
+func (table *Table) getSqlCapacity() uint16 {
+	return table.sqlCapacity
+}
+
 //******************************
 // public methods
 //******************************
@@ -721,7 +737,7 @@ func (table *Table) sortRelations() {
 	if len(table.relations) > 1 {
 		// sort fields by id
 		sort.Slice(table.relations, func(i, j int) bool {
-			return table.relations[i].name < table.relations[j].name
+			return table.relations[i].GetName() < table.relations[j].GetName()
 		})
 	}
 }
@@ -757,7 +773,7 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// add missing primary key
 		if primaryKey == nil && tableType == tabletype.Business {
-			field.fieldType = fieldtype.Long
+			field.setType(fieldtype.Long)
 			var defaultPrimaryKey = field.getDefaultPrimaryKey()
 			table.fields = append(table.fields, defaultPrimaryKey)         // sorted by name
 			table.fieldsById = append(table.fieldsById, defaultPrimaryKey) // sorted by id
@@ -767,7 +783,7 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// replace primary key
 		if tableType == tabletype.Business && primaryKey != nil {
-			field.fieldType = primaryKey.fieldType
+			field.setType(primaryKey.GetType())
 			var defaultPrimaryKey = field.getDefaultPrimaryKey()
 			table.fields[primaryKeyIndex] = defaultPrimaryKey
 			table.fieldsById[primaryKeyIndex] = defaultPrimaryKey
@@ -887,7 +903,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 		}
 		break
 	case tabletype.Business:
-		query.WriteString(defaultPrimaryKeyInt64.name)
+		query.WriteString(defaultPrimaryKeyInt64.GetName())
 		query.WriteString(operatorEqual)
 		query.WriteString(strconv.Itoa(addedIndex))
 		break
@@ -1051,7 +1067,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// unique key (1)      id; schema_id; reference_id; object_type
-	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
+	var indexedFields = []string{id.GetName(), schemaId.name, objectType.name, referenceId.name}
 	uk.Init(1, metaTableName, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
 
 	fields = append(fields, id)          //1
@@ -1121,7 +1137,7 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	fields = append(fields, lineNumber)  //11
 
 	// indexes
-	var indexedFields = []string{entryTime.name}
+	var indexedFields = []string{entryTime.GetName()}
 	idxEntryTime.Init(1, entryTime.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)
 	indexedFields = []string{jobId.name}
 	idxJobId.Init(2, jobId.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)

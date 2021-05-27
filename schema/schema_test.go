@@ -89,10 +89,10 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		"subject test", true, false, true, false)
 	for i := -100; i <= TABLE_COUNT; i++ {
 		table := elemt.Clone()
-		table.id = int32(i)
+		table.setId(int32(i))
 		nameLenght := (abs(i) % 30) + 2
 		// fixture
-		table.name = randStringBytes(nameLenght)
+		table.setName(randStringBytes(nameLenght))
 		tables = append(tables, *table)
 	}
 
@@ -104,10 +104,10 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		databaseprovider.Influx, 0, 0, true, true, true)
 	// GetTableByName()
 	for i := 0; i < len(tables); i++ {
-		tableName := tables[i].name
+		tableName := tables[i].GetName()
 		val := schema.GetTableByName(tableName)
 		if val == nil {
-			t.Errorf("Schema.GetTableByName() ==> tables[i].name; i=%d, name=%s, id=%d", i, tableName, tables[i].id)
+			t.Errorf("Schema.GetTableByName() ==> tables[i].name; i=%d, name=%s, id=%d", i, tableName, tables[i].GetId())
 			break
 		} else {
 			if tableName != val.GetName() {
@@ -119,7 +119,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 
 	// GetTableById()
 	for i := 0; i < len(tables); i++ {
-		tableId := tables[i].id
+		tableId := tables[i].GetId()
 		val := schema.GetTableById(tableId)
 
 		if val == nil {

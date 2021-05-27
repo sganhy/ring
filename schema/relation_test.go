@@ -133,7 +133,7 @@ func Test__Relation__GetDdl(t *testing.T) {
 		t.Errorf("Field.GetSql() ==> (1) sql should be equal to REL TEST INT8")
 	}
 
-	elemr0.toTable = nil
+	elemr0.setToTable(nil)
 	sql = elemr0.GetDdl(databaseprovider.PostgreSql)
 	if sql != "" {
 		t.Errorf("Field.GetSql() ==> (1) sql should be null")
@@ -171,8 +171,8 @@ func Test__Relation__Clone(t *testing.T) {
 	if elemr0.GetType() != elemr1.GetType() {
 		t.Errorf("Relation.Clone() ==> r0.GetType() must be equal to r1.GetType()")
 	}
-	if elemr0.notNull != elemr1.notNull {
-		t.Errorf("Relation.Clone() ==> r0.notNull must be equal to r1.notNull")
+	if elemr0.IsNotNull() != elemr1.IsNotNull() {
+		t.Errorf("Relation.Clone() ==> r0.IsNotNull() must be equal to r1.notNull")
 	}
 	if elemr0.IsBaseline() != elemr1.IsBaseline() {
 		t.Errorf("Relation.Clone() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")

@@ -181,6 +181,10 @@ func (field *Field) GetEntityType() entitytype.EntityType {
 
 }
 
+func (field *Field) setType(fieldType fieldtype.FieldType) {
+	field.fieldType = fieldType
+}
+
 //******************************
 // public methods
 //******************************

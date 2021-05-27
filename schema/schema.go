@@ -346,7 +346,7 @@ func (schema *Schema) loadTables(tables []Table) {
 	for i := 0; i < len(tables); i++ {
 		table := tables[i]
 		schema.tables[table.GetName()] = &table
-		schema.tablesById[table.id] = &table
+		schema.tablesById[table.GetId()] = &table
 	}
 }
 

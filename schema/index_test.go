@@ -187,7 +187,7 @@ func Test__Index__GetDdl(t *testing.T) {
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
-	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
+	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
 	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, int32(tabletype.MetaId), false, false, true, true)
 
 	fields = append(fields, id)          //1

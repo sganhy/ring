@@ -61,7 +61,7 @@ func Test__Table__Init(t *testing.T) {
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
-	var indexedFields = []string{id.name, schemaId.name, objectType.name, referenceId.name}
+	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
 	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, 55, false, true, true, true)
 
 	fields = append(fields, id)          //1
@@ -159,14 +159,14 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	for i := 0; i < len(fields); i++ {
 		// test valid field only
 		if fields[i].IsValid() == true {
-			fieldName := fields[i].name
+			fieldName := fields[i].GetName()
 			field := table.GetFieldByName(fieldName)
 			if field == nil {
-				t.Errorf("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s, id=%d", i, fieldName, fields[i].id)
+				t.Errorf("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s, id=%d", i, fieldName, fields[i].GetId())
 				break
 			} else {
 				if fieldName != field.GetName() {
-					t.Errorf("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s, found=%s", i, fieldName, table.GetFieldByName(fields[i].name).GetName())
+					t.Errorf("Table.GetFieldByName() ==> fields[i].name; i=%d, name=%s, found=%s", i, fieldName, table.GetFieldByName(fields[i].GetName()).GetName())
 					break
 				}
 			}
@@ -209,13 +209,13 @@ func Test__Table__GetFieldByName(t *testing.T) {
 		t.Errorf("Table.GetFieldByName() ==> field '111' cannot be found")
 	}
 	//Testing GetFieldByNameI
-	field = table.GetFieldByNameI(strings.ToLower(table.fieldsById[3].name))
+	field = table.GetFieldByNameI(strings.ToLower(table.fieldsById[3].GetName()))
 	if field == nil {
-		t.Errorf("Table.GetFieldByNameI() ==> ToLower(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].name))
+		t.Errorf("Table.GetFieldByNameI() ==> ToLower(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].GetName()))
 	}
-	field = table.GetFieldByNameI(strings.ToUpper(table.fieldsById[3].name))
+	field = table.GetFieldByNameI(strings.ToUpper(table.fieldsById[3].GetName()))
 	if field == nil {
-		t.Errorf("Table.GetFieldByNameI() ==> ToUpper(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].name))
+		t.Errorf("Table.GetFieldByNameI() ==> ToUpper(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].GetName()))
 	}
 	field = table.GetFieldByNameI("111")
 	if field != nil {
@@ -230,7 +230,7 @@ func Test__Table__GetFieldByName(t *testing.T) {
 	table = table.getMetaTable(databaseprovider.MySql, metaSchemaName)
 	position = table.GetFieldIndexByName("description")
 	if position != 2 {
-		t.Errorf("Table.GetFieldIndexByName() ==> field '%s' index should be equal to 2", field.name)
+		t.Errorf("Table.GetFieldIndexByName() ==> field '%s' index should be equal to 2", field.GetName())
 	}
 
 }
@@ -258,14 +258,14 @@ func Test__Table__GetRelationByName(t *testing.T) {
 
 	for i := 0; i < len(relations); i++ {
 		// test valid field only
-		relationName := relations[i].name
+		relationName := relations[i].GetName()
 		relation := table.GetRelationByName(relationName)
 		if relation == nil {
-			t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, id=%d", i, relationName, relations[i].id)
+			t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, id=%d", i, relationName, relations[i].GetId())
 			break
 		} else {
 			if relationName != relation.GetName() {
-				t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, found=%s", i, relationName, table.GetRelationByName(fields[i].name).GetName())
+				t.Errorf("Table.GetRelationByName() ==> relations[i].name; i=%d, name=%s, found=%s", i, relationName, table.GetRelationByName(fields[i].GetName()).GetName())
 				break
 			}
 		}
@@ -280,7 +280,7 @@ func Test__Table__GetRelationByName(t *testing.T) {
 	if position != relationNotFound {
 		t.Errorf("Table.GetRelationIndexByName() ==> relation '22222' index cannot be found!!")
 	}
-	position = table.GetRelationIndexByName(relations[RELATION_COUNT>>2].name)
+	position = table.GetRelationIndexByName(relations[RELATION_COUNT>>2].GetName())
 	if position == relationNotFound {
 		t.Errorf("Table.GetRelationIndexByName() ==> relation index must be found!!")
 	}
@@ -329,14 +329,14 @@ func Test__Table__GetIndexByName(t *testing.T) {
 
 	for i := 0; i < len(indexes); i++ {
 		// test valid field only
-		indexName := indexes[i].name
+		indexName := indexes[i].GetName()
 		index := table.GetIndexByName(indexName)
 		if index == nil {
-			t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, id=%d", i, indexName, indexes[i].id)
+			t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, id=%d", i, indexName, indexes[i].GetId())
 			break
 		} else {
 			if indexName != index.GetName() {
-				t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, found=%s", i, indexName, table.GetIndexByName(indexes[i].name).GetName())
+				t.Errorf("Table.GetIndexByName() ==> indexes[i].name; i=%d, name=%s, found=%s", i, indexName, table.GetIndexByName(indexes[i].GetName()).GetName())
 				break
 			}
 		}
