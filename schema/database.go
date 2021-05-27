@@ -259,8 +259,9 @@ func createMetaSequences(schema *Schema) {
 		if sequence.exists(schema) == false {
 			sequence.create(schema)
 		}
-		if sequence.value.exists(entitytype.Sequence, sequence.id, schema.id) == false {
-			sequence.value.create(entitytype.Sequence, sequence.id, schema.id)
+		var cacheId = sequence.GetCacheId()
+		if cacheId.exists(entitytype.Sequence, sequence.GetId(), schema.id) == false {
+			cacheId.create(entitytype.Sequence, sequence.GetId(), schema.id)
 		}
 	}
 }

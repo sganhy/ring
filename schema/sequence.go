@@ -67,6 +67,9 @@ func (sequence *Sequence) GetMaxValue() int64 {
 func (sequence *Sequence) GetEntityType() entitytype.EntityType {
 	return entitytype.Sequence
 }
+func (sequence *Sequence) GetCacheId() *CacheId {
+	return sequence.value
+}
 
 //******************************
 // public methods

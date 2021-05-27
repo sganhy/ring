@@ -145,9 +145,9 @@ func Test__Schema__GetSequenceByName(t *testing.T) {
 	schema = schema.getMetaSchema(databaseprovider.MySql, "", 0, 0, true)
 
 	for i := 0; i < len(schema.sequences); i++ {
-		sequence := schema.GetSequenceByName(schema.sequences[i].name)
+		sequence := schema.GetSequenceByName(schema.sequences[i].GetName())
 		if sequence == nil {
-			t.Errorf("Schema.GetSequenceByName() ==> sequence name '%s' cannot be found", schema.sequences[i].name)
+			t.Errorf("Schema.GetSequenceByName() ==> sequence name '%s' cannot be found", schema.sequences[i].GetName())
 		}
 	}
 
