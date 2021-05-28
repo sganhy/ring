@@ -40,7 +40,7 @@ func init() {
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
 
 //******************************
@@ -251,7 +251,7 @@ func createMetaTables(schema *Schema) {
 		}
 	}
 	// now we can start sync logging
-	schema.logger.isMetaTables(true)
+	schema.logger.isMetaTable(true)
 }
 
 func createMetaSequences(schema *Schema) {

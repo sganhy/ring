@@ -22,6 +22,7 @@ type Import struct {
 	schemaName      string
 	source          sourcetype.SourceType
 	initialized     bool
+	loaded          bool
 	jobId           int64
 	loadedSchema    *Schema
 	tables          map[string]int32
@@ -70,11 +71,11 @@ const (
 	importXmlAttributeMultiLang   string = "multilingual"
 	importMinId                   int64  = -2147483648
 	importMaxId                   int64  = 2147483647
+	baseErrorId                   int32  = 11
 )
 
 var (
-	currentSchemaImportId int   = 1
-	baseErrorId           int32 = 11
+	currentSchemaImportId int = 101
 )
 
 func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
@@ -85,13 +86,34 @@ func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
 	importFile.source = source
 	importFile.logger = new(log)
 	importFile.logger.Init(schemaNotDefined, false)
+	importFile.loaded = false
 }
 
 //******************************
-// getters / setters
+// getters and setters
 //******************************
 func (importFile *Import) GetJobId() int64 {
 	return importFile.jobId
+}
+
+func (importFile *Import) GetId() int {
+	return importFile.id
+}
+
+func (importFile *Import) GetFile() string {
+	return importFile.fileName
+}
+
+func (importFile *Import) GetSchemaName() string {
+	return importFile.schemaName
+}
+
+func (importFile *Import) GetSchemaId() int32 {
+	return importFile.schemaId
+}
+
+func (importFile *Import) GetSourceType() sourcetype.SourceType {
+	return importFile.source
 }
 
 //******************************
@@ -131,6 +153,11 @@ func (importFile *Import) Load() {
 			}
 		}
 	}
+	importFile.loaded = true
+}
+
+func (importFile *Import) IsValid() bool {
+	return importFile.errorCount == 0 && importFile.loaded
 }
 
 //******************************

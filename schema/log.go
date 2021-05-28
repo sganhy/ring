@@ -72,6 +72,39 @@ func initLogger(schema *Schema, table *Table) {
 //******************************
 // getters / setters
 //******************************
+func (logger *log) getId() int32 {
+	return logger.id
+}
+func (logger *log) getEntryTime() time.Time {
+	return logger.entryTime
+}
+func (logger *log) getLevel() int8 {
+	return logger.level
+}
+func (logger *log) getSchemaId() int32 {
+	return logger.schemaId
+}
+func (logger *log) getThreadId() int32 {
+	return logger.threadId
+}
+func (logger *log) getClassSite() string {
+	return logger.callSite
+}
+func (logger *log) getJobId() int64 {
+	return logger.jobId
+}
+func (logger *log) getMethod() string {
+	return logger.method
+}
+func (logger *log) getLineNumber() int32 {
+	return logger.lineNumber
+}
+func (logger *log) getMessage() string {
+	return logger.message
+}
+func (logger *log) getDescription() string {
+	return logger.description
+}
 
 func (logger *log) setMethod(method string) {
 	if len(method) > 80 {
@@ -102,11 +135,8 @@ func (logger *log) setCallSite(callSite string) {
 	}
 }
 
-func (logger *log) setThreadId(threadId int) {
-	logger.threadId = int32(threadId & 2147483647)
-}
-
-func (logger *log) isMetaTables(exist bool) {
+// is meta table present in the database
+func (logger *log) isMetaTable(exist bool) {
 	fmt.Println("isMetaTables(exist bool)")
 	metaTableExist = exist
 }
@@ -150,8 +180,8 @@ func (logger *log) info(id int32, jobId int64, messages ...interface{}) {
 
 //go:noinline
 func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages ...interface{}) {
-	var message = logger.getMessage(messages)
-	var description = logger.getDescription(messages)
+	var message = logger.extractMessage(messages)
+	var description = logger.extractDescription(messages)
 
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
@@ -199,10 +229,10 @@ func (logger *log) getNewLog(id int32, level int8, schemaId int32, jobId int64, 
 	newLog.id = id
 	newLog.setEntryTime()
 	newLog.level = level
-	newLog.setThreadId(logger.getThreadId())
+	newLog.threadId = logger.getThreadId()
 	newLog.callSite = callsite
 	newLog.jobId = jobId
-	newLog.setSchemaId(schemaId)
+	newLog.schemaId = schemaId
 	newLog.setMethod(method)
 	newLog.lineNumber = lineNumber
 	newLog.setMessage(message)
@@ -230,8 +260,8 @@ func (logger *log) getCallerInfo() (string, string, int32) {
 	return callSite, method, int32(frame.Line)
 }
 
-func (logger *log) getThreadId() int {
-	return os.Getpid()
+func (logger *log) getCurrentThreadId() int32 {
+	return int32(os.Getpid() & 2147483647)
 }
 
 // get method name
@@ -257,7 +287,7 @@ func (logger *log) getFrame(skipFrames int) runtime.Frame {
 	return frame
 }
 
-func (logger *log) getMessage(params []interface{}) string {
+func (logger *log) extractMessage(params []interface{}) string {
 	if len(params) > 0 {
 		param := params[0]
 		switch param.(type) {
@@ -277,7 +307,7 @@ func LogTest(id int32, jobId int64, messages ...interface{}) {
 	logTest.writePartialLog(id, levelError, jobId, messages)
 }
 
-func (logger *log) getDescription(params []interface{}) string {
+func (logger *log) extractDescription(params []interface{}) string {
 	if len(params) > 1 {
 		param := params[1]
 		switch param.(type) {

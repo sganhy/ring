@@ -410,18 +410,20 @@ func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, err
 
 func (query *metaQuery) insertLog(newLog *log) error {
 	var params []interface{}
+
 	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
-	params[0] = newLog.id
-	params[1] = newLog.entryTime
-	params[2] = newLog.level
-	params[3] = newLog.schemaId
-	params[4] = newLog.threadId
-	params[5] = newLog.callSite
-	params[6] = newLog.jobId
-	params[7] = newLog.method
-	params[8] = newLog.lineNumber
-	params[9] = newLog.message
-	params[10] = newLog.description
+	params[0] = newLog.getId()
+	params[1] = newLog.getEntryTime()
+	params[2] = newLog.getLevel()
+	params[3] = newLog.getSchemaId()
+	params[4] = newLog.getThreadId()
+	params[5] = newLog.getClassSite()
+	params[6] = newLog.getJobId()
+	params[7] = newLog.getMethod()
+	params[8] = newLog.getLineNumber()
+	params[9] = newLog.getMessage()
+	params[10] = newLog.getDescription()
+
 	return query.insert(params)
 }
 
