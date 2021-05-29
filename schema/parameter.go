@@ -88,19 +88,20 @@ func (param *parameter) exists(schema *Schema) bool {
 	query.setTable(metaTableName)
 
 	query.addFilter(metaId, operatorEqual, param.id)
-	query.addFilter(metaSchemaId, operatorEqual, schema.id)
+	query.addFilter(metaSchemaId, operatorEqual, schema.GetId())
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Parameter))
-	query.addFilter(metaReferenceId, operatorEqual, schema.id)
+	query.addFilter(metaReferenceId, operatorEqual, schema.GetId())
 
 	result, _ := query.exists()
 	return result
 }
 
 func (param *parameter) create(schema *Schema) error {
+	var schemaId = schema.GetId()
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
-	return query.insertMeta(param.toMeta(schema.id), schema.id)
+	return query.insertMeta(param.toMeta(schemaId), schemaId)
 }
 
 func (param *parameter) toMeta(objectId int32) *Meta {

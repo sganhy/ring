@@ -229,7 +229,7 @@ func (logger *log) getNewLog(id int32, level int8, schemaId int32, jobId int64, 
 	newLog.id = id
 	newLog.setEntryTime()
 	newLog.level = level
-	newLog.threadId = logger.getThreadId()
+	newLog.threadId = logger.getCurrentThreadId()
 	newLog.callSite = callsite
 	newLog.jobId = jobId
 	newLog.schemaId = schemaId

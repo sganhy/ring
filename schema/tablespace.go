@@ -31,9 +31,8 @@ func (tablespace *Tablespace) Init(id int32, name string, description string, fi
 }
 
 //******************************
-// getters
+// getters and setters
 //******************************
-
 func (tablespace *Tablespace) GetId() int32 {
 	return tablespace.id
 }
@@ -48,6 +47,10 @@ func (tablespace *Tablespace) GetDescription() string {
 
 func (tablespace *Tablespace) GetEntityType() entitytype.EntityType {
 	return entitytype.Tablespace
+}
+
+func (tablespace *Tablespace) setName(name string) {
+	tablespace.name = name
 }
 
 //******************************

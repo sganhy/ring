@@ -45,14 +45,14 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 		var newSchema = schema.Clone()
 		nameLenght := (abs(i) % 30) + 2
 		schemaName := randStringBytes(nameLenght)
-		newSchema.id = int32(i)
-		newSchema.name = schemaName
+		newSchema.setId(int32(i))
+		newSchema.setName(schemaName)
 		addSchema(newSchema)
 		schemas = append(schemas, newSchema)
 	}
 	// search all schema
 	for i := 0; i < len(schemas); i++ {
-		var schemaName = schemas[i].name
+		var schemaName = schemas[i].GetName()
 		if GetSchemaByName(schemaName) == nil {
 			t.Errorf("Database.GetSchemaByName() ==> schema name %s is missing", schemaName)
 		}
@@ -60,18 +60,18 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	if GetSchemaByName("11111111111111111111") != nil {
 		t.Errorf("Database.GetSchemaByName() ==> schema name %s cannot be not found", "11111111111111111111")
 	}
-	schemaName := schemas[len(schemas)>>1].name + ".zorro"
+	schemaName := schemas[len(schemas)>>1].GetName() + ".zorro"
 	if GetTableBySchemaName(schemaName) == nil {
 		t.Errorf("Database.GetTableBySchemaName() ==> recordtype %s not found", schemaName)
 	}
 	if GetTableBySchemaName("?????.?????") != nil {
 		t.Errorf("Database.GetTableBySchemaName() ==> recordtype %s cannot be found", "?????.?????")
 	}
-	schemaId := schemas[SCHEMA_COUNT>>1].id
+	schemaId := schemas[SCHEMA_COUNT>>1].GetId()
 	if GetSchemaById(schemaId) == nil {
 		t.Errorf("Database.GetSchemaById() ==> schema id %d not found", schemaId)
 	}
-	schemaId = schemas[SCHEMA_COUNT>>2].id
+	schemaId = schemas[SCHEMA_COUNT>>2].GetId()
 	if GetSchemaById(schemaId) == nil {
 		t.Errorf("Database.GetSchemaById() ==> schema id %d not found", schemaId)
 	}

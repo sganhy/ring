@@ -3,7 +3,6 @@ package schema
 import (
 	"encoding/xml"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"reflect"
@@ -141,17 +140,18 @@ func (importFile *Import) Load() {
 		valid := new(validator)
 		valid.Init()
 		valid.ValidateImport(importFile)
-		for i := 0; i < len(importFile.metaList); i++ {
-			meta := importFile.metaList[i]
-
-			if meta.objectType == 0 {
-				fmt.Println("TABLE ==> " + meta.name)
+		/*
+			for i := 0; i < len(importFile.metaList); i++ {
+				meta := importFile.metaList[i]
+					if meta.objectType == 0 {
+						fmt.Println("TABLE ==> " + meta.name)
+					}
+					if meta.objectType == 23 {
+						//var field = meta.toTablespace()
+						fmt.Println(meta.String())
+					}
 			}
-			if meta.objectType == 23 {
-				//var field = meta.toTablespace()
-				fmt.Println(meta.String())
-			}
-		}
+		*/
 	}
 	importFile.loaded = true
 }

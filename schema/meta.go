@@ -182,8 +182,8 @@ func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index)
 func (meta *Meta) toSchema() *Schema {
 	if meta.GetEntityType() == entitytype.Schema {
 		var schema = new(Schema)
-		schema.id = meta.id
-		schema.name = meta.name
+		schema.setId(meta.id)
+		schema.setName(meta.name)
 		schema.description = meta.description
 		return schema
 	}
@@ -330,6 +330,7 @@ func getTables(schema Schema, metaList []Meta) []Table {
 	var objectType entitytype.EntityType
 	fieldsMap, relationsMap, IndexesMap := initTableMappers(metaList)
 	result := []Table{}
+	var schemaId = schema.GetId()
 
 	for i := 0; i < len(metaList); i++ {
 		objectType = entitytype.EntityType(metaList[i].objectType)
@@ -337,7 +338,7 @@ func getTables(schema Schema, metaList []Meta) []Table {
 			var tableId = metaList[i].id
 			var table = *metaList[i].toTable(fieldsMap[tableId], relationsMap[tableId], IndexesMap[tableId])
 			//TO define
-			table.schemaId = schema.id
+			table.schemaId = schemaId
 			//table.provider = schema.
 			result = append(result, table)
 		}

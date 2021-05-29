@@ -41,6 +41,22 @@ func (relationType RelationType) String() string {
 	return ""
 }
 
+func (relationType RelationType) InverseRelationType() RelationType {
+	switch relationType {
+	case Otop:
+		return Otof
+	case Otm:
+		return Mto
+	case Mtm:
+		return Mtm
+	case Mto:
+		return Otm
+	case Otof:
+		return Otop
+	}
+	return NotDefined
+}
+
 func GetRelationType(value string) RelationType {
 	switch strings.ToLower(value) {
 	case strings.ToLower(strOtop):

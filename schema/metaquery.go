@@ -62,7 +62,7 @@ func (query *metaQuery) setTable(tableName string) {
 		query.resultCount = new(int)
 	}
 	if query.table == nil {
-		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.name)
+		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.GetName())
 	}
 }
 

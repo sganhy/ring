@@ -60,7 +60,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		}
 		// 1> instanciate meta schema
 		var metaSchema = schema.getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
-		defaultSchemaName = metaSchema.name
+		defaultSchemaName = metaSchema.GetName()
 
 		// 2> add meta schema to collection
 		addSchema(metaSchema)
@@ -194,7 +194,7 @@ func getSchemaId(schemaName string) int32 {
 func addSchema(schema *Schema) {
 	metaDb := new(database)
 	metaDb.index = len(*schemaById)
-	metaDb.name = formatSchemaName(schema.name)
+	metaDb.name = formatSchemaName(schema.GetName())
 	*schemaIndexByName = append(*schemaIndexByName, metaDb)
 	*schemaById = append(*schemaById, schema)
 	var currentDb *database
@@ -303,8 +303,9 @@ func getSchemaIdList() []Schema {
 
 // load schema from @meta table
 func loadSchemaById(schema Schema) {
-	var metaList = getMetaList(schema.id)
-	var metaIdList = getMetaIdList(schema.id)
+	var schemaId = schema.GetId()
+	var metaList = getMetaList(schemaId)
+	var metaIdList = getMetaIdList(schemaId)
 	var tables = getTables(schema, metaList) //from: meta.go
 
 	if int64(schema.id) > schemaCacheId.currentId {

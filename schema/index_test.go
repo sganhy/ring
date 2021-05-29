@@ -155,7 +155,7 @@ func Test__Index__GetDdl(t *testing.T) {
 	var uk Index = Index{}
 	var tablespace = Tablespace{}
 
-	tablespace.name = "rpg_index"
+	tablespace.setName("rpg_index")
 
 	// physical_name is builded later
 	//  == metaId table

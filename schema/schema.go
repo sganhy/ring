@@ -124,6 +124,14 @@ func (schema *Schema) GetEntityType() entitytype.EntityType {
 	return entitytype.Schema
 }
 
+func (schema *Schema) setId(id int32) {
+	schema.id = id
+}
+
+func (schema *Schema) setName(name string) {
+	schema.name = name
+}
+
 //******************************
 // public methods
 //******************************
