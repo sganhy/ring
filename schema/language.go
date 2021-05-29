@@ -693,7 +693,7 @@ func (language *Language) exists(schema *Schema) bool {
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
 
-	query.addFilter(metaId, operatorEqual, language.id)
+	query.addFilter(metaFieldId, operatorEqual, language.id)
 	query.addFilter(metaSchemaId, operatorEqual, schema.id)
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Language))
 	query.addFilter(metaReferenceId, operatorEqual, schema.id)

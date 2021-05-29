@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-type CacheId struct {
+type cacheId struct {
 	currentId     int64
 	maxId         int64
 	reservedRange int32
@@ -31,55 +31,55 @@ var (
 func InitCacheId(schema *Schema, table *Table, resultTable *Table) {
 	cacheIdSchema = schema
 	cacheIdTable = resultTable
-	cacheid := new(CacheId)
+	cacheid := new(cacheId)
 	cacheIdQuery = cacheid.GetDml(dmlstatement.Update, table)
 }
 
-func (cacheId *CacheId) Init(objid int32, schemaId int32, entityType entitytype.EntityType) {
-	cacheId.metaquery = new(metaQuery)
-	cacheId.metaquery.Init(cacheIdSchema, cacheIdTable)
+func (cacheid *cacheId) Init(objid int32, schemaId int32, entityType entitytype.EntityType) {
+	cacheid.metaquery = new(metaQuery)
+	cacheid.metaquery.Init(cacheIdSchema, cacheIdTable)
 
 	// added cacheIdSchema check to avoid unitesting crash!
 	if cacheIdSchema != nil {
-		cacheId.metaquery.query = cacheIdQuery
-		cacheId.metaquery.addParam(int32(1))
-		cacheId.metaquery.addParam(objid)
-		cacheId.metaquery.addParam(schemaId)
-		cacheId.metaquery.addParam(int8(entityType))
+		cacheid.metaquery.query = cacheIdQuery
+		cacheid.metaquery.addParam(int32(1))
+		cacheid.metaquery.addParam(objid)
+		cacheid.metaquery.addParam(schemaId)
+		cacheid.metaquery.addParam(int8(entityType))
 	}
 
 	// max should be equal to int64 min value - forcing to initialize
-	cacheId.maxId = initialMaxId
-	cacheId.currentId = 0
-	cacheId.reservedRange = 0
+	cacheid.maxId = initialMaxId
+	cacheid.currentId = 0
+	cacheid.reservedRange = 0
 }
 
 //******************************
 // getters and setters
 //******************************
-func (cacheId *CacheId) GetCurrentId() int64 {
-	return cacheId.currentId
+func (cacheid *cacheId) GetCurrentId() int64 {
+	return cacheid.currentId
 }
-func (cacheId *CacheId) IsInitialized() bool {
-	return cacheId.maxId != initialMaxId
+func (cacheid *cacheId) IsInitialized() bool {
+	return cacheid.maxId != initialMaxId
 }
-func (cacheId *CacheId) SetCurrentId(value int64) {
-	cacheId.currentId = value
+func (cacheid *cacheId) SetCurrentId(value int64) {
+	cacheid.currentId = value
 }
 
 //dynamic range (Cache I)
-func (cacheId *CacheId) SetCache(value bool) {
+func (cacheid *cacheId) SetCache(value bool) {
 	if value == true {
-		cacheId.reservedRange = 1
+		cacheid.reservedRange = 1
 	} else {
-		cacheId.reservedRange = 0
+		cacheid.reservedRange = 0
 	}
 }
 
 //******************************
 // public methods
 //******************************
-func (cacheId *CacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) string {
+func (cacheid *cacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) string {
 	var result strings.Builder
 	var provider = table.GetDatabaseProvider()
 
@@ -109,40 +109,40 @@ func (cacheId *CacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) 
 }
 
 // Generate id with cache management for BulKsave (Hi/Lo algorithm)
-func (cacheId *CacheId) GetNewId() int64 {
+func (cacheid *cacheId) GetNewId() int64 {
 	var result int64
-	cacheId.syncRoot.Lock()
+	cacheid.syncRoot.Lock()
 
 	//TODO manage cycles and overflows !!
-	result = cacheId.currentId + 1
-	if result > cacheId.maxId {
+	result = cacheid.currentId + 1
+	if result > cacheid.maxId {
 		// compute reserve range
-		if cacheId.reservedRange > 1 {
-			cacheId.metaquery.setParamValue(cacheId.reservedRange, 0)
-			result = 1 - int64(cacheId.reservedRange)
+		if cacheid.reservedRange > 1 {
+			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
+			result = 1 - int64(cacheid.reservedRange)
 		} else {
 			// set default parameter for returning value
-			cacheId.metaquery.setParamValue(int32(1), 0)
+			cacheid.metaquery.setParamValue(int32(1), 0)
 			result = 0
 		}
 
 		// never loaded
-		cacheId.metaquery.run(1)
-		cacheId.maxId = cacheId.metaquery.getInt64Value()
-		result += cacheId.maxId
+		cacheid.metaquery.run(1)
+		cacheid.maxId = cacheid.metaquery.getInt64Value()
+		result += cacheid.maxId
 
 		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
-		if cacheId.reservedRange < maxReservedRange {
-			cacheId.reservedRange <<= 1
+		if cacheid.reservedRange < maxReservedRange {
+			cacheid.reservedRange <<= 1
 		}
 	}
-	cacheId.currentId = result
-	cacheId.syncRoot.Unlock()
+	cacheid.currentId = result
+	cacheid.syncRoot.Unlock()
 	return result
 }
 
 // Generate id with cache management for BulKsave (Hi/Lo algorithm)
-func (cacheId *CacheId) GetNewRangeId(reservedRange uint32) int64 {
+func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
 	// duplicate ==> GetNewId()
 	if reservedRange > maxExtReservedRange || reservedRange < 1 {
 		// invalid range value
@@ -151,61 +151,61 @@ func (cacheId *CacheId) GetNewRangeId(reservedRange uint32) int64 {
 	}
 
 	var resultRange int64
-	cacheId.syncRoot.Lock()
+	cacheid.syncRoot.Lock()
 
 	//TODO manage cycles and overflows !!
-	resultRange = cacheId.currentId + int64(reservedRange)
-	if resultRange > cacheId.maxId {
+	resultRange = cacheid.currentId + int64(reservedRange)
+	if resultRange > cacheid.maxId {
 		// compute reserve range
-		if cacheId.reservedRange > int32(reservedRange) {
-			cacheId.metaquery.setParamValue(cacheId.reservedRange, 0)
-			resultRange = 1 - int64(cacheId.reservedRange)
+		if cacheid.reservedRange > int32(reservedRange) {
+			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
+			resultRange = 1 - int64(cacheid.reservedRange)
 		} else {
-			cacheId.metaquery.setParamValue(int32(reservedRange), 0)
+			cacheid.metaquery.setParamValue(int32(reservedRange), 0)
 			resultRange = 1 - int64(reservedRange)
 		}
 
 		// never loaded
-		cacheId.metaquery.run(1)
-		cacheId.maxId = cacheId.metaquery.getInt64Value()
-		resultRange += cacheId.maxId
+		cacheid.metaquery.run(1)
+		cacheid.maxId = cacheid.metaquery.getInt64Value()
+		resultRange += cacheid.maxId
 
 		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
-		if cacheId.reservedRange < maxReservedRange {
-			cacheId.reservedRange <<= 1
+		if cacheid.reservedRange < maxReservedRange {
+			cacheid.reservedRange <<= 1
 		}
 	}
-	cacheId.currentId = resultRange
-	cacheId.syncRoot.Unlock()
+	cacheid.currentId = resultRange
+	cacheid.syncRoot.Unlock()
 	return resultRange
 }
 
 //******************************
 // private methods
 //******************************
-func (cacheId *CacheId) toMetaId(objectType entitytype.EntityType, objectId int32, schemaId int32) *MetaId {
-	metaId := new(MetaId)
-	metaId.id = objectId
-	metaId.schemaId = schemaId
-	metaId.objectType = int8(objectType)
-	metaId.value = cacheId.currentId
-	return metaId
+func (cacheid *cacheId) toMetaId(objectType entitytype.EntityType, objectId int32, schemaId int32) *metaId {
+	metaid := new(metaId)
+	metaid.id = objectId
+	metaid.schemaId = schemaId
+	metaid.objectType = int8(objectType)
+	metaid.value = cacheid.currentId
+	return metaid
 }
 
-func (cacheId *CacheId) create(objectType entitytype.EntityType, objectId int32, schemaId int32) error {
+func (cacheid *cacheId) create(objectType entitytype.EntityType, objectId int32, schemaId int32) error {
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaIdTableName)
-	return query.insertMetaId(cacheId.toMetaId(objectType, objectId, schemaId))
+	return query.insertMetaId(cacheid.toMetaId(objectType, objectId, schemaId))
 }
 
-func (cacheId *CacheId) exists(objectType entitytype.EntityType, objectId int32, schemaId int32) bool {
+func (cacheid *cacheId) exists(objectType entitytype.EntityType, objectId int32, schemaId int32) bool {
 	query := new(metaQuery)
 
 	query.setSchema(metaSchemaName)
 	query.setTable(metaIdTableName)
 
-	query.addFilter(metaId, operatorEqual, objectId)
+	query.addFilter(metaFieldId, operatorEqual, objectId)
 	query.addFilter(metaSchemaId, operatorEqual, schemaId)
 	query.addFilter(metaObjectType, operatorEqual, int8(objectType))
 

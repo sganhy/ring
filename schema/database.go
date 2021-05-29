@@ -25,7 +25,7 @@ var (
 	schemaIndexByName   *[]*database // assign secondly  --> sorted by name
 	defaultSchemaName   string
 	databaseInitialized = false
-	schemaCacheId       *CacheId         // used to generate new schema Id
+	schemaCacheId       *cacheId         // used to generate new schema Id
 	schemaReservedId    map[string]int32 // [schema_name] schema_id
 )
 
@@ -34,7 +34,7 @@ func init() {
 	schemaById = &lstById
 	lstByName := make([]*database, 0, initialSliceCount)
 	schemaIndexByName = &lstByName
-	schemaCacheId = new(CacheId)
+	schemaCacheId = new(cacheId)
 	schemaCacheId.currentId = 0
 	schemaReservedId = make(map[string]int32)
 }
@@ -259,7 +259,7 @@ func createMetaSequences(schema *Schema) {
 		if sequence.exists(schema) == false {
 			sequence.create(schema)
 		}
-		var cacheId = sequence.GetCacheId()
+		var cacheId = sequence.getCacheId()
 		if cacheId.exists(entitytype.Sequence, sequence.GetId(), schema.id) == false {
 			cacheId.create(entitytype.Sequence, sequence.GetId(), schema.id)
 		}
@@ -334,7 +334,7 @@ func getMetaList(schemaId int32) []Meta {
 }
 
 // load metaI from db @meta_id table
-func getMetaIdList(schemaId int32) []MetaId {
+func getMetaIdList(schemaId int32) []metaId {
 	var query = metaQuery{}
 
 	query.setTable(metaIdTableName)

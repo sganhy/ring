@@ -111,7 +111,7 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetDatabaseProvider() != databaseprovider.PostgreSql {
 		t.Errorf("Table.Init() ==> GetDatabaseProvider() <> databaseprovider.Oracle")
 	}
-	if table.GetCacheId() == nil {
+	if table.getCacheId() == nil {
 		t.Errorf("Table.Init() ==> GetCacheId() cannot be null")
 	}
 	if table.IsCached() != true {

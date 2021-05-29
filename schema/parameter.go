@@ -87,7 +87,7 @@ func (param *parameter) exists(schema *Schema) bool {
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
 
-	query.addFilter(metaId, operatorEqual, param.id)
+	query.addFilter(metaFieldId, operatorEqual, param.id)
 	query.addFilter(metaSchemaId, operatorEqual, schema.GetId())
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Parameter))
 	query.addFilter(metaReferenceId, operatorEqual, schema.GetId())

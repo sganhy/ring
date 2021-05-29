@@ -11,7 +11,7 @@ type Sequence struct {
 	description string
 	schemaId    int32
 	maxValue    int64
-	value       *CacheId
+	value       *cacheId
 	baseline    bool
 	active      bool
 }
@@ -35,7 +35,7 @@ func (sequence *Sequence) Init(id int32, name string, description string, schema
 	sequence.description = description
 	sequence.schemaId = schemaId
 	sequence.maxValue = maxValue
-	sequence.value = new(CacheId)
+	sequence.value = new(cacheId)
 	sequence.value.Init(id, schemaId, sequence.GetEntityType())
 	sequence.baseline = baseline
 	sequence.active = active
@@ -67,7 +67,7 @@ func (sequence *Sequence) GetMaxValue() int64 {
 func (sequence *Sequence) GetEntityType() entitytype.EntityType {
 	return entitytype.Sequence
 }
-func (sequence *Sequence) GetCacheId() *CacheId {
+func (sequence *Sequence) getCacheId() *cacheId {
 	return sequence.value
 }
 
@@ -100,7 +100,7 @@ func (sequence *Sequence) exists(schema *Schema) bool {
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
-	query.addFilter(metaId, operatorEqual, sequence.id)
+	query.addFilter(metaFieldId, operatorEqual, sequence.id)
 	query.addFilter(metaSchemaId, operatorEqual, sequence.schemaId)
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Sequence))
 	query.addFilter(metaReferenceId, operatorEqual, sequence.schemaId)

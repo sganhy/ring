@@ -33,7 +33,7 @@ type Table struct {
 	fieldList    string
 	subject      string
 	provider     databaseprovider.DatabaseProvider
-	cacheId      *CacheId
+	cacheid      *cacheId
 	sqlCapacity  uint16
 	cached       bool
 	readonly     bool
@@ -61,7 +61,7 @@ const (
 	metaDataType         string = "data_type"
 	metaDescription      string = "description"
 	metaFlags            string = "flags"
-	metaId               string = "id"
+	metaFieldId          string = "id"
 	metaLogCallSite      string = "call_site"
 	metaLogEntryTime     string = "entry_time"
 	metaLogId            string = "id"
@@ -98,8 +98,8 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadMapper()         // !!!load after loadFields
 	table.loadIndexes(indexes) //!!!! run at the end only
 	// initialize cacheId
-	table.cacheId = new(CacheId)
-	table.cacheId.Init(id, schemaId, table.GetEntityType())
+	table.cacheid = new(cacheId)
+	table.cacheid.Init(id, schemaId, table.GetEntityType())
 	table.tableType = tableType
 	table.schemaId = schemaId
 	table.tableType = tableType
@@ -132,8 +132,8 @@ func (table *Table) GetDescription() string {
 	return table.description
 }
 
-func (table *Table) GetCacheId() *CacheId {
-	return table.cacheId
+func (table *Table) getCacheId() *cacheId {
+	return table.cacheid
 }
 
 func (table *Table) GetPhysicalName() string {
@@ -1011,12 +1011,12 @@ func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, s
 	var uk = Index{}
 
 	// !!!! id field must be greater than 0 !!!!
-	id.Init(1103, metaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	id.Init(1103, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(1117, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	objectType.Init(1151, metaObjectType, "", fieldtype.Byte, 0, "", true, true, true, false, true)
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
-	var indexedFields = []string{metaId, metaSchemaId, metaObjectType}
+	var indexedFields = []string{metaFieldId, metaSchemaId, metaObjectType}
 	uk.Init(1, metaIdTableName, "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
 
 	fields = append(fields, id)
@@ -1054,7 +1054,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	var active = Field{}
 
 	// !!!! id field must be greater than 0 !!!!
-	id.Init(1009, metaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	id.Init(1009, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(1013, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	objectType.Init(1019, metaObjectType, "", fieldtype.Byte, 0, "", true, true, true, false, true)
 	referenceId.Init(1021, metaReferenceId, "", fieldtype.Int, 0, "", true, true, true, false, true)

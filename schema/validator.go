@@ -67,7 +67,7 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 	if importFile.errorCount == 0 {
 		valid.inverseRelationValid(importFile)
 		valid.indexValid(importFile)
-		valid.duplicateIndex(importFile)
+		//valid.duplicateIndex(importFile)
 	}
 
 	//{3} final checks

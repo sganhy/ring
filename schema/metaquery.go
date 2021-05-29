@@ -227,7 +227,7 @@ func (query *metaQuery) getMetaList() []Meta {
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
 				switch field.GetName() {
-				case metaId:
+				case metaFieldId:
 					tempMeta, _ = strconv.ParseInt(record[j], 10, 32)
 					result[i].id = int32(tempMeta)
 					break
@@ -275,12 +275,12 @@ func (query *metaQuery) getInt64Value() int64 {
 	}
 }
 
-func (query *metaQuery) getMetaIdList() []MetaId {
+func (query *metaQuery) getMetaIdList() []metaId {
 	if query.table != nil && query.table.GetName() == metaIdTableName {
 
 		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
-		var result = make([]MetaId, resultCount, resultCount)
+		var result = make([]metaId, resultCount, resultCount)
 		var tempMetaId int64 = 0
 		var field *Field
 		var j = 0
@@ -291,7 +291,7 @@ func (query *metaQuery) getMetaIdList() []MetaId {
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
 				switch field.GetName() {
-				case metaId:
+				case metaFieldId:
 					tempMetaId, _ = strconv.ParseInt(record[j], 10, 32)
 					result[i].id = int32(tempMetaId)
 					break
@@ -443,7 +443,7 @@ func (query *metaQuery) insertMeta(meta *Meta, schemaId int32) error {
 	return query.insert(params)
 }
 
-func (query *metaQuery) insertMetaId(metaid *MetaId) error {
+func (query *metaQuery) insertMetaId(metaid *metaId) error {
 	var params []interface{}
 	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
 	params[0] = metaid.id
