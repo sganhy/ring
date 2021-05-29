@@ -153,9 +153,9 @@ func Test__Index__GetDdl(t *testing.T) {
 	var indexes = []Index{}
 	var table = new(Table)
 	var uk Index = Index{}
-	var tablespace = Tablespace{}
+	var tableSpace = tablespace{}
 
-	tablespace.setName("rpg_index")
+	tableSpace.setName("rpg_index")
 
 	// physical_name is builded later
 	//  == metaId table
@@ -225,7 +225,7 @@ func Test__Index__GetDdl(t *testing.T) {
 
 	// test with tablespace
 	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id) TABLESPACE rpg_index"
-	if uk.GetDdl(ddlstatement.Create, table, &tablespace) != query {
+	if uk.GetDdl(ddlstatement.Create, table, &tableSpace) != query {
 		t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
 	}
 

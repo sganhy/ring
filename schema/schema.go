@@ -20,7 +20,7 @@ type Schema struct {
 	language        Language // default language
 	tables          map[string]*Table
 	tablesById      map[int32]*Table
-	tableSpaces     []*Tablespace
+	tablespaces     []*tablespace
 	sequences       []*Sequence
 	parameters      []*parameter
 	connections     *connectionPool
@@ -42,7 +42,7 @@ var (
 )
 
 func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
-	tableSpaces []Tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
+	tableSpaces []tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
 	minConnection uint16, maxConnection uint16, baseline bool, active bool, disablePool bool) {
 
 	logger := new(log)
@@ -175,7 +175,7 @@ func (schema *Schema) GetTableCount() int {
 func (schema *Schema) Clone() *Schema {
 	newSchema := new(Schema)
 	var tables []Table
-	var tableSpaces []Tablespace
+	var tableSpaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
 	var disabledPool = false
@@ -184,8 +184,8 @@ func (schema *Schema) Clone() *Schema {
 		var table = (*v).Clone()
 		tables = append(tables, *table)
 	}
-	for i := 0; i < len(schema.tableSpaces); i++ {
-		var tablespace = *schema.tableSpaces[i]
+	for i := 0; i < len(schema.tablespaces); i++ {
+		var tablespace = *schema.tablespaces[i]
 		tableSpaces = append(tableSpaces, *tablespace.Clone())
 	}
 	for i := 0; i < len(schema.sequences); i++ {
@@ -334,8 +334,8 @@ func (schema *Schema) exists() bool {
 	return cata.exists(schema, schema)
 }
 
-func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *Tablespace {
-	result := new(Tablespace)
+func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *tablespace {
+	result := new(tablespace)
 	result.name = "rpg_data"
 	return result
 }
@@ -358,10 +358,10 @@ func (schema *Schema) loadTables(tables []Table) {
 	}
 }
 
-func (schema *Schema) loadTablespaces(tablespaces []Tablespace) {
-	schema.tableSpaces = make([]*Tablespace, 0, len(tablespaces))
+func (schema *Schema) loadTablespaces(tablespaces []tablespace) {
+	schema.tablespaces = make([]*tablespace, 0, len(tablespaces))
 	for i := 0; i < len(tablespaces); i++ {
-		schema.tableSpaces = append(schema.tableSpaces, &tablespaces[i])
+		schema.tablespaces = append(schema.tablespaces, &tablespaces[i])
 	}
 }
 
@@ -372,7 +372,7 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 	if schema.name == metaSchemaName {
 		// initialize cache id before instance sequences
 		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
-		InitCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
+		initCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
 		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getLanguageId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
@@ -419,7 +419,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	const schemaId int32 = 0
 	var table = new(Table)
 	var tables []Table
-	var tablespaces []Tablespace
+	var tablespaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
 	var result = new(Schema)

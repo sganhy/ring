@@ -28,7 +28,7 @@ var (
 	cacheIdQuery  string
 )
 
-func InitCacheId(schema *Schema, table *Table, resultTable *Table) {
+func initCacheId(schema *Schema, table *Table, resultTable *Table) {
 	cacheIdSchema = schema
 	cacheIdTable = resultTable
 	cacheid := new(cacheId)

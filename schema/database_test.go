@@ -14,10 +14,10 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	var indexes = []Index{}
 	var fields = []Field{}
 	var tables = []Table{}
-	var tablespaces = []Tablespace{}
+	var tablespaces = []tablespace{}
 	var sequences = []Sequence{}
 	var parameters = []parameter{}
-	var tablespace = Tablespace{}
+	var tableSpace = tablespace{}
 	var schema = Schema{}
 	var schemas = []*Schema{}
 	var language = Language{}
@@ -32,8 +32,8 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	field0.Init(1, "Gga", "", fieldtype.Int, 0, "", true, true, true, false, true)
 	fields = append(fields, field0)
 
-	tablespace.Init(55, "test", "test", "azezae", true, true)
-	tablespaces = append(tablespaces, tablespace)
+	tableSpace.Init(55, "test", "test", "azezae", true, true)
+	tablespaces = append(tablespaces, tableSpace)
 
 	elemt := Table{}
 	elemt.Init(22, "zorro", "hellkzae", fields, relations, indexes,

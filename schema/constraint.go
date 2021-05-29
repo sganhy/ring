@@ -44,11 +44,11 @@ func (constr *constraint) GetEntityType() entitytype.EntityType {
 //******************************
 // public methods
 //******************************
-func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tablespace *Tablespace) string {
+func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tableSpace *tablespace) string {
 	if statment == ddlstatement.Create {
 		switch constr.constType {
 		case constrainttype.PrimaryKey:
-			return constr.getDdlPrimaryKey(tablespace)
+			return constr.getDdlPrimaryKey(tableSpace)
 		case constrainttype.Check:
 			return constr.getDdlCheck()
 		case constrainttype.NotNull:
@@ -116,16 +116,16 @@ func (constr *constraint) getCheckName() string {
 	return result
 }
 
-func (constr *constraint) getDdlPrimaryKey(tablespace *Tablespace) string {
+func (constr *constraint) getDdlPrimaryKey(tableSpace *tablespace) string {
 	var sqlTablespace = ""
 	var fields = constr.table.getUniqueFieldList()
 	var provider = constr.table.GetDatabaseProvider()
 
 	// unique fields ?
 	if fields != "" {
-		if tablespace != nil && provider == databaseprovider.PostgreSql {
+		if tableSpace != nil && provider == databaseprovider.PostgreSql {
 			// postgresql only ==>
-			sqlTablespace = "USING INDEX " + tablespace.GetDdl(ddlstatement.NotDefined, constr.table.GetDatabaseProvider())
+			sqlTablespace = "USING INDEX " + tableSpace.GetDdl(ddlstatement.NotDefined, constr.table.GetDatabaseProvider())
 		}
 
 		switch provider {

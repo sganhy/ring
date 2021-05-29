@@ -151,12 +151,12 @@ func (meta *Meta) toIndex() *Index {
 	return nil
 }
 
-func (meta *Meta) toTablespace() *Tablespace {
+func (meta *Meta) toTablespace() *tablespace {
 	if meta.GetEntityType() == entitytype.Tablespace {
-		var tablespace = new(Tablespace)
+		var tableSpace = new(tablespace)
 		// Init(id int32, name string, description string, fileName string, table bool, index bool) {
-		tablespace.Init(meta.id, meta.name, meta.description, meta.value, meta.IsTablespaceTable(), meta.IsTablespaceIndex())
-		return tablespace
+		tableSpace.Init(meta.id, meta.name, meta.description, meta.value, meta.IsTablespaceTable(), meta.IsTablespaceIndex())
+		return tableSpace
 	}
 	return nil
 }

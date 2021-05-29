@@ -7,7 +7,7 @@ import (
 	"ring/schema/entitytype"
 )
 
-type Tablespace struct {
+type tablespace struct {
 	id          int32
 	name        string
 	description string
@@ -21,58 +21,58 @@ const (
 	tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
 )
 
-func (tablespace *Tablespace) Init(id int32, name string, description string, fileName string, table bool, index bool) {
-	tablespace.id = id
-	tablespace.name = name
-	tablespace.description = description
-	tablespace.filName = fileName
-	tablespace.table = table
-	tablespace.index = index
+func (tableSpace *tablespace) Init(id int32, name string, description string, fileName string, table bool, index bool) {
+	tableSpace.id = id
+	tableSpace.name = name
+	tableSpace.description = description
+	tableSpace.filName = fileName
+	tableSpace.table = table
+	tableSpace.index = index
 }
 
 //******************************
 // getters and setters
 //******************************
-func (tablespace *Tablespace) GetId() int32 {
-	return tablespace.id
+func (tableSpace *tablespace) GetId() int32 {
+	return tableSpace.id
 }
 
-func (tablespace *Tablespace) GetName() string {
-	return tablespace.name
+func (tableSpace *tablespace) GetName() string {
+	return tableSpace.name
 }
 
-func (tablespace *Tablespace) GetDescription() string {
-	return tablespace.description
+func (tableSpace *tablespace) GetDescription() string {
+	return tableSpace.description
 }
 
-func (tablespace *Tablespace) GetEntityType() entitytype.EntityType {
+func (tableSpace *tablespace) GetEntityType() entitytype.EntityType {
 	return entitytype.Tablespace
 }
 
-func (tablespace *Tablespace) setName(name string) {
-	tablespace.name = name
+func (tableSpace *tablespace) setName(name string) {
+	tableSpace.name = name
 }
 
 //******************************
 // public methods
 //******************************
-func (tablespace *Tablespace) Clone() *Tablespace {
-	newTablespace := new(Tablespace)
-	newTablespace.Init(tablespace.id, tablespace.name, tablespace.description,
-		tablespace.tableName, tablespace.table, tablespace.index)
+func (tableSpace *tablespace) Clone() *tablespace {
+	newTablespace := new(tablespace)
+	newTablespace.Init(tableSpace.id, tableSpace.name, tableSpace.description,
+		tableSpace.tableName, tableSpace.table, tableSpace.index)
 	return newTablespace
 }
 
-func (tablespace *Tablespace) GetDdl(statement ddlstatement.DdlStatement, provider databaseprovider.DatabaseProvider) string {
+func (tableSpace *tablespace) GetDdl(statement ddlstatement.DdlStatement, provider databaseprovider.DatabaseProvider) string {
 	switch statement {
 	case ddlstatement.NotDefined:
-		return "TABLESPACE " + tablespace.name
+		return "TABLESPACE " + tableSpace.name
 	}
 	return ""
 }
 
-func (tablespace *Tablespace) String() string {
+func (tableSpace *tablespace) String() string {
 	// tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
-	return fmt.Sprintf(tablespaceToStringFormat, tablespace.name, tablespace.description, tablespace.filName,
-		tablespace.table, tablespace.index)
+	return fmt.Sprintf(tablespaceToStringFormat, tableSpace.name, tableSpace.description, tableSpace.filName,
+		tableSpace.table, tableSpace.index)
 }

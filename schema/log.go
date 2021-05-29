@@ -301,11 +301,13 @@ func (logger *log) extractMessage(params []interface{}) string {
 	return ""
 }
 
+/*TEST ==>
 func LogTest(id int32, jobId int64, messages ...interface{}) {
 	logTest := new(log)
 	logTest.Init(schemaNotDefined, false)
 	logTest.writePartialLog(id, levelError, jobId, messages)
 }
+*/
 
 func (logger *log) extractDescription(params []interface{}) string {
 	if len(params) > 1 {

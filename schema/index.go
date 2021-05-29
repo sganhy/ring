@@ -100,10 +100,10 @@ func (index *Index) Clone() *Index {
 	return newIndex
 }
 
-func (index *Index) GetDdl(statment ddlstatement.DdlStatement, table *Table, tablespace *Tablespace) string {
+func (index *Index) GetDdl(statment ddlstatement.DdlStatement, table *Table, tableSpace *tablespace) string {
 	switch statment {
 	case ddlstatement.Create:
-		return index.getDdlCreate(table, tablespace)
+		return index.getDdlCreate(table, tableSpace)
 	case ddlstatement.Drop:
 		return index.getDdlDrop(table)
 	}
@@ -191,7 +191,7 @@ func (index *Index) getDdlDrop(table *Table) string {
 	return query.String()
 }
 
-func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
+func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	var sqlUnique = ""
 	var sqlTablespace = ""
 	var fields strings.Builder
@@ -200,8 +200,8 @@ func (index *Index) getDdlCreate(table *Table, tablespace *Tablespace) string {
 	if index.unique == true {
 		sqlUnique = " UNIQUE"
 	}
-	if tablespace != nil {
-		sqlTablespace = tablespace.GetDdl(ddlstatement.NotDefined, provider)
+	if tableSpace != nil {
+		sqlTablespace = tableSpace.GetDdl(ddlstatement.NotDefined, provider)
 	}
 	if len(index.fields) > 0 {
 		for i := 0; i < len(index.fields); i++ {

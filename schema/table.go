@@ -335,7 +335,7 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
-func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tablespace) string {
+func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace) string {
 	var query string
 	switch statement {
 	case ddlstatement.Create:
@@ -351,8 +351,8 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tablespace *Tabl
 		query = fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
 			strings.Join(fields, ",\n"))
 		query += table.getCreateOptions()
-		if tablespace != nil {
-			query += ddlSpace + tablespace.GetDdl(ddlstatement.NotDefined, table.provider)
+		if tableSpace != nil {
+			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
 		break
 	}
