@@ -101,7 +101,6 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	if err != nil {
 		fmt.Println("ERROR ==>")
 		fmt.Println(err.Error())
-		rows.Close()
 		return err
 	}
 	*query.resultCount = 0

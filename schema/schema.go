@@ -378,15 +378,13 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getIndexId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getEventId(schema.id))
+		schema.sequences = append(schema.sequences, seq.getJobId(schema.id))
 	} else {
-
 		for i := 0; i < len(sequences); i++ {
 			var seq = sequences[i]
 			schema.sequences = append(schema.sequences, &seq)
 		}
 	}
-	// add @job_id for all schema
-	schema.sequences = append(schema.sequences, seq.getJobId(schema.id))
 
 	// sort sequences
 	sort.Slice(schema.sequences, func(i, j int) bool {
@@ -416,12 +414,7 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 }
 
 func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []metaId) *Schema {
-	// sort by refId
-	/*
-		sort.Slice(metaList, func(i, j int) bool {
-			return metaList[i].refId < metaList[j].refId
-		})
-	*/
+	schemaName, schemaDescription := schema.getSchemaInfo(metaList)
 	var provider = databaseprovider.PostgreSql
 	var tables = schema.getTables(provider, schemaId, metaList, metaIdList)
 	var tablespaces []tablespace
@@ -432,11 +425,11 @@ func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []me
 	var result = new(Schema)
 	var language = Language{}
 	var connectionstring string = ""
-	var disablePool = false
+	var disablePool = true
 	var physicalName = result.getPhysicalName(provider, metaSchemaName)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables,
+	result.Init(schemaId, schemaName, physicalName, schemaDescription, connectionstring, language, tables,
 		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
@@ -488,7 +481,27 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, sche
 	for _, element := range metaTables {
 		result = append(result, *table.getTable(provider, schemaId, element))
 	}
+	schema.loadRelations(result, metaList)
 	return result
+}
+
+func (schema *Schema) loadRelations(tables []Table, metaList []Meta) {
+	// build map of table
+	var tableDico map[int32]*Table
+	tableDico = make(map[int32]*Table, len(tables))
+	for i := 0; i < len(tables); i++ {
+		table := tables[i]
+		tableDico[table.id] = &table
+	}
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Relation {
+			var fromTable = tableDico[meta.refId]
+			var toTable = tableDico[meta.dataType]
+			var relation = fromTable.GetRelationByName(meta.name)
+			relation.setToTable(toTable)
+		}
+	}
 }
 
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
@@ -543,4 +556,14 @@ func (schema *Schema) getJobIdNextValue() int64 {
 		return jobIdSequence.GetValue()
 	}
 	return -1
+}
+
+func (schema *Schema) getSchemaInfo(metaList []Meta) (string, string) {
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		if meta.GetEntityType() == entitytype.Schema {
+			return meta.name, meta.description
+		}
+	}
+	return "", ""
 }

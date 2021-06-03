@@ -159,52 +159,6 @@ func GetSchemaById(id int32) *Schema {
 //******************************
 // private methods
 //******************************
-func saveMetaList(schemaId int32, metaList []*Meta) error {
-	existingMetaList := getMetaList(schemaId)
-	query := new(metaQuery)
-	query.setSchema(metaSchemaName)
-	query.setTable(metaTableName)
-
-	// create new schema
-	if len(existingMetaList) == 0 {
-		for i := 0; i < len(metaList); i++ {
-			_ = query.insertMeta(metaList[i], schemaId)
-		}
-	}
-	return nil
-}
-
-func saveMetaIdList(schemaId int32, metaList []*Meta) error {
-	query := new(metaQuery)
-	metaid := new(metaId)
-
-	metaid.schemaId = schemaId
-	metaid.objectType = int8(entitytype.Table)
-	metaid.value = 0
-
-	query.setSchema(metaSchemaName)
-	query.setTable(metaIdTableName)
-
-	query.addFilter(metaFieldId, operatorEqual, 0)
-	query.addFilter(metaSchemaId, operatorEqual, schemaId)
-	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Table))
-
-	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			query.setParamValue(meta.id, 0)
-			exist, err := query.exists()
-			if err != nil {
-				return err
-			}
-			if exist == false {
-				metaid.id = meta.id
-				query.insertMetaId(metaid)
-			}
-		}
-	}
-	return nil
-}
 
 func formatSchemaName(name string) string {
 	var result = strings.ToUpper(name)
