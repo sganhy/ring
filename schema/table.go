@@ -1166,3 +1166,60 @@ func (table *Table) getLongTable() *Table {
 		tabletype.Logical, databaseprovider.NotDefined, "", false, false, true, true)
 	return result
 }
+
+func (table *Table) getTable(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []*Meta) *Table {
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+	var metaTable *Meta
+	var result = new(Table)
+	var fieldCount = 0
+	var relationCount = 0
+	var indexCount = 0
+
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		var metaType = meta.GetEntityType()
+		switch metaType {
+		case entitytype.Table:
+			metaTable = meta
+			break
+		case entitytype.Index:
+			indexCount++
+			break
+		case entitytype.Field:
+			fieldCount++
+			break
+		case entitytype.Relation:
+			relationCount++
+			break
+		}
+	}
+
+	fields = make([]Field, 0, fieldCount)
+	relations = make([]Relation, 0, relationCount)
+	indexes = make([]Index, 0, indexCount)
+
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		var metaType = meta.GetEntityType()
+		switch metaType {
+		case entitytype.Index:
+			indexes = append(indexes, *meta.toIndex())
+			break
+		case entitytype.Field:
+			fields = append(fields, *meta.toField())
+			break
+		case entitytype.Relation:
+			// load table information later
+			relations = append(relations, *meta.toRelation(nil))
+			break
+		}
+	}
+
+	result.Init(metaTable.id, metaTable.name, metaTable.description, fields, relations, indexes, physicaltype.Table, 0, "",
+		tabletype.Business, provider, metaTable.value, metaTable.IsTableCached(),
+		metaTable.IsTableReadonly(), metaTable.IsEntityBaseline(), metaTable.enabled)
+
+	return result
+}

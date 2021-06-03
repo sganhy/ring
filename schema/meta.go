@@ -178,18 +178,6 @@ func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index)
 	return nil
 }
 
-// Build partial schema object
-func (meta *Meta) toSchema() *Schema {
-	if meta.GetEntityType() == entitytype.Schema {
-		var schema = new(Schema)
-		schema.setId(meta.id)
-		schema.setName(meta.name)
-		schema.description = meta.description
-		return schema
-	}
-	return nil
-}
-
 func (meta *Meta) toParameter() *parameter {
 	if meta.GetEntityType() == entitytype.Parameter {
 		var param = new(parameter)

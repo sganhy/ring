@@ -16,6 +16,7 @@ const (
 	validatorAtLine           string = "\n at line %d"
 	invalidEntityName         string = "Invalid %s name"
 	invalidIndexValue         string = "Invalid index definition"
+	invalidRelationValue      string = "Invalid relation definition"
 	joinOperationByName       int    = 1
 	joinOperationByLineNumber int    = 2
 	prefixedEntityMaxLength   int    = 28
@@ -310,8 +311,12 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 	//	var dicoTable map[int32]map[string]bool
 
 	var metaList = importFile.metaList
+
+	// <relation.RefId, <relation.Name, RelationType>>
 	var dicoRelation map[int32]map[string]relationtype.RelationType
 	var relations []*Meta
+	var ok bool
+	var val relationtype.RelationType
 
 	dicoRelation = make(map[int32]map[string]relationtype.RelationType)
 	relations = make([]*Meta, 0, 10)
@@ -324,7 +329,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 			var relationName = strings.ToUpper(meta.name)
 
 			relations = append(relations, meta)
-			if _, ok := dicoRelation[meta.refId]; !ok {
+			if _, ok = dicoRelation[meta.refId]; !ok {
 				dicoRelation[meta.refId] = make(map[string]relationtype.RelationType)
 			}
 			dicoRelation[meta.refId][relationName] = meta.GetRelationType()
@@ -333,10 +338,27 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 
 	// (2) check relations
 	for i := 0; i < len(relations); i++ {
-		meta := metaList[i]
-		relationType := meta.GetRelationType().InverseRelationType()
+		meta := relations[i]
 
-		fmt.Println(relationType)
+		if meta.value == "" {
+			var description = fmt.Sprintf("empty inverse relation definition"+validatorAtLine, meta.lineNumber)
+			importFile.logErrorStr(955, invalidRelationValue, description)
+			continue
+		}
+
+		relationName := strings.ToUpper(meta.value)
+
+		if val, ok = dicoRelation[meta.dataType][relationName]; !ok {
+			var description = fmt.Sprintf("invalid inverse relation definition '%s'"+validatorAtLine, meta.value, meta.lineNumber)
+			importFile.logErrorStr(956, invalidRelationValue, description)
+			continue
+		}
+
+		if val.InverseRelationType() != meta.GetRelationType() {
+			var description = fmt.Sprintf("invalid relation type '%s'"+validatorAtLine, meta.GetRelationType().String(),
+				meta.lineNumber)
+			importFile.logErrorStr(957, invalidRelationValue, description)
+		}
 	}
 }
 

@@ -89,6 +89,9 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	} else if query.dml == true {
 		fmt.Println(sqlQuery)
 		rows, err = query.executeQuery(dbConnection, sqlQuery)
+
+		// avoid==> panic: pq: sorry, too many clients already
+		rows.Close() //WARN: don't forget rows.Close()
 		return err
 	} else {
 		fmt.Println(sqlQuery)
@@ -98,6 +101,7 @@ func (query metaQuery) Execute(dbConnection *sql.DB) error {
 	if err != nil {
 		fmt.Println("ERROR ==>")
 		fmt.Println(err.Error())
+		rows.Close()
 		return err
 	}
 	*query.resultCount = 0

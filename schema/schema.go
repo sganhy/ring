@@ -415,6 +415,82 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 	return name
 }
 
+func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []metaId) *Schema {
+	// sort by refId
+	/*
+		sort.Slice(metaList, func(i, j int) bool {
+			return metaList[i].refId < metaList[j].refId
+		})
+	*/
+	var provider = databaseprovider.PostgreSql
+	var tables = schema.getTables(provider, schemaId, metaList, metaIdList)
+	var tablespaces []tablespace
+	var minConnection uint16 = 5
+	var maxConnection uint16 = 20
+	var sequences []Sequence
+	var parameters []parameter
+	var result = new(Schema)
+	var language = Language{}
+	var connectionstring string = ""
+	var disablePool = false
+	var physicalName = result.getPhysicalName(provider, metaSchemaName)
+
+	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
+	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables,
+		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
+		disablePool)
+
+	return result
+}
+
+func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []Meta, metaIdList []metaId) []Table {
+	var result []Table
+	// map[tableId] *table_meta
+	var metaTables map[int32][]*Meta
+	var metaRefItemCount map[int32]int
+	table := Table{}
+
+	metaTables = make(map[int32][]*Meta)
+	metaRefItemCount = make(map[int32]int)
+
+	// {1} init metaTablesItemCount map
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		if val, ok := metaRefItemCount[meta.refId]; ok {
+			metaRefItemCount[meta.refId] = val + 1
+		} else {
+			// new item + tableId
+			metaRefItemCount[meta.refId] = 2
+		}
+	}
+
+	// {2} init metaTables map
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		if meta.GetEntityType() == entitytype.Table {
+			val := make([]*Meta, 0, metaRefItemCount[meta.id])
+			val = append(val, &meta)
+			metaTables[meta.id] = val
+		}
+	}
+
+	// {3} build metaTables
+	result = make([]Table, 0, len(metaTables))
+	for i := 0; i < len(metaList); i++ {
+		var meta = metaList[i]
+		if val, ok := metaTables[meta.refId]; ok {
+			val = append(val, &meta)
+			metaTables[meta.refId] = val
+		}
+	}
+
+	// {4} build result
+	for _, element := range metaTables {
+		result = append(result, *table.getTable(provider, schemaId, element))
+	}
+	return result
+}
+
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
 	const schemaId int32 = 0
 	var table = new(Table)

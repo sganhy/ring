@@ -1,7 +1,6 @@
 package schema
 
 import (
-	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/tabletype"
@@ -84,7 +83,8 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 			var schemas = getSchemaIdList()
 			for i := 0; i < len(schemas); i++ {
-				loadSchemaById(schemas[i])
+				//				addSchema(getSchemaById(schemas[i].id))
+				//getSchemaById(schemas[i])
 			}
 		}
 		// call garbage collector
@@ -159,6 +159,53 @@ func GetSchemaById(id int32) *Schema {
 //******************************
 // private methods
 //******************************
+func saveMetaList(schemaId int32, metaList []*Meta) error {
+	existingMetaList := getMetaList(schemaId)
+	query := new(metaQuery)
+	query.setSchema(metaSchemaName)
+	query.setTable(metaTableName)
+
+	// create new schema
+	if len(existingMetaList) == 0 {
+		for i := 0; i < len(metaList); i++ {
+			_ = query.insertMeta(metaList[i], schemaId)
+		}
+	}
+	return nil
+}
+
+func saveMetaIdList(schemaId int32, metaList []*Meta) error {
+	query := new(metaQuery)
+	metaid := new(metaId)
+
+	metaid.schemaId = schemaId
+	metaid.objectType = int8(entitytype.Table)
+	metaid.value = 0
+
+	query.setSchema(metaSchemaName)
+	query.setTable(metaIdTableName)
+
+	query.addFilter(metaFieldId, operatorEqual, 0)
+	query.addFilter(metaSchemaId, operatorEqual, schemaId)
+	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Table))
+
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Table {
+			query.setParamValue(meta.id, 0)
+			exist, err := query.exists()
+			if err != nil {
+				return err
+			}
+			if exist == false {
+				metaid.id = meta.id
+				query.insertMetaId(metaid)
+			}
+		}
+	}
+	return nil
+}
+
 func formatSchemaName(name string) string {
 	var result = strings.ToUpper(name)
 	result = strings.ReplaceAll(result, " ", "")
@@ -278,9 +325,9 @@ func createMetaParameters(schema *Schema) {
 }
 
 // get schema list from @meta table
-func getSchemaIdList() []Schema {
+func getSchemaIdList() []int32 {
 	var query = metaQuery{}
-	var result []Schema
+	var result []int32
 
 	// generate meta query
 	query.setTable(metaTableName)
@@ -292,44 +339,37 @@ func getSchemaIdList() []Schema {
 	}
 	var metaList = query.getMetaList()
 	var count = len(metaList)
-	result = make([]Schema, count, count)
+	result = make([]int32, count, count)
 
 	// O(log n)
 	for i := 0; i < count; i++ {
-		result[i] = *metaList[i].toSchema()
+		result[i] = metaList[i].id
 	}
 	return result
 }
 
-// load schema from @meta table
-func loadSchemaById(schema Schema) {
-	var schemaId = schema.GetId()
+// load schema from @meta table sort by reference_
+func getSchemaById(schemaId int32) *Schema {
 	var metaList = getMetaList(schemaId)
 	var metaIdList = getMetaIdList(schemaId)
-	var tables = getTables(schema, metaList) //from: meta.go
-
-	if int64(schema.id) > schemaCacheId.currentId {
-		schemaCacheId.currentId = int64(schema.id)
-	}
-
-	//var schema = new(Schema)
-
-	//schema.Init(212, "test", "test", "", language, tables, tablespaces, databaseprovider.Influx, 0, 0, true, true, true)
-	fmt.Println(len(metaList))
-	fmt.Println(len(metaIdList))
-	fmt.Println(len(tables))
+	var schema = new(Schema)
+	return schema.getSchema(schemaId, metaList, metaIdList)
 }
 
-// load meta from db @meta table
+// load meta from db @meta table sorted by ref_id
 func getMetaList(schemaId int32) []Meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)
 	query.addFilter(metaSchemaId, operatorEqual, schemaId)
+	// improve perf to load schema later
+	query.addSort(metaName, true)
+
 	err := query.run(0)
 	if err != nil {
 		panic(err)
 	}
+
 	return query.getMetaList()
 }
 

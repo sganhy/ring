@@ -10,6 +10,7 @@ import (
 	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
 	"ring/schema/sourcetype"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -23,10 +24,10 @@ type Import struct {
 	initialized     bool
 	loaded          bool
 	jobId           int64
-	loadedSchema    *Schema
 	tables          map[string]int32
 	errorCount      int32
 	metaList        []*Meta
+	newSchema       *Schema
 	logger          *log
 	tablespaceCount int32
 }
@@ -140,20 +141,33 @@ func (importFile *Import) Load() {
 		valid := new(validator)
 		valid.Init()
 		valid.ValidateImport(importFile)
-		/*
-			for i := 0; i < len(importFile.metaList); i++ {
-				meta := importFile.metaList[i]
-					if meta.objectType == 0 {
-						fmt.Println("TABLE ==> " + meta.name)
-					}
-					if meta.objectType == 23 {
-						//var field = meta.toTablespace()
-						fmt.Println(meta.String())
-					}
-			}
-		*/
 	}
 	importFile.loaded = true
+}
+
+func (importFile *Import) Upgrade() {
+	const upgradeSchema string = "Upgrade schema"
+
+	if importFile.IsValid() == true {
+		var err error
+		err = saveMetaList(importFile.schemaId, importFile.metaList)
+		if err != nil {
+			importFile.logError(err)
+			return
+		}
+
+		err = saveMetaIdList(importFile.schemaId, importFile.metaList)
+		if err != nil {
+			importFile.logError(err)
+			return
+		}
+		//TODO rollback !!
+		// no error
+		importFile.loaded = false
+		importFile.metaList = nil
+		importFile.newSchema = getSchemaById(importFile.schemaId)
+		runtime.GC()
+	}
 }
 
 func (importFile *Import) IsValid() bool {

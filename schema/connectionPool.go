@@ -85,7 +85,9 @@ func (connPool *connectionPool) get() *connection {
 		return result
 	}
 	connPool.syncRoot.Unlock()
+
 	newConn := new(connection)
+	fmt.Println("connectionPool::newConn := new(connection)")
 	_ = newConn.Init(-1, connPool.connectionString, connPool.provider.String())
 	//TODO add login
 	return newConn
@@ -103,6 +105,8 @@ func (connPool *connectionPool) put(conn *connection) {
 		return
 	}
 	connPool.syncRoot.Unlock()
+	fmt.Println("connectionPool::conn.close()")
+
 	conn.close()
 }
 
