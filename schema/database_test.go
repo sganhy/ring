@@ -13,7 +13,7 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
-	var tables = []Table{}
+	var tables = []*Table{}
 	var tablespaces = []tablespace{}
 	var sequences = []Sequence{}
 	var parameters = []parameter{}
@@ -38,7 +38,7 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	elemt := Table{}
 	elemt.Init(22, "zorro", "hellkzae", fields, relations, indexes,
 		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined, "subject test", true, false, true, false)
-	tables = append(tables, elemt)
+	tables = append(tables, &elemt)
 	schema.Init(212, "test", "test", "test", "test", language, tables, tablespaces, sequences, parameters,
 		databaseprovider.Influx, 0, 0, true, true, true)
 	for i := -100; i < SCHEMA_COUNT; i++ {

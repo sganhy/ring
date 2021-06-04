@@ -116,6 +116,10 @@ func (importFile *Import) GetSourceType() sourcetype.SourceType {
 	return importFile.source
 }
 
+func (importFile *Import) GetSchema() *Schema {
+	return importFile.newSchema
+}
+
 //******************************
 // public methods
 //******************************

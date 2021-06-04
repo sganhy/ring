@@ -597,14 +597,17 @@ func (table *Table) getVariableInfo() (string, int) {
 	return "", 0
 }
 func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
-	var physicalName = physicalSchemaName + "."
+	var physicalName = physicalSchemaName
 	var tableName = table.name
 
+	if physicalName != "" {
+		physicalName += "."
+	}
 	if table.tableType == tabletype.Business {
 		// add prefix
 		tableName = "t_" + tableName
 	}
-	physicalName += sqlfmt.FormatEntityName(table.provider, table.name)
+	physicalName += sqlfmt.FormatEntityName(table.provider, tableName)
 	//.getPhysicalName(provider)
 	return physicalName
 }

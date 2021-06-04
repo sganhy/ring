@@ -12,7 +12,7 @@ import (
 
 // INIT
 func Test__Schema__Init(t *testing.T) {
-	var tables = []Table{}
+	var tables = []*Table{}
 	var language = Language{}
 	var tablespaces = []tablespace{}
 	var sequences = []Sequence{}
@@ -65,7 +65,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
-	var tables = []Table{}
+	var tables = []*Table{}
 	var tablespaces = []tablespace{}
 	var sequences = []Sequence{}
 	var parameters = []parameter{}
@@ -93,7 +93,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		nameLenght := (abs(i) % 30) + 2
 		// fixture
 		table.setName(randStringBytes(nameLenght))
-		tables = append(tables, *table)
+		tables = append(tables, table)
 	}
 
 	/*

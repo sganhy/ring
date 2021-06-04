@@ -41,8 +41,8 @@ var (
 	createSchemaSql string = "%s %s %s"
 )
 
-func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language, tables []Table,
-	tableSpaces []tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
+func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language,
+	tables []*Table, tableSpaces []tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
 	minConnection uint16, maxConnection uint16, baseline bool, active bool, disablePool bool) {
 
 	logger := new(log)
@@ -174,7 +174,7 @@ func (schema *Schema) GetTableCount() int {
 
 func (schema *Schema) Clone() *Schema {
 	newSchema := new(Schema)
-	var tables []Table
+	var tables []*Table
 	var tableSpaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
@@ -182,7 +182,7 @@ func (schema *Schema) Clone() *Schema {
 
 	for _, v := range schema.tables {
 		var table = (*v).Clone()
-		tables = append(tables, *table)
+		tables = append(tables, table)
 	}
 	for i := 0; i < len(schema.tablespaces); i++ {
 		var tablespace = *schema.tablespaces[i]
@@ -340,7 +340,7 @@ func (schema *Schema) findTablespace(table *Table, index *Index, constr *constra
 	return result
 }
 
-func (schema *Schema) loadTables(tables []Table) {
+func (schema *Schema) loadTables(tables []*Table) {
 	tableCount := len(tables) + 1
 	// reducing collision then *2
 	capacity := tableCount * 2
@@ -353,8 +353,8 @@ func (schema *Schema) loadTables(tables []Table) {
 
 	for i := 0; i < len(tables); i++ {
 		table := tables[i]
-		schema.tables[table.GetName()] = &table
-		schema.tablesById[table.GetId()] = &table
+		schema.tables[table.GetName()] = table
+		schema.tablesById[table.GetId()] = table
 	}
 }
 
@@ -410,7 +410,7 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 	if name == metaSchemaName {
 		return postgreSqlSchema
 	}
-	return name
+	return sqlfmt.ToSnakeCase(name)
 }
 
 func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []metaId) *Schema {
@@ -436,8 +436,8 @@ func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []me
 	return result
 }
 
-func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []Meta, metaIdList []metaId) []Table {
-	var result []Table
+func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []Meta, metaIdList []metaId) []*Table {
+	var result []*Table
 	// map[tableId] *table_meta
 	var metaTables map[int32][]*Meta
 	var metaRefItemCount map[int32]int
@@ -468,7 +468,7 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, sche
 	}
 
 	// {3} build metaTables
-	result = make([]Table, 0, len(metaTables))
+	result = make([]*Table, 0, len(metaTables))
 	for i := 0; i < len(metaList); i++ {
 		var meta = metaList[i]
 		if val, ok := metaTables[meta.refId]; ok {
@@ -479,19 +479,19 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, sche
 
 	// {4} build result
 	for _, element := range metaTables {
-		result = append(result, *table.getTable(provider, schemaId, element))
+		result = append(result, table.getTable(provider, schemaId, element))
 	}
 	schema.loadRelations(result, metaList)
 	return result
 }
 
-func (schema *Schema) loadRelations(tables []Table, metaList []Meta) {
+func (schema *Schema) loadRelations(tables []*Table, metaList []Meta) {
 	// build map of table
 	var tableDico map[int32]*Table
 	tableDico = make(map[int32]*Table, len(tables))
 	for i := 0; i < len(tables); i++ {
 		table := tables[i]
-		tableDico[table.id] = &table
+		tableDico[table.id] = table
 	}
 	for i := 0; i < len(metaList); i++ {
 		meta := metaList[i]
@@ -507,7 +507,7 @@ func (schema *Schema) loadRelations(tables []Table, metaList []Meta) {
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
 	const schemaId int32 = 0
 	var table = new(Table)
-	var tables []Table
+	var tables []*Table
 	var tablespaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
@@ -523,10 +523,10 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	language.Init(1, "en-US")
 
 	//TODO meta schema name hardcoded ("information_schema")
-	tables = append(tables, *metaTable)
-	tables = append(tables, *metaIdTable)
-	tables = append(tables, *metaLogTable)
-	tables = append(tables, *metaLongTable)
+	tables = append(tables, metaTable)
+	tables = append(tables, metaIdTable)
+	tables = append(tables, metaLogTable)
+	tables = append(tables, metaLongTable)
 
 	parameters = append(parameters, *param.getCreationTimeParameter(0, entitytype.Schema))
 	parameters = append(parameters, *param.getVersionParameter(0, entitytype.Schema, ""))
