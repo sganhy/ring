@@ -375,7 +375,7 @@ func Test__Table__Clone(t *testing.T) {
 
 	t2 := t1.Clone()
 
-	// TODO add more test
+	//TODO add more test
 	if t1.GetName() != t2.GetName() {
 		t.Errorf("Table.Clone() ==> t1.GetName() <> t2.GetName()")
 	}

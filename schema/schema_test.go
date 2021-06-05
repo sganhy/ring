@@ -166,3 +166,26 @@ func Test__Schema__GetDdl(t *testing.T) {
 		t.Errorf("Schema.GetDdl() ==> is not equal to 'CREATE SCHEMA rpg_sheet_test'")
 	}
 }
+
+func Test__Schema__getPhysicalName(t *testing.T) {
+	schema := new(Schema)
+
+	if schema.getPhysicalName(databaseprovider.PostgreSql, metaSchemaName) != postgreSqlSchema {
+		t.Errorf("Schema.getPhysicalName() ==> is not equal to '%s'", postgreSqlSchema)
+	}
+
+	validPhysicalName := "rpg_sheet"
+	if schema.getPhysicalName(databaseprovider.PostgreSql, " Rpg Sheet ") != validPhysicalName {
+		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
+	}
+	if schema.getPhysicalName(databaseprovider.PostgreSql, "Rpg     Sheet") != validPhysicalName {
+		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
+	}
+	if schema.getPhysicalName(databaseprovider.PostgreSql, "Rpg_Sheet") != validPhysicalName {
+		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
+	}
+	if schema.getPhysicalName(databaseprovider.PostgreSql, "Rpg sheet") != validPhysicalName {
+		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
+	}
+
+}

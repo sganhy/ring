@@ -28,7 +28,9 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
+
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+
 	var lang = new(schema.Language)
 
 	lang.Init(1, "eu-ES")
@@ -43,6 +45,7 @@ func main() {
 	importFile.Upgrade()
 
 	schema2 := importFile.GetSchema()
+	fmt.Println(schema2.Test())
 	tblBook := schema2.GetTableByName("book")
 	tblArmor := schema2.GetTableByName("armor")
 	tblBook2 := tblArmor.GetRelationByName("armor2book")

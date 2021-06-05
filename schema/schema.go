@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 )
 
 type Schema struct {
@@ -405,18 +406,36 @@ func (schema *Schema) loadParameters(parameters []parameter) {
 	})
 }
 
+func (schema *Schema) Test() string {
+	return schema.getPhysicalName(databaseprovider.PostgreSql, "  Rpg Sheet ")
+}
+
 func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
 	//
+	if name == "" {
+		return ""
+	}
 	if name == metaSchemaName {
 		return postgreSqlSchema
 	}
-	return sqlfmt.ToSnakeCase(name)
+	var tempName = strings.Trim(name, " ")
+	tempName = strings.ReplaceAll(tempName, "  ", " ")
+	tempName = strings.ReplaceAll(tempName, "  ", " ")
+	var runeArr = []rune(tempName)
+	var result strings.Builder
+	for i := 0; i < len(runeArr); i++ {
+		var chr = runeArr[i]
+		if unicode.IsLetter(chr) || unicode.IsDigit(chr) || unicode.IsSpace(chr) || chr == '_' {
+			result.WriteRune(chr)
+		}
+	}
+	return strings.ToLower(sqlfmt.ToSnakeCase(result.String()))
 }
 
 func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []metaId) *Schema {
-	schemaName, schemaDescription := schema.getSchemaInfo(metaList)
-	var provider = databaseprovider.PostgreSql
-	var tables = schema.getTables(provider, schemaId, metaList, metaIdList)
+	schemaName, schemaDescription, physicalName, provider := schema.getSchemaInfo(metaList)
+
+	var tables = schema.getTables(provider, physicalName, schemaId, metaList, metaIdList)
 	var tablespaces []tablespace
 	var minConnection uint16 = 5
 	var maxConnection uint16 = 20
@@ -426,7 +445,6 @@ func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []me
 	var language = Language{}
 	var connectionstring string = ""
 	var disablePool = true
-	var physicalName = result.getPhysicalName(provider, metaSchemaName)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
 	result.Init(schemaId, schemaName, physicalName, schemaDescription, connectionstring, language, tables,
@@ -436,7 +454,8 @@ func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []me
 	return result
 }
 
-func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []Meta, metaIdList []metaId) []*Table {
+func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, physicalSchemaName string,
+	schemaId int32, metaList []Meta, metaIdList []metaId) []*Table {
 	var result []*Table
 	// map[tableId] *table_meta
 	var metaTables map[int32][]*Meta
@@ -479,7 +498,7 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, sche
 
 	// {4} build result
 	for _, element := range metaTables {
-		result = append(result, table.getTable(provider, schemaId, element))
+		result = append(result, table.getTable(provider, physicalSchemaName, schemaId, element))
 	}
 	schema.loadRelations(result, metaList)
 	return result
@@ -522,7 +541,6 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 
 	language.Init(1, "en-US")
 
-	//TODO meta schema name hardcoded ("information_schema")
 	tables = append(tables, metaTable)
 	tables = append(tables, metaIdTable)
 	tables = append(tables, metaLogTable)
@@ -558,12 +576,12 @@ func (schema *Schema) getJobIdNextValue() int64 {
 	return -1
 }
 
-func (schema *Schema) getSchemaInfo(metaList []Meta) (string, string) {
+func (schema *Schema) getSchemaInfo(metaList []Meta) (string, string, string, databaseprovider.DatabaseProvider) {
 	for i := 0; i < len(metaList); i++ {
 		var meta = metaList[i]
 		if meta.GetEntityType() == entitytype.Schema {
-			return meta.name, meta.description
+			return meta.name, meta.description, meta.value, databaseprovider.GetDatabaseProviderById(int(meta.flags))
 		}
 	}
-	return "", ""
+	return "", "", "", databaseprovider.NotDefined
 }

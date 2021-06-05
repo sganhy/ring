@@ -28,3 +28,13 @@ func (provider *DatabaseProvider) String() string {
 
 	return ""
 }
+
+func GetDatabaseProviderById(providerId int) DatabaseProvider {
+	if providerId <= 127 && providerId >= -128 {
+		var newId = DatabaseProvider(providerId)
+		if newId == Oracle || newId == PostgreSql || newId == MySql || newId == Influx {
+			return newId
+		}
+	}
+	return NotDefined
+}

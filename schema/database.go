@@ -160,6 +160,14 @@ func GetSchemaById(id int32) *Schema {
 // private methods
 //******************************
 
+func getDefaultDbProvider() databaseprovider.DatabaseProvider {
+	metaSchema := GetSchemaByName(metaSchemaName)
+	if metaSchema != nil {
+		return metaSchema.GetDatabaseProvider()
+	}
+	return databaseprovider.NotDefined
+}
+
 func formatSchemaName(name string) string {
 	var result = strings.ToUpper(name)
 	result = strings.ReplaceAll(result, " ", "")

@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
@@ -30,6 +31,7 @@ type Import struct {
 	newSchema       *Schema
 	logger          *log
 	tablespaceCount int32
+	provider        databaseprovider.DatabaseProvider
 }
 
 const (
@@ -120,12 +122,16 @@ func (importFile *Import) GetSchema() *Schema {
 	return importFile.newSchema
 }
 
+func (importFile *Import) GetDatabaseProvider() databaseprovider.DatabaseProvider {
+	return importFile.provider
+}
+
 //******************************
 // public methods
 //******************************
 func (importFile *Import) Load() {
 	var metaSchema = GetSchemaByName(metaSchemaName)
-
+	importFile.provider = getDefaultDbProvider()
 	importFile.tablespaceCount = 0
 	importFile.metaList = make([]*Meta, 0, 20)
 	importFile.errorCount = 0
@@ -288,12 +294,17 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 
 func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *Meta {
 	var result = new(Meta)
-	result.flags = 0
+	var schema = new(Schema)
+
+	result.flags = uint64(importFile.provider)
 	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
 	result.objectType = int8(entitytype.Schema)
 	result.refId = 0
 	result.id = 0
 	result.lineNumber = line
+	result.enabled = true
+	result.value = schema.getPhysicalName(importFile.provider, result.name)
+
 	return result
 }
 
@@ -307,6 +318,7 @@ func (importFile *Import) getXmlMetaTablespace(attributes *[]xml.Attr, line int6
 	result.id = importFile.tablespaceCount
 	result.lineNumber = line
 	result.value = importFile.getXmlAttribute(attributes, importXmlAttributeFileTag)
+	result.enabled = true
 	var isIndex = strings.ToLower(importFile.getXmlAttribute(attributes, importIndexTag))
 	if isIndex == importXmlBoolTrueValue1 || isIndex == importXmlBoolTrueValue2 {
 		result.setTablespaceIndex(true)

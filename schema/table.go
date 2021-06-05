@@ -1170,7 +1170,8 @@ func (table *Table) getLongTable() *Table {
 	return result
 }
 
-func (table *Table) getTable(provider databaseprovider.DatabaseProvider, schemaId int32, metaList []*Meta) *Table {
+func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physicalSchemaName string,
+	schemaId int32, metaList []*Meta) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index
@@ -1220,8 +1221,8 @@ func (table *Table) getTable(provider databaseprovider.DatabaseProvider, schemaI
 		}
 	}
 
-	result.Init(metaTable.id, metaTable.name, metaTable.description, fields, relations, indexes, physicaltype.Table, 0, "",
-		tabletype.Business, provider, metaTable.value, metaTable.IsTableCached(),
+	result.Init(metaTable.id, metaTable.name, metaTable.description, fields, relations, indexes, physicaltype.Table, schemaId,
+		physicalSchemaName, tabletype.Business, provider, metaTable.value, metaTable.IsTableCached(),
 		metaTable.IsTableReadonly(), metaTable.IsEntityBaseline(), metaTable.enabled)
 
 	return result
