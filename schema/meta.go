@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-type Meta struct {
+type meta struct {
 	id          int32
 	dataType    int32
 	name        string
@@ -51,65 +51,66 @@ const (
 //******************************
 // public methods
 //******************************
-func (meta *Meta) GetFieldSize() uint32 {
-	return uint32((meta.flags >> bitPositionFirstPositionSize) & uint64(metaMaxInt32))
+func (metaData *meta) GetFieldSize() uint32 {
+	return uint32((metaData.flags >> bitPositionFirstPositionSize) & uint64(metaMaxInt32))
 }
-func (meta *Meta) IsFieldMultilingual() bool {
-	return meta.readFlag(bitPositionFieldMultilingual)
+func (metaData *meta) IsFieldMultilingual() bool {
+	return metaData.readFlag(bitPositionFieldMultilingual)
 }
-func (meta *Meta) IsFieldCaseSensitive() bool {
-	return meta.readFlag(bitPositionFieldCaseSensitive)
+func (metaData *meta) IsFieldCaseSensitive() bool {
+	return metaData.readFlag(bitPositionFieldCaseSensitive)
 }
-func (meta *Meta) IsFieldNotNull() bool {
-	return meta.readFlag(bitPositionFieldNotNull)
+func (metaData *meta) IsFieldNotNull() bool {
+	return metaData.readFlag(bitPositionFieldNotNull)
 }
-func (meta *Meta) IsEntityBaseline() bool {
-	return meta.readFlag(bitPositionEntityBaseline)
+func (metaData *meta) IsEntityBaseline() bool {
+	return metaData.readFlag(bitPositionEntityBaseline)
 }
-func (meta *Meta) IsRelationNotNull() bool {
-	return meta.readFlag(bitPositionRelationNotNull)
+func (metaData *meta) IsRelationNotNull() bool {
+	return metaData.readFlag(bitPositionRelationNotNull)
 }
-func (meta *Meta) IsIndexUnique() bool {
-	return meta.readFlag(bitPositionIndexUnique)
+func (metaData *meta) IsIndexUnique() bool {
+	return metaData.readFlag(bitPositionIndexUnique)
 }
-func (meta *Meta) IsIndexBitmap() bool {
-	return meta.readFlag(bitPositionIndexBitmap)
+func (metaData *meta) IsIndexBitmap() bool {
+	return metaData.readFlag(bitPositionIndexBitmap)
 }
-func (meta *Meta) IsTableCached() bool {
-	return meta.readFlag(bitPositionTableCached)
-}
-
-func (meta *Meta) IsTableReadonly() bool {
-	return meta.readFlag(bitPositionTableReadonly)
+func (metaData *meta) IsTableCached() bool {
+	return metaData.readFlag(bitPositionTableCached)
 }
 
-func (meta *Meta) IsTablespaceIndex() bool {
-	return meta.readFlag(bitPositionTablespaceIndex)
+func (metaData *meta) IsTableReadonly() bool {
+	return metaData.readFlag(bitPositionTableReadonly)
 }
 
-func (meta *Meta) IsTablespaceTable() bool {
-	return meta.readFlag(bitPositionTablespaceTable)
+func (metaData *meta) IsTablespaceIndex() bool {
+	return metaData.readFlag(bitPositionTablespaceIndex)
 }
 
-func (meta *Meta) GetFieldType() fieldtype.FieldType {
-	return fieldtype.GetFieldTypeById(int(meta.dataType & 127))
-}
-func (meta *Meta) GetEntityType() entitytype.EntityType {
-	return entitytype.GetEntityTypeById(int(meta.objectType & 127))
+func (metaData *meta) IsTablespaceTable() bool {
+	return metaData.readFlag(bitPositionTablespaceTable)
 }
 
-func (meta *Meta) GetRelationType() relationtype.RelationType {
-	return relationtype.GetRelationTypeById(int((meta.flags >> bitPositionFirstPositionRelType) & 127))
+func (metaData *meta) GetFieldType() fieldtype.FieldType {
+	return fieldtype.GetFieldTypeById(int(metaData.dataType & 127))
+}
+func (metaData *meta) GetEntityType() entitytype.EntityType {
+	return entitytype.GetEntityTypeById(int(metaData.objectType & 127))
 }
 
-func (meta *Meta) String() string {
+func (metaData *meta) GetRelationType() relationtype.RelationType {
+	return relationtype.GetRelationTypeById(int((metaData.flags >> bitPositionFirstPositionRelType) & 127))
+}
+
+func (metaData *meta) String() string {
 	// used for debug only
 	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; line_number: %d; description: %s",
-		meta.id, meta.name, meta.objectType, meta.refId, meta.dataType, meta.flags, meta.value, meta.lineNumber, meta.description)
+		metaData.id, metaData.name, metaData.objectType, metaData.refId, metaData.dataType, metaData.flags,
+		metaData.value, metaData.lineNumber, metaData.description)
 }
 
-func (meta *Meta) GetParameterType() fieldtype.FieldType {
-	return fieldtype.GetFieldTypeById(int((meta.flags >> bitPositionFirstPositionDataType) & 127))
+func (metaData *meta) GetParameterType() fieldtype.FieldType {
+	return fieldtype.GetFieldTypeById(int((metaData.flags >> bitPositionFirstPositionDataType) & 127))
 }
 
 //******************************
@@ -117,164 +118,164 @@ func (meta *Meta) GetParameterType() fieldtype.FieldType {
 //******************************
 
 // mappers
-func (meta *Meta) toField() *Field {
-	if meta.GetEntityType() == entitytype.Field {
+func (metaData *meta) toField() *Field {
+	if metaData.GetEntityType() == entitytype.Field {
 		var field = new(Field)
-		field.Init(meta.id, meta.name, meta.description,
-			meta.GetFieldType(), meta.GetFieldSize(), meta.value,
-			meta.IsEntityBaseline(), meta.IsFieldNotNull(), meta.IsFieldCaseSensitive(),
-			meta.IsFieldMultilingual(), meta.enabled)
+		field.Init(metaData.id, metaData.name, metaData.description,
+			metaData.GetFieldType(), metaData.GetFieldSize(), metaData.value,
+			metaData.IsEntityBaseline(), metaData.IsFieldNotNull(), metaData.IsFieldCaseSensitive(),
+			metaData.IsFieldMultilingual(), metaData.enabled)
 		return field
 	}
 	return nil
 }
 
-func (meta *Meta) toRelation(table *Table) *Relation {
-	if meta.GetEntityType() == entitytype.Relation {
+func (metaData *meta) toRelation(table *Table) *Relation {
+	if metaData.GetEntityType() == entitytype.Relation {
 		var relation = new(Relation)
-		relation.Init(meta.id, meta.name, meta.description,
-			meta.value, meta.value, table, meta.GetRelationType(),
-			meta.IsRelationNotNull(), meta.IsEntityBaseline(), meta.enabled)
+		relation.Init(metaData.id, metaData.name, metaData.description,
+			metaData.value, metaData.value, table, metaData.GetRelationType(),
+			metaData.IsRelationNotNull(), metaData.IsEntityBaseline(), metaData.enabled)
 		return relation
 	}
 	return nil
 }
 
-func (meta *Meta) toIndex() *Index {
-	if meta.GetEntityType() == entitytype.Index {
+func (metaData *meta) toIndex() *Index {
+	if metaData.GetEntityType() == entitytype.Index {
 		var index = new(Index)
-		var arr = strings.Split(meta.value, metaIndexSeparator)
-		index.Init(meta.id, meta.name, meta.description, arr, meta.refId, meta.IsIndexBitmap(), meta.IsIndexUnique(),
-			meta.IsEntityBaseline(), meta.enabled)
+		var arr = strings.Split(metaData.value, metaIndexSeparator)
+		index.Init(metaData.id, metaData.name, metaData.description, arr, metaData.refId, metaData.IsIndexBitmap(), metaData.IsIndexUnique(),
+			metaData.IsEntityBaseline(), metaData.enabled)
 		return index
 	}
 	return nil
 }
 
-func (meta *Meta) toTablespace() *tablespace {
-	if meta.GetEntityType() == entitytype.Tablespace {
+func (metaData *meta) toTablespace() *tablespace {
+	if metaData.GetEntityType() == entitytype.Tablespace {
 		var tableSpace = new(tablespace)
 		// Init(id int32, name string, description string, fileName string, table bool, index bool) {
-		tableSpace.Init(meta.id, meta.name, meta.description, meta.value, meta.IsTablespaceTable(), meta.IsTablespaceIndex())
+		tableSpace.Init(metaData.id, metaData.name, metaData.description, metaData.value, metaData.IsTablespaceTable(), metaData.IsTablespaceIndex())
 		return tableSpace
 	}
 	return nil
 }
 
 // loosing schemaId and databaseprovider
-func (meta *Meta) toTable(fields []Field, relations []Relation, indexes []Index) *Table {
-	if meta.GetEntityType() == entitytype.Table {
+func (metaData *meta) toTable(fields []Field, relations []Relation, indexes []Index) *Table {
+	if metaData.GetEntityType() == entitytype.Table {
 		var table = new(Table)
 		/*
 			t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
 			physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
 		*/
-		table.Init(meta.id, meta.name, meta.description, fields, relations, indexes,
+		table.Init(metaData.id, metaData.name, metaData.description, fields, relations, indexes,
 			physicaltype.Table, 0, metaSchemaName, tabletype.Business,
-			databaseprovider.NotDefined, meta.value, meta.IsTableCached(), meta.IsTableReadonly(), meta.IsEntityBaseline(),
-			meta.enabled)
+			databaseprovider.NotDefined, metaData.value, metaData.IsTableCached(), metaData.IsTableReadonly(), metaData.IsEntityBaseline(),
+			metaData.enabled)
 		return table
 	}
 	return nil
 }
 
-func (meta *Meta) toParameter() *parameter {
-	if meta.GetEntityType() == entitytype.Parameter {
+func (metaData *meta) toParameter() *parameter {
+	if metaData.GetEntityType() == entitytype.Parameter {
 		var param = new(parameter)
-		var entityType = entitytype.GetEntityTypeById(int(meta.dataType))
-		var fieldType = meta.GetParameterType()
-		param.Init(meta.id, meta.name, meta.description, entityType, fieldType, meta.value)
+		var entityType = entitytype.GetEntityTypeById(int(metaData.dataType))
+		var fieldType = metaData.GetParameterType()
+		param.Init(metaData.id, metaData.name, metaData.description, entityType, fieldType, metaData.value)
 		return param
 	}
 	return nil
 }
 
-func (meta *Meta) toLanguage() *Language {
-	if meta.GetEntityType() == entitytype.Language {
+func (metaData *meta) toLanguage() *Language {
+	if metaData.GetEntityType() == entitytype.Language {
 		var lang = new(Language)
-		lang.Init(meta.id, meta.value)
+		lang.Init(metaData.id, metaData.value)
 		return lang
 	}
 	return nil
 }
 
 // flags
-func (meta *Meta) setFieldMultilingual(value bool) {
-	meta.writeFlag(bitPositionFieldMultilingual, value)
+func (metaData *meta) setFieldMultilingual(value bool) {
+	metaData.writeFlag(bitPositionFieldMultilingual, value)
 }
-func (meta *Meta) setFieldNotNull(value bool) {
-	meta.writeFlag(bitPositionFieldNotNull, value)
+func (metaData *meta) setFieldNotNull(value bool) {
+	metaData.writeFlag(bitPositionFieldNotNull, value)
 }
-func (meta *Meta) setFieldCaseSensitive(value bool) {
-	meta.writeFlag(bitPositionFieldCaseSensitive, value)
+func (metaData *meta) setFieldCaseSensitive(value bool) {
+	metaData.writeFlag(bitPositionFieldCaseSensitive, value)
 }
-func (meta *Meta) setFieldSize(size uint32) {
+func (metaData *meta) setFieldSize(size uint32) {
 	var temp = uint64(size & uint32(metaMaxInt32))
 	// maxInt32 & size << ()
 	// reset flags 16 first bits using  65.535
-	meta.flags &= 65535
+	metaData.flags &= 65535
 	temp <<= bitPositionFirstPositionSize
-	//temp = meta.flags & temp // reset size to 0;
-	meta.flags += temp
+	//temp = metaData.flags & temp // reset size to 0;
+	metaData.flags += temp
 }
 
-func (meta *Meta) setParameterDataType(fieldType fieldtype.FieldType) {
+func (metaData *meta) setParameterDataType(fieldType fieldtype.FieldType) {
 	var temp = uint64(fieldType)
 	temp <<= bitPositionFirstPositionDataType
-	meta.flags &= 65535
-	meta.flags += temp
+	metaData.flags &= 65535
+	metaData.flags += temp
 }
 
-func (meta *Meta) setEntityBaseline(value bool) {
-	meta.writeFlag(bitPositionEntityBaseline, value)
+func (metaData *meta) setEntityBaseline(value bool) {
+	metaData.writeFlag(bitPositionEntityBaseline, value)
 }
-func (meta *Meta) setRelationNotNull(value bool) {
-	meta.writeFlag(bitPositionRelationNotNull, value)
-}
-
-func (meta *Meta) setIndexBitmap(value bool) {
-	meta.writeFlag(bitPositionIndexBitmap, value)
-}
-func (meta *Meta) setIndexUnique(value bool) {
-	meta.writeFlag(bitPositionIndexUnique, value)
-}
-func (meta *Meta) setTableCached(value bool) {
-	meta.writeFlag(bitPositionTableCached, value)
-}
-func (meta *Meta) setTableReadonly(value bool) {
-	meta.writeFlag(bitPositionTableReadonly, value)
-}
-func (meta *Meta) setTablespaceIndex(value bool) {
-	meta.writeFlag(bitPositionTablespaceIndex, value)
-}
-func (meta *Meta) setTablespaceTable(value bool) {
-	meta.writeFlag(bitPositionTablespaceTable, value)
+func (metaData *meta) setRelationNotNull(value bool) {
+	metaData.writeFlag(bitPositionRelationNotNull, value)
 }
 
-func (meta *Meta) setRelationType(relationType relationtype.RelationType) {
+func (metaData *meta) setIndexBitmap(value bool) {
+	metaData.writeFlag(bitPositionIndexBitmap, value)
+}
+func (metaData *meta) setIndexUnique(value bool) {
+	metaData.writeFlag(bitPositionIndexUnique, value)
+}
+func (metaData *meta) setTableCached(value bool) {
+	metaData.writeFlag(bitPositionTableCached, value)
+}
+func (metaData *meta) setTableReadonly(value bool) {
+	metaData.writeFlag(bitPositionTableReadonly, value)
+}
+func (metaData *meta) setTablespaceIndex(value bool) {
+	metaData.writeFlag(bitPositionTablespaceIndex, value)
+}
+func (metaData *meta) setTablespaceTable(value bool) {
+	metaData.writeFlag(bitPositionTablespaceTable, value)
+}
+
+func (metaData *meta) setRelationType(relationType relationtype.RelationType) {
 	var temp = uint64(uint32(relationType) & uint32(metaMaxInt8))
 	// maxInt32 & size << ()
 	// reset flags 16 first bits using  65.535
-	meta.flags &= 65535
+	metaData.flags &= 65535
 	temp <<= bitPositionFirstPositionRelType
-	//temp = meta.flags & temp // reset size to 0;
-	meta.flags += temp
+	//temp = metaData.flags & temp // reset size to 0;
+	metaData.flags += temp
 }
 
 // bit position: ]1,64[
-func (meta *Meta) writeFlag(bitPosition uint8, value bool) {
+func (metaData *meta) writeFlag(bitPosition uint8, value bool) {
 	var mask uint64 = 0
 	if bitPosition < 64 {
 		mask = 1
 		mask <<= bitPosition - 1
 		if value == true {
-			meta.flags |= mask
+			metaData.flags |= mask
 		} else {
-			meta.flags &= ^mask
+			metaData.flags &= ^mask
 		}
 	}
 }
 
-func (meta *Meta) readFlag(bitPosition uint8) bool {
-	return ((meta.flags >> (bitPosition - 1)) & 1) > 0
+func (metaData *meta) readFlag(bitPosition uint8) bool {
+	return ((metaData.flags >> (bitPosition - 1)) & 1) > 0
 }

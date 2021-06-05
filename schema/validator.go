@@ -84,21 +84,21 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 //******************************
 func (valid *validator) tableIdUnique(importFile *Import) {
 	var metaList = importFile.metaList
-	var dico map[int32][]*Meta
+	var dico map[int32][]*meta
 	var ok bool
-	var val []*Meta
+	var val []*meta
 
-	dico = make(map[int32][]*Meta)
+	dico = make(map[int32][]*meta)
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			val, ok = dico[meta.id]
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			val, ok = dico[metaData.id]
 			if !ok {
 				// new slice
-				val = make([]*Meta, 0, 2)
+				val = make([]*meta, 0, 2)
 			}
-			val = append(val, meta)
-			dico[meta.id] = val
+			val = append(val, metaData)
+			dico[metaData.id] = val
 		}
 	}
 	for key, arr := range dico {
@@ -115,20 +115,20 @@ func (valid *validator) tableIdUnique(importFile *Import) {
 // Check if table name are unique
 func (valid *validator) tableNameUnique(importFile *Import) {
 	var metaList = importFile.metaList
-	var dico map[string]*Meta
-	dico = make(map[string]*Meta)
+	var dico map[string]*meta
+	dico = make(map[string]*meta)
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			name := strings.ToUpper(meta.name)
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			name := strings.ToUpper(metaData.name)
 			if val, ok := dico[name]; ok {
 				var message = "Duplicate table name '%s'"
 				var description = fmt.Sprintf("table name '%s' is already in use.\n at line %d and %d",
-					meta.name, val.lineNumber, meta.lineNumber)
+					metaData.name, val.lineNumber, metaData.lineNumber)
 				importFile.logErrorStr(704, message, description)
 			} else {
-				dico[name] = meta
+				dico[name] = metaData
 			}
 		}
 	}
@@ -138,51 +138,51 @@ func (valid *validator) entityNameValid(importFile *Import) {
 	var metaList = importFile.metaList
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
 
-		// is meta.name empty?
-		if len(meta.name) == 0 {
+		// is metaData.name empty?
+		if len(metaData.name) == 0 {
 			var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
 			var description = fmt.Sprintf("%s name cannot be empty."+validatorAtLine,
-				strings.ToLower(metaType.String()), meta.lineNumber)
+				strings.ToLower(metaType.String()), metaData.lineNumber)
 			importFile.logErrorStr(502, message, description)
 		} else {
-			valid.checkEntityName(importFile, meta, metaType)
+			valid.checkEntityName(importFile, metaData, metaType)
 		}
 	}
 }
 
-func (valid *validator) checkEntityName(importFile *Import, meta *Meta, metaType entitytype.EntityType) {
+func (valid *validator) checkEntityName(importFile *Import, metaData *meta, metaType entitytype.EntityType) {
 	const descMaxLengthEntityName string = "%s name '%s' is too long (max length=%d)." + validatorAtLine
 
 	// is name valid
-	if valid.isValidName(meta.name) == false &&
+	if valid.isValidName(metaData.name) == false &&
 		(metaType == entitytype.Table || metaType == entitytype.Field || metaType == entitytype.Index ||
 			metaType == entitytype.Relation || metaType == entitytype.Tablespace) {
 		var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
 		var description = fmt.Sprintf("invalid %s name '%s'. A name can consist of any combination of letters(A to Z a to z), decimal digits(0 to 9) or underscore (_)."+validatorAtLine,
-			strings.ToLower(metaType.String()), meta.name, meta.lineNumber)
+			strings.ToLower(metaType.String()), metaData.name, metaData.lineNumber)
 		importFile.logErrorStr(501, message, description)
 	}
-	// is meta.name len > 28
-	if len(meta.name) > prefixedEntityMaxLength && (metaType == entitytype.Table || metaType == entitytype.Field) {
+	// is metaData.name len > 28
+	if len(metaData.name) > prefixedEntityMaxLength && (metaType == entitytype.Table || metaType == entitytype.Field) {
 		var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
-		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
-			prefixedEntityMaxLength, meta.lineNumber)
+		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), metaData.name,
+			prefixedEntityMaxLength, metaData.lineNumber)
 		importFile.logErrorStr(503, message, description)
 	}
-	// is meta.name len > 30
-	if len(meta.name) > unPrefixedEntityMaxLength && metaType != entitytype.Table && metaType != entitytype.Field {
+	// is metaData.name len > 30
+	if len(metaData.name) > unPrefixedEntityMaxLength && metaType != entitytype.Table && metaType != entitytype.Field {
 		var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
-		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), meta.name,
-			unPrefixedEntityMaxLength, meta.lineNumber)
+		var description = fmt.Sprintf(descMaxLengthEntityName, strings.ToLower(metaType.String()), metaData.name,
+			unPrefixedEntityMaxLength, metaData.lineNumber)
 		importFile.logErrorStr(505, message, description)
 	}
-	if metaType == entitytype.Schema && strings.ToLower(strings.Trim(meta.name, " ")) == strings.ToLower(metaSchemaName) {
+	if metaType == entitytype.Schema && strings.ToLower(strings.Trim(metaData.name, " ")) == strings.ToLower(metaSchemaName) {
 		var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
 		var description = fmt.Sprintf("invalid schema name '%s'. A schema name cannot be equal to '@meta'."+validatorAtLine,
-			meta.name, meta.lineNumber)
+			metaData.name, metaData.lineNumber)
 		importFile.logErrorStr(507, message, description)
 	}
 
@@ -195,17 +195,17 @@ func (valid *validator) duplicateMetaKey(importFile *Import) {
 
 	// check on db unique key (pk_@meta) ==> id|schema_id|object_type|reference_id
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
+		metaData := metaList[i]
 
-		metaKey := strconv.FormatInt(int64(meta.id), 16) + "-" +
-			strconv.FormatInt(int64(meta.refId), 16) + "-" +
-			strconv.FormatInt(int64(meta.objectType), 16)
+		metaKey := strconv.FormatInt(int64(metaData.id), 16) + "-" +
+			strconv.FormatInt(int64(metaData.refId), 16) + "-" +
+			strconv.FormatInt(int64(metaData.objectType), 16)
 
 		if _, ok := dicoEntities[metaKey]; ok {
 			// error duplicate meta key
 			var message = fmt.Sprintf("Duplicate meta key")
-			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d", strings.ToLower(meta.GetEntityType().String()),
-				meta.refId, meta.id)
+			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d", strings.ToLower(metaData.GetEntityType().String()),
+				metaData.refId, metaData.id)
 
 			importFile.logErrorStr(527, message, description)
 		} else {
@@ -224,33 +224,33 @@ func (valid *validator) entityNameUnique(importFile *Import) {
 
 	// (1) build table dictionary
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			dicoTable[meta.id] = make(map[string]bool)
-			dicoTableName[meta.id] = meta.name
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			dicoTable[metaData.id] = make(map[string]bool)
+			dicoTableName[metaData.id] = metaData.name
 		}
 	}
 
 	// (2) load field & relations
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
 		if metaType == entitytype.Field || metaType == entitytype.Relation {
-			entityName := strings.ToUpper(meta.name)
-			if _, ok := dicoTable[meta.refId][entityName]; ok {
+			entityName := strings.ToUpper(metaData.name)
+			if _, ok := dicoTable[metaData.refId][entityName]; ok {
 				var message = "Duplicate relation or field"
 				var description = fmt.Sprintf("relation or field '%s' for table '%s'"+validatorAtLine,
-					meta.name, dicoTableName[meta.refId], meta.lineNumber)
+					metaData.name, dicoTableName[metaData.refId], metaData.lineNumber)
 				importFile.logErrorStr(811, message, description)
 			} else {
-				dicoTable[meta.refId][entityName] = true
+				dicoTable[metaData.refId][entityName] = true
 			}
 		}
 	}
 
 }
 
-func (valid *validator) joinMeta(metaList []*Meta, operation int) string {
+func (valid *validator) joinMeta(metaList []*meta, operation int) string {
 	var result strings.Builder
 	for i := 0; i < len(metaList); i++ {
 		switch operation {
@@ -283,11 +283,11 @@ func (valid *validator) languageCodeValid(importFile *Import) {
 	lang := new(Language)
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
 
 		if metaType == entitytype.Language {
-			_, err := lang.IsCodeValid(meta.value)
+			_, err := lang.IsCodeValid(metaData.value)
 			if err != nil {
 				importFile.logErrorStr(549, "Invalid language code", err.Error())
 			}
@@ -299,15 +299,15 @@ func (valid *validator) entityTypeValid(importFile *Import) {
 	var metaList = importFile.metaList
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
-		if metaType == entitytype.Relation && meta.GetRelationType() == relationtype.NotDefined {
-			var description = fmt.Sprintf("wrong relation type (must be OTOP, OTM, MTM, MTO, or OTOF)"+validatorAtLine, meta.lineNumber)
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
+		if metaType == entitytype.Relation && metaData.GetRelationType() == relationtype.NotDefined {
+			var description = fmt.Sprintf("wrong relation type (must be OTOP, OTM, MTM, MTO, or OTOF)"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(852, "Invalid relation type", description)
 		}
 
-		if metaType == entitytype.Field && meta.GetFieldType() == fieldtype.NotDefined {
-			var description = fmt.Sprintf("wrong field type "+validatorAtLine, meta.lineNumber)
+		if metaType == entitytype.Field && metaData.GetFieldType() == fieldtype.NotDefined {
+			var description = fmt.Sprintf("wrong field type "+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(853, "Invalid field type", description)
 		}
 	}
@@ -321,49 +321,49 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 
 	// <relation.RefId, <relation.Name, RelationType>>
 	var dicoRelation map[int32]map[string]relationtype.RelationType
-	var relations []*Meta
+	var relations []*meta
 	var ok bool
 	var val relationtype.RelationType
 
 	dicoRelation = make(map[int32]map[string]relationtype.RelationType)
-	relations = make([]*Meta, 0, 10)
+	relations = make([]*meta, 0, 10)
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
+		metaData := metaList[i]
 
-		if meta.GetEntityType() == entitytype.Relation {
-			var relationName = strings.ToUpper(meta.name)
+		if metaData.GetEntityType() == entitytype.Relation {
+			var relationName = strings.ToUpper(metaData.name)
 
-			relations = append(relations, meta)
-			if _, ok = dicoRelation[meta.refId]; !ok {
-				dicoRelation[meta.refId] = make(map[string]relationtype.RelationType)
+			relations = append(relations, metaData)
+			if _, ok = dicoRelation[metaData.refId]; !ok {
+				dicoRelation[metaData.refId] = make(map[string]relationtype.RelationType)
 			}
-			dicoRelation[meta.refId][relationName] = meta.GetRelationType()
+			dicoRelation[metaData.refId][relationName] = metaData.GetRelationType()
 		}
 	}
 
 	// (2) check relations
 	for i := 0; i < len(relations); i++ {
-		meta := relations[i]
+		metaData := relations[i]
 
-		if meta.value == "" {
-			var description = fmt.Sprintf("empty inverse relation definition"+validatorAtLine, meta.lineNumber)
+		if metaData.value == "" {
+			var description = fmt.Sprintf("empty inverse relation definition"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(955, invalidRelationValue, description)
 			continue
 		}
 
-		relationName := strings.ToUpper(meta.value)
+		relationName := strings.ToUpper(metaData.value)
 
-		if val, ok = dicoRelation[meta.dataType][relationName]; !ok {
-			var description = fmt.Sprintf("invalid inverse relation definition '%s'"+validatorAtLine, meta.value, meta.lineNumber)
+		if val, ok = dicoRelation[metaData.dataType][relationName]; !ok {
+			var description = fmt.Sprintf("invalid inverse relation definition '%s'"+validatorAtLine, metaData.value, metaData.lineNumber)
 			importFile.logErrorStr(956, invalidRelationValue, description)
 			continue
 		}
 
-		if val.InverseRelationType() != meta.GetRelationType() {
-			var description = fmt.Sprintf("invalid relation type '%s'"+validatorAtLine, meta.GetRelationType().String(),
-				meta.lineNumber)
+		if val.InverseRelationType() != metaData.GetRelationType() {
+			var description = fmt.Sprintf("invalid relation type '%s'"+validatorAtLine, metaData.GetRelationType().String(),
+				metaData.lineNumber)
 			importFile.logErrorStr(957, invalidRelationValue, description)
 		}
 	}
@@ -374,10 +374,10 @@ func (valid *validator) indexValueValid(importFile *Import) {
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
+		metaData := metaList[i]
 
-		if meta.GetEntityType() == entitytype.Index && len(strings.Trim(meta.value, " ")) == 0 {
-			var description = fmt.Sprintf("empty index definition"+validatorAtLine, meta.lineNumber)
+		if metaData.GetEntityType() == entitytype.Index && len(strings.Trim(metaData.value, " ")) == 0 {
+			var description = fmt.Sprintf("empty index definition"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(860, invalidIndexValue, description)
 		}
 	}
@@ -391,18 +391,18 @@ func (valid *validator) tableValueValid(importFile *Import) {
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
 		if metaType == entitytype.Field || metaType == entitytype.Relation {
-			fieldDico[meta.refId] = true
+			fieldDico[metaData.refId] = true
 		}
 	}
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			if _, ok := fieldDico[meta.id]; !ok {
-				var description = fmt.Sprintf("empty table definition"+validatorAtLine, meta.lineNumber)
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			if _, ok := fieldDico[metaData.id]; !ok {
+				var description = fmt.Sprintf("empty table definition"+validatorAtLine, metaData.lineNumber)
 				importFile.logErrorStr(864, "Invalid table definition", description)
 			}
 		}
@@ -420,24 +420,24 @@ func (valid *validator) indexValid(importFile *Import) {
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		metaType := meta.GetEntityType()
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
 
 		if metaType == entitytype.Field || metaType == entitytype.Relation {
-			key := strings.ToUpper(meta.name) + strconv.Itoa(int(meta.refId))
+			key := strings.ToUpper(metaData.name) + strconv.Itoa(int(metaData.refId))
 			dicoField[key] = true
 		}
 	}
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
+		metaData := metaList[i]
 
-		if meta.GetEntityType() == entitytype.Index {
-			strArr := strings.Split(meta.value, metaIndexSeparator)
+		if metaData.GetEntityType() == entitytype.Index {
+			strArr := strings.Split(metaData.value, metaIndexSeparator)
 			for j := 0; j < len(strArr); j++ {
-				key := strings.Trim(strings.ToUpper(strArr[j]), "") + strconv.Itoa(int(meta.refId))
+				key := strings.Trim(strings.ToUpper(strArr[j]), "") + strconv.Itoa(int(metaData.refId))
 				if _, ok := dicoField[key]; !ok {
-					var description = fmt.Sprintf("invalid indexed field or relation '%s' "+validatorAtLine, strArr[j], meta.lineNumber)
+					var description = fmt.Sprintf("invalid indexed field or relation '%s' "+validatorAtLine, strArr[j], metaData.lineNumber)
 					importFile.logErrorStr(861, invalidIndexValue, description)
 				}
 			}

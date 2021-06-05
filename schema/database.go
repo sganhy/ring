@@ -319,7 +319,7 @@ func getSchemaById(schemaId int32) *Schema {
 }
 
 // load meta from db @meta table sorted by ref_id
-func getMetaList(schemaId int32) []Meta {
+func getMetaList(schemaId int32) []meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)

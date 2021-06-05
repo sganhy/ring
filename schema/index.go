@@ -142,9 +142,9 @@ func (index *Index) String() string {
 //******************************
 // private methods
 //******************************
-func (index *Index) toMeta() *Meta {
+func (index *Index) toMeta() *meta {
 	// we cannot have error here
-	var result = new(Meta)
+	var result = new(meta)
 
 	// key
 	result.id = index.id

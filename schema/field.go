@@ -349,9 +349,9 @@ func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) 
 //******************************
 // private methods
 //******************************
-func (field *Field) toMeta(tableId int32) *Meta {
+func (field *Field) toMeta(tableId int32) *meta {
 	// we cannot have error here
-	var result = new(Meta)
+	var result = new(meta)
 
 	// key
 	result.id = field.id

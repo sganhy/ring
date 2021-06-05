@@ -8,90 +8,90 @@ import (
 )
 
 func Test__Meta__GetEntityType(t *testing.T) {
-	var meta = new(Meta)
+	var metaData = new(meta)
 
 	// key
-	meta.id = 12123
-	meta.refId = 545434
+	metaData.id = 12123
+	metaData.refId = 545434
 
-	meta.objectType = 4
-	if meta.GetEntityType() != entitytype.NotDefined {
+	metaData.objectType = 4
+	if metaData.GetEntityType() != entitytype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> objectType==4 must return entitytype.NotDefined")
 	}
-	meta.objectType = 5
-	if meta.GetEntityType() != entitytype.NotDefined {
+	metaData.objectType = 5
+	if metaData.GetEntityType() != entitytype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> objectType==5 must return entitytype.NotDefined")
 	}
 
-	meta.objectType = 6
-	if meta.GetEntityType() != entitytype.NotDefined {
+	metaData.objectType = 6
+	if metaData.GetEntityType() != entitytype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> objectType==6 must return entitytype.NotDefined")
 	}
 }
 
 func Test__Meta__GetRelationType(t *testing.T) {
-	var meta = new(Meta)
+	var metaData = new(meta)
 
 	// key
-	meta.id = 12123
-	meta.refId = 545434
+	metaData.id = 12123
+	metaData.refId = 545434
 
-	meta.setRelationType(4)
-	if meta.GetRelationType() != relationtype.NotDefined {
+	metaData.setRelationType(4)
+	if metaData.GetRelationType() != relationtype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> relationType==4 must return entitytype.NotDefined")
 	}
-	meta.setRelationType(5)
-	if meta.GetRelationType() != relationtype.NotDefined {
+	metaData.setRelationType(5)
+	if metaData.GetRelationType() != relationtype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> relationType==5 must return entitytype.NotDefined")
 	}
 
-	meta.setRelationType(6)
-	if meta.GetRelationType() != relationtype.NotDefined {
+	metaData.setRelationType(6)
+	if metaData.GetRelationType() != relationtype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> relationType==6 must return entitytype.NotDefined")
 	}
 }
 
 func Test__Meta__GetFieldType(t *testing.T) {
-	var meta = new(Meta)
+	var metaData = new(meta)
 
 	// key
-	meta.id = 12123
-	meta.refId = 545434
+	metaData.id = 12123
+	metaData.refId = 545434
 
-	meta.dataType = 4
-	if meta.GetFieldType() != fieldtype.NotDefined {
+	metaData.dataType = 4
+	if metaData.GetFieldType() != fieldtype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> fieldType==4 must return entitytype.NotDefined")
 	}
-	meta.dataType = 5
-	if meta.GetFieldType() != fieldtype.NotDefined {
+	metaData.dataType = 5
+	if metaData.GetFieldType() != fieldtype.NotDefined {
 		t.Errorf("Meta.GetEntityType() ==> fieldType==5 must return entitytype.NotDefined")
 	}
 
-	meta.dataType = 6
-	if meta.GetFieldType() != fieldtype.NotDefined {
+	metaData.dataType = 6
+	if metaData.GetFieldType() != fieldtype.NotDefined {
 		t.Errorf("Meta.GetFieldType() ==> fieldType==6 must return entitytype.NotDefined")
 	}
 }
 
 //test ToField, ToRelation, ToIndex, ToTable, and ToSchema
 func Test__Meta__toField(t *testing.T) {
-	var meta = new(Meta)
+	var metaData = new(meta)
 
 	// testing nil return
-	meta.objectType = 4
-	if meta.toField() != nil {
+	metaData.objectType = 4
+	if metaData.toField() != nil {
 		t.Errorf("Meta.toField() ==> objectType==4 must return nil")
 	}
-	if meta.toRelation(nil) != nil {
+	if metaData.toRelation(nil) != nil {
 		t.Errorf("Meta.toRelation() ==> objectType==4 must return nil")
 	}
-	if meta.toIndex() != nil {
+	if metaData.toIndex() != nil {
 		t.Errorf("Meta.toIndex() ==> objectType==4 must return nil")
 	}
-	if meta.toTable(nil, nil, nil) != nil {
+	if metaData.toTable(nil, nil, nil) != nil {
 		t.Errorf("Meta.toTable() ==> objectType==4 must return nil")
 	}
-	if meta.toParameter() != nil {
+	if metaData.toParameter() != nil {
 		t.Errorf("Meta.toParameter() ==> objectType==4 must return nil")
 	}
 }

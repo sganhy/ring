@@ -432,7 +432,7 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 	return strings.ToLower(sqlfmt.ToSnakeCase(result.String()))
 }
 
-func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []metaId) *Schema {
+func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []metaId) *Schema {
 	schemaName, schemaDescription, physicalName, provider := schema.getSchemaInfo(metaList)
 
 	var tables = schema.getTables(provider, physicalName, schemaId, metaList, metaIdList)
@@ -455,14 +455,14 @@ func (schema *Schema) getSchema(schemaId int32, metaList []Meta, metaIdList []me
 }
 
 func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, physicalSchemaName string,
-	schemaId int32, metaList []Meta, metaIdList []metaId) []*Table {
+	schemaId int32, metaList []meta, metaIdList []metaId) []*Table {
 	var result []*Table
 	// map[tableId] *table_meta
-	var metaTables map[int32][]*Meta
+	var metaTables map[int32][]*meta
 	var metaRefItemCount map[int32]int
 	table := Table{}
 
-	metaTables = make(map[int32][]*Meta)
+	metaTables = make(map[int32][]*meta)
 	metaRefItemCount = make(map[int32]int)
 
 	// {1} init metaTablesItemCount map
@@ -478,11 +478,11 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, phys
 
 	// {2} init metaTables map
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			val := make([]*Meta, 0, metaRefItemCount[meta.id])
-			val = append(val, &meta)
-			metaTables[meta.id] = val
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			val := make([]*meta, 0, metaRefItemCount[metaData.id])
+			val = append(val, &metaData)
+			metaTables[metaData.id] = val
 		}
 	}
 
@@ -504,7 +504,7 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, phys
 	return result
 }
 
-func (schema *Schema) loadRelations(tables []*Table, metaList []Meta) {
+func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 	// build map of table
 	var tableDico map[int32]*Table
 	tableDico = make(map[int32]*Table, len(tables))
@@ -576,11 +576,11 @@ func (schema *Schema) getJobIdNextValue() int64 {
 	return -1
 }
 
-func (schema *Schema) getSchemaInfo(metaList []Meta) (string, string, string, databaseprovider.DatabaseProvider) {
+func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, databaseprovider.DatabaseProvider) {
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		if meta.GetEntityType() == entitytype.Schema {
-			return meta.name, meta.description, meta.value, databaseprovider.GetDatabaseProviderById(int(meta.flags))
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Schema {
+			return metaData.name, metaData.description, metaData.value, databaseprovider.GetDatabaseProviderById(int(metaData.flags))
 		}
 	}
 	return "", "", "", databaseprovider.NotDefined

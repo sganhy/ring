@@ -214,12 +214,12 @@ func (query *metaQuery) getQuery() string {
 	return ""
 }
 
-func (query *metaQuery) getMetaList() []Meta {
+func (query *metaQuery) getMetaList() []meta {
 	if query.table != nil && query.table.GetName() == metaTableName {
 
 		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
-		var result = make([]Meta, resultCount, resultCount)
+		var result = make([]meta, resultCount, resultCount)
 		var tempMeta int64 = 0
 		var field *Field
 		var j = 0
@@ -430,19 +430,19 @@ func (query *metaQuery) insertLog(newLog *log) error {
 	return query.insert(params)
 }
 
-func (query *metaQuery) insertMeta(meta *Meta, schemaId int32) error {
+func (query *metaQuery) insertMeta(metaData *meta, schemaId int32) error {
 	var params []interface{}
 	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
-	params[0] = meta.id
+	params[0] = metaData.id
 	params[1] = schemaId
-	params[2] = meta.objectType
-	params[3] = meta.refId
-	params[4] = meta.dataType
-	params[5] = meta.flags
-	params[6] = meta.name
-	params[7] = meta.description
-	params[8] = meta.value
-	params[9] = meta.enabled
+	params[2] = metaData.objectType
+	params[3] = metaData.refId
+	params[4] = metaData.dataType
+	params[5] = metaData.flags
+	params[6] = metaData.name
+	params[7] = metaData.description
+	params[8] = metaData.value
+	params[9] = metaData.enabled
 	return query.insert(params)
 }
 

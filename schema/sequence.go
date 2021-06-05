@@ -159,8 +159,8 @@ func (sequence *Sequence) getEventId(schemaId int32) *Sequence {
 	return result
 }
 
-func (sequence *Sequence) toMeta() *Meta {
-	var metaTable = new(Meta)
+func (sequence *Sequence) toMeta() *meta {
+	var metaTable = new(meta)
 
 	// key
 	metaTable.id = sequence.id

@@ -547,8 +547,8 @@ func (table *Table) GetPrimaryKeyIndex() int {
 //******************************
 // private methods
 //******************************
-func (table *Table) toMeta() *Meta {
-	var metaTable = new(Meta)
+func (table *Table) toMeta() *meta {
+	var metaTable = new(meta)
 
 	// key
 	metaTable.id = table.id
@@ -1171,11 +1171,11 @@ func (table *Table) getLongTable() *Table {
 }
 
 func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physicalSchemaName string,
-	schemaId int32, metaList []*Meta) *Table {
+	schemaId int32, metaList []*meta) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index
-	var metaTable *Meta
+	var metaTable *meta
 	var result = new(Table)
 	var fieldCount = 0
 	var relationCount = 0

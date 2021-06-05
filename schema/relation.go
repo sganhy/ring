@@ -157,9 +157,9 @@ func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProv
 	return sqlfmt.FormatEntityName(provider, relation.name)
 }
 
-func (relation *Relation) toMeta(tableId int32) *Meta {
+func (relation *Relation) toMeta(tableId int32) *meta {
 	// we cannot have error here
-	var result = new(Meta)
+	var result = new(meta)
 
 	// key
 	result.id = relation.id

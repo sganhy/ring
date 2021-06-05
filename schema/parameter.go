@@ -104,8 +104,8 @@ func (param *parameter) create(schema *Schema) error {
 	return query.insertMeta(param.toMeta(schemaId), schemaId)
 }
 
-func (param *parameter) toMeta(objectId int32) *Meta {
-	var metaParam = new(Meta)
+func (param *parameter) toMeta(objectId int32) *meta {
+	var metaParam = new(meta)
 
 	// key
 	metaParam.id = param.id

@@ -709,8 +709,8 @@ func (language *Language) create(schema *Schema) error {
 	return query.insertMeta(language.toMeta(), schema.id)
 }
 
-func (language *Language) toMeta() *Meta {
-	var metaTable = new(Meta)
+func (language *Language) toMeta() *meta {
+	var metaTable = new(meta)
 
 	// key
 	metaTable.id = language.id
