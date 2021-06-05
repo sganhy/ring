@@ -18,11 +18,11 @@ import (
 )
 
 type Table struct {
-	id           int32
-	name         string
-	description  string
-	fields       []*Field    // sorted by name
-	fieldsById   []*Field    // sorted by id
+	id          int32
+	name        string
+	description string
+	fields      []*Field // sorted by name
+	//fieldsById   []*Field    // sorted by id
 	relations    []*Relation // sorted by name
 	indexes      []*Index    // sorted by name
 	mapper       []uint16    // mapping from .fieldsById to .fields ==> max number of column 65535!!
@@ -95,8 +95,8 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.description = description
 	table.loadFields(fields, tableType)
 	table.loadRelations(relations)
-	table.loadMapper()         // !!!load after loadFields
-	table.loadIndexes(indexes) //!!!! run at the end only
+	table.loadMapper()         // !!! load after loadFields()
+	table.loadIndexes(indexes) // !!! run at the end only
 	// initialize cacheId
 	table.cacheid = new(cacheId)
 	table.cacheid.Init(id, schemaId, table.GetEntityType())
@@ -199,6 +199,9 @@ func (table *Table) setDatabaseProvider(provider databaseprovider.DatabaseProvid
 func (table *Table) getSqlCapacity() uint16 {
 	return table.sqlCapacity
 }
+func (table *Table) GetFieldIdByIndex(index int) *Field {
+	return table.fields[table.mapper[index]]
+}
 
 //******************************
 // public methods
@@ -223,26 +226,9 @@ func (table *Table) GetFieldByName(name string) *Field {
 // case insensitive search
 // Get field by name ==> O(n) complexity
 func (table *Table) GetFieldByNameI(name string) *Field {
-	for i := len(table.fieldsById) - 1; i >= 0; i-- {
+	for i := len(table.fields) - 1; i >= 0; i-- {
 		if strings.EqualFold(name, table.fields[i].name) {
 			return table.fields[i]
-		}
-	}
-	return nil
-}
-
-func (table *Table) GetFieldById(id int32) *Field {
-	var indexerLeft, indexerRight, indexerMiddle = 0, len(table.fieldsById) - 1, 0
-	for indexerLeft <= indexerRight {
-		indexerMiddle = indexerLeft + indexerRight
-		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
-
-		if id == table.fieldsById[indexerMiddle].id {
-			return table.fieldsById[indexerMiddle]
-		} else if id > table.fieldsById[indexerMiddle].id {
-			indexerLeft = indexerMiddle + 1
-		} else {
-			indexerRight = indexerMiddle - 1
 		}
 	}
 	return nil
@@ -269,11 +255,6 @@ func (table *Table) GetFieldIndexByName(name string) int {
 //
 func (table *Table) GetFieldByIndex(index int) *Field {
 	return table.fields[index]
-}
-
-//
-func (table *Table) GetFieldIdByIndex(index int) *Field {
-	return table.fieldsById[index]
 }
 
 func (table *Table) GetRelationByName(name string) *Relation {
@@ -329,8 +310,8 @@ func (table *Table) GetRelationIndexByName(name string) int {
 }
 
 func (table *Table) GetPrimaryKey() *Field {
-	if len(table.fieldsById) > 0 && table.tableType == tabletype.Business {
-		return table.fieldsById[0]
+	if len(table.fields) > 0 && table.tableType == tabletype.Business {
+		return table.fields[table.mapper[0]]
 	}
 	return nil
 }
@@ -340,8 +321,9 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 	switch statement {
 	case ddlstatement.Create:
 		var fields []string
-		for i := 0; i < len(table.fieldsById); i++ {
-			fieldSql := table.fieldsById[i].GetDdl(table.provider, table.tableType)
+		for i := 0; i < len(table.fields); i++ {
+			index := table.mapper[i]
+			fieldSql := table.fields[index].GetDdl(table.provider, table.tableType)
 			fields = append(fields, fieldSql)
 		}
 		for i := 0; i < len(table.relations); i++ {
@@ -475,7 +457,7 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	// manage fields first
 	for i := 0; i < capacity; i++ {
 		value = *columnPointer[i].(*interface{})
-		currentField = table.fieldsById[i]
+		currentField = table.fields[table.mapper[i]]
 		// use a mapper instead
 		//index = table.GetFieldIndexByName(currentField.name)
 		index = int(table.mapper[i])
@@ -630,9 +612,9 @@ func (table *Table) getFieldList() string {
 	// reduce memory usage
 	// capacity
 	var b strings.Builder
-	for i := 0; i < len(table.fieldsById); i++ {
-		b.WriteString(table.fieldsById[i].GetPhysicalName(table.provider))
-		if i < len(table.fieldsById)-1 {
+	for i := 0; i < len(table.fields); i++ {
+		b.WriteString(table.fields[table.mapper[i]].GetPhysicalName(table.provider))
+		if i < len(table.fields)-1 {
 			b.WriteString(fieldListSeparator)
 		}
 	}
@@ -685,8 +667,7 @@ func (table *Table) copyFields(fields []Field) {
 	for i := 0; i < len(fields); i++ {
 		// append only valid fields
 		if fields[i].IsValid() == true {
-			table.fields = append(table.fields, &fields[i])         // sorted by name
-			table.fieldsById = append(table.fieldsById, &fields[i]) // sorted by id
+			table.fields = append(table.fields, &fields[i]) // sorted by name
 		}
 	}
 }
@@ -729,10 +710,6 @@ func (table *Table) sortFields() {
 		sort.Slice(table.fields, func(i, j int) bool {
 			return table.fields[i].name < table.fields[j].name
 		})
-		// sort fields by id
-		sort.Slice(table.fieldsById, func(i, j int) bool {
-			return table.fieldsById[i].id < table.fieldsById[j].id
-		})
 	}
 }
 
@@ -772,14 +749,12 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		// allow structures
 		table.fields = make([]*Field, 0, capacity)
-		table.fieldsById = make([]*Field, 0, capacity)
 
 		// add missing primary key
 		if primaryKey == nil && tableType == tabletype.Business {
 			field.setType(fieldtype.Long)
 			var defaultPrimaryKey = field.getDefaultPrimaryKey()
-			table.fields = append(table.fields, defaultPrimaryKey)         // sorted by name
-			table.fieldsById = append(table.fieldsById, defaultPrimaryKey) // sorted by id
+			table.fields = append(table.fields, defaultPrimaryKey) // sorted by name
 		}
 
 		table.copyFields(fields)
@@ -789,14 +764,12 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 			field.setType(primaryKey.GetType())
 			var defaultPrimaryKey = field.getDefaultPrimaryKey()
 			table.fields[primaryKeyIndex] = defaultPrimaryKey
-			table.fieldsById[primaryKeyIndex] = defaultPrimaryKey
 		}
 
 		table.sortFields()
 	} else {
 		//TODO throw an error + logging
 		table.fields = make([]*Field, 0, 1)
-		table.fieldsById = make([]*Field, 0, 1)
 	}
 }
 
@@ -814,9 +787,17 @@ func (table *Table) loadIndexes(indexes []Index) {
 }
 
 func (table *Table) loadMapper() {
-	table.mapper = make([]uint16, len(table.fieldsById), len(table.fieldsById))
-	for i := 0; i < len(table.fieldsById); i++ {
-		table.mapper[i] = uint16(table.GetFieldIndexByName(table.fieldsById[i].name))
+	table.mapper = make([]uint16, len(table.fields), len(table.fields))
+	fieldsById := make([]*Field, len(table.fields), len(table.fields))
+
+	for i := 0; i < len(table.fields); i++ {
+		fieldsById[i] = table.fields[i]
+	}
+	sort.Slice(fieldsById, func(i, j int) bool {
+		return fieldsById[i].id < fieldsById[j].id
+	})
+	for i := 0; i < len(table.fields); i++ {
+		table.mapper[i] = uint16(table.GetFieldIndexByName(fieldsById[i].name))
 	}
 }
 

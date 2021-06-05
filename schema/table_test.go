@@ -172,26 +172,9 @@ func Test__Table__GetFieldByName(t *testing.T) {
 			}
 		}
 	}
-	//Testing GetFieldById
-	field := table.GetFieldById(10)
-	if field == nil {
-		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", 10)
-	}
-	field = table.GetFieldById((FIELD_COUNT >> 1) + 1)
-	if field == nil {
-		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", (FIELD_COUNT>>1)+1)
-	}
-	field = table.GetFieldById(FIELD_COUNT >> 2)
-	if field == nil {
-		t.Errorf("Table.GetFieldById() ==> cannot find current id %d", FIELD_COUNT>>2)
-	}
-	field = table.GetFieldById(-1)
-	if field != nil {
-		t.Errorf("Table.GetFieldById() ==> getFieldById(-1) cannot be find")
-	}
 
 	//find primary key
-	field = table.GetFieldByName("id")
+	field := table.GetFieldByName("id")
 	if field == nil {
 		t.Errorf("Table.GetFieldByName() ==> Cannot find primary key")
 	} else if field.IsPrimaryKey() == false {
@@ -209,11 +192,11 @@ func Test__Table__GetFieldByName(t *testing.T) {
 		t.Errorf("Table.GetFieldByName() ==> field '111' cannot be found")
 	}
 	//Testing GetFieldByNameI
-	field = table.GetFieldByNameI(strings.ToLower(table.fieldsById[3].GetName()))
+	field = table.GetFieldByNameI(strings.ToLower(table.fields[table.mapper[3]].GetName()))
 	if field == nil {
 		t.Errorf("Table.GetFieldByNameI() ==> ToLower(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].GetName()))
 	}
-	field = table.GetFieldByNameI(strings.ToUpper(table.fieldsById[3].GetName()))
+	field = table.GetFieldByNameI(strings.ToUpper(table.fields[table.mapper[3]].GetName()))
 	if field == nil {
 		t.Errorf("Table.GetFieldByNameI() ==> ToUpper(fields[2].name); i=%d, name=%s", 2, strings.ToLower(fields[2].GetName()))
 	}
