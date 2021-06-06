@@ -66,8 +66,8 @@ func Test__Index__ToMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemi0.Init(21, "rel test", "hellkzae", aarr, -11, false, true, false, true)
 
-	meta := elemi0.toMeta()
-	elemi1 := meta.toIndex()
+	metaData := elemi0.toMeta()
+	elemi1 := metaData.toIndex()
 
 	if elemi0.GetId() != elemi1.GetId() {
 		t.Errorf("Index.toMeta() ==> i0.GetId() must be equal to i1.GetId()")

@@ -4,8 +4,24 @@ import (
 	"ring/schema/constrainttype"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
+	"ring/schema/entitytype"
 	"testing"
 )
+
+func Test__Constraint__Init(t *testing.T) {
+	table := new(Table)
+	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "information_schema")
+	//======================
+	//==== testing PostgreSql
+	//======================
+	constr := new(constraint)
+	constr.Init(constrainttype.PrimaryKey, metaTable)
+
+	if constr.GetEntityType() != entitytype.Constraint {
+		t.Errorf("Constraint.GetEntityType() ==>  must be equal to " + entitytype.Constraint.String())
+	}
+
+}
 
 func Test__Constraint__getDdlPrimaryKey(t *testing.T) {
 	table := new(Table)
@@ -71,4 +87,8 @@ func Test__Constraint__getDdlCheck(t *testing.T) {
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCheck() ==> query must be equal to " + expectedSql)
 	}
+}
+
+func Test__Constraint__getPhysicalName(t *testing.T) {
+
 }

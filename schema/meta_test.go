@@ -16,16 +16,16 @@ func Test__Meta__GetEntityType(t *testing.T) {
 
 	metaData.objectType = 4
 	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> objectType==4 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> objectType==4 must return entitytype.NotDefined")
 	}
 	metaData.objectType = 5
 	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> objectType==5 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> objectType==5 must return entitytype.NotDefined")
 	}
 
 	metaData.objectType = 6
 	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> objectType==6 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> objectType==6 must return entitytype.NotDefined")
 	}
 }
 
@@ -38,16 +38,16 @@ func Test__Meta__GetRelationType(t *testing.T) {
 
 	metaData.setRelationType(4)
 	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> relationType==4 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> relationType==4 must return entitytype.NotDefined")
 	}
 	metaData.setRelationType(5)
 	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> relationType==5 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> relationType==5 must return entitytype.NotDefined")
 	}
 
 	metaData.setRelationType(6)
 	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> relationType==6 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> relationType==6 must return entitytype.NotDefined")
 	}
 }
 
@@ -60,16 +60,16 @@ func Test__Meta__GetFieldType(t *testing.T) {
 
 	metaData.dataType = 4
 	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> fieldType==4 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> fieldType==4 must return entitytype.NotDefined")
 	}
 	metaData.dataType = 5
 	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("Meta.GetEntityType() ==> fieldType==5 must return entitytype.NotDefined")
+		t.Errorf("meta.GetEntityType() ==> fieldType==5 must return entitytype.NotDefined")
 	}
 
 	metaData.dataType = 6
 	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("Meta.GetFieldType() ==> fieldType==6 must return entitytype.NotDefined")
+		t.Errorf("meta.GetFieldType() ==> fieldType==6 must return entitytype.NotDefined")
 	}
 }
 
@@ -80,18 +80,18 @@ func Test__Meta__toField(t *testing.T) {
 	// testing nil return
 	metaData.objectType = 4
 	if metaData.toField() != nil {
-		t.Errorf("Meta.toField() ==> objectType==4 must return nil")
+		t.Errorf("meta.toField() ==> objectType==4 must return nil")
 	}
 	if metaData.toRelation(nil) != nil {
-		t.Errorf("Meta.toRelation() ==> objectType==4 must return nil")
+		t.Errorf("meta.toRelation() ==> objectType==4 must return nil")
 	}
 	if metaData.toIndex() != nil {
-		t.Errorf("Meta.toIndex() ==> objectType==4 must return nil")
+		t.Errorf("meta.toIndex() ==> objectType==4 must return nil")
 	}
 	if metaData.toTable(nil, nil, nil) != nil {
-		t.Errorf("Meta.toTable() ==> objectType==4 must return nil")
+		t.Errorf("meta.toTable() ==> objectType==4 must return nil")
 	}
 	if metaData.toParameter() != nil {
-		t.Errorf("Meta.toParameter() ==> objectType==4 must return nil")
+		t.Errorf("meta.toParameter() ==> objectType==4 must return nil")
 	}
 }

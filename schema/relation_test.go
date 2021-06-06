@@ -75,8 +75,8 @@ func Test__Relation__toMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
 
-	meta := elemr0.toMeta(777)
-	elemr1 := meta.toRelation(&elemt)
+	metaData := elemr0.toMeta(777)
+	elemr1 := metaData.toRelation(&elemt)
 
 	if elemr0.GetId() != elemr1.GetId() {
 		t.Errorf("Relation.toMeta() ==> r0.GetId() must be equal to r1.GetId()")

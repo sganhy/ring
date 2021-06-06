@@ -15,6 +15,7 @@ type tablespace struct {
 	tableName   string
 	table       bool
 	index       bool
+	constraint  bool
 }
 
 const (

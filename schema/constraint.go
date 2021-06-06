@@ -20,12 +20,14 @@ type constraint struct {
 }
 
 const (
-	constraintPkPrefix string = "pk_"
-	constraintCkPrefix string = "ck_"
-	createPkPostGreSql string = "%s %s %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s"
-	createNnPostGreSql string = "%s %s %s ALTER COLUMN %s SET NOT NULL"
-	createNnMySql      string = "%s %s %s MODIFY %s NOT NULL"
-	createCkPostGreSql string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN -128 AND 127)"
+	constraintPkPrefix      string = "pk_"
+	constraintPkShortPrefix string = "pk"
+	constraintCkPrefix      string = "ck_"
+	constraintFkPrefix      string = "fk_"
+	createPkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s"
+	createNnPostGreSql      string = "%s %s %s ALTER COLUMN %s SET NOT NULL"
+	createNnMySql           string = "%s %s %s MODIFY %s NOT NULL"
+	createCkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN -128 AND 127)"
 )
 
 func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *Table) {
@@ -90,12 +92,21 @@ func (constr *constraint) getPhysicalName() string {
 	result := ""
 	switch constr.constType {
 	case constrainttype.PrimaryKey:
-		result = constraintPkPrefix + constr.table.GetName()
+		var tableName = constr.table.GetName()
+		// keep constraint lenght less or equal to 30
+		if len(tableName) > 27 {
+			result = constraintPkShortPrefix + tableName
+		} else {
+			result = constraintPkPrefix + tableName
+		}
+
 		break
 	case constrainttype.Check:
 		result = constr.getCheckName()
 		break
-
+	case constrainttype.ForeignKey:
+		result = ""
+		break
 	}
 	return sqlfmt.FormatEntityName(constr.table.GetDatabaseProvider(), result)
 }

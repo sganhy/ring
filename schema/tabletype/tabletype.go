@@ -16,3 +16,33 @@ const (
 	TableSpaceDictionary TableType = 25
 	Logical              TableType = 27
 )
+
+func (tableType *TableType) String() string {
+	tabletype := *tableType
+	switch tabletype {
+	case Business:
+		return "business"
+	case Meta:
+		return "meta"
+	case MetaId:
+		return "metaId"
+	case Fake:
+		return "fake"
+	case Mtm:
+		return "mtm"
+	case Log:
+		return "log"
+	case Lexicon:
+		return "lexicon"
+	case LexiconItem:
+		return "lexiconItem"
+	case SchemaDictionary:
+		return "schemaDictionary"
+	case TableDictionary:
+		return "tableDictionary"
+	case Logical:
+		return "logical"
+	}
+
+	return ""
+}

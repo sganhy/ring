@@ -178,8 +178,8 @@ func Test__Field__toMeta(t *testing.T) {
 	elemf0 := Field{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemf0.Init(11, "aName", "AField Test", fieldtype.Float, 15, "test default", true, false, false, true, true)
-	meta := elemf0.toMeta(777)
-	elemf1 := meta.toField()
+	metaData := elemf0.toMeta(777)
+	elemf1 := metaData.toField()
 
 	if elemf0.GetId() != elemf1.GetId() {
 		t.Errorf("Field.toMeta() ==> f0.GetId() must be equal to f1.GetId()")

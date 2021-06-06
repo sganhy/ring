@@ -9,6 +9,7 @@ const (
 	UniqueKey  ConstraintType = 2
 	Check      ConstraintType = 3
 	NotNull    ConstraintType = 8
+	ForeignKey ConstraintType = 9
 	NotDefined ConstraintType = 125
 )
 
@@ -18,6 +19,8 @@ func (constraintType ConstraintType) String() string {
 		return "PRIMARY KEY"
 	case Check:
 		return "CHECK"
+	case ForeignKey:
+		return "FOREIGN KEY"
 	case NotNull:
 		return "NOT NULL"
 	}

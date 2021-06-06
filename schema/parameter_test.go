@@ -14,8 +14,8 @@ func Test__Parameter__toMeta(t *testing.T) {
 	// id int32, name string, description string, parameterType entitytype.EntityType, fieldType fieldtype.FieldType, value string
 	elemp0.Init(111778, "test parameter", "test description", entitytype.Constraint, fieldtype.Boolean, "value test!!")
 
-	meta := elemp0.toMeta(7777)
-	elemp1 := meta.toParameter()
+	metaData := elemp0.toMeta(7777)
+	elemp1 := metaData.toParameter()
 
 	if elemp0.GetId() != elemp1.GetId() {
 		t.Errorf("Parameter.toMeta() ==> p0.GetId() must be equal to p1.GetId()")

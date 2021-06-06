@@ -233,7 +233,7 @@ func addSchema(schema *Schema) {
 
 func createPhysicalSchema(schema *Schema) {
 	if schema.exists() == false {
-		err := schema.create()
+		err := schema.create(0)
 		if err != nil {
 			panic(err)
 		}
@@ -346,4 +346,14 @@ func getMetaIdList(schemaId int32) []metaId {
 		panic(err)
 	}
 	return query.getMetaIdList()
+}
+
+func upgradeSchema(jobId int64, schema *Schema) {
+	// compare with previous
+	var currentSchema = GetSchemaByName(schema.name)
+	if currentSchema == nil {
+		schema := new(Schema)
+		currentSchema = schema.getEmptySchema()
+	}
+	currentSchema.alter(jobId, schema)
 }

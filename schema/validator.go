@@ -313,7 +313,7 @@ func (valid *validator) entityTypeValid(importFile *Import) {
 	}
 }
 
-// Check Relation inverse relation + inverse Type
+// Check Relation inverse relation + inverse Type (case sensitif)
 func (valid *validator) inverseRelationValid(importFile *Import) {
 	//	var dicoTable map[int32]map[string]bool
 
@@ -333,7 +333,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 		metaData := metaList[i]
 
 		if metaData.GetEntityType() == entitytype.Relation {
-			var relationName = strings.ToUpper(metaData.name)
+			var relationName = metaData.name
 
 			relations = append(relations, metaData)
 			if _, ok = dicoRelation[metaData.refId]; !ok {
@@ -353,7 +353,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 			continue
 		}
 
-		relationName := strings.ToUpper(metaData.value)
+		relationName := metaData.value
 
 		if val, ok = dicoRelation[metaData.dataType][relationName]; !ok {
 			var description = fmt.Sprintf("invalid inverse relation definition '%s'"+validatorAtLine, metaData.value, metaData.lineNumber)
@@ -423,8 +423,9 @@ func (valid *validator) indexValid(importFile *Import) {
 		metaData := metaList[i]
 		metaType := metaData.GetEntityType()
 
+		// make check case sensitive
 		if metaType == entitytype.Field || metaType == entitytype.Relation {
-			key := strings.ToUpper(metaData.name) + strconv.Itoa(int(metaData.refId))
+			key := metaData.name + strconv.Itoa(int(metaData.refId))
 			dicoField[key] = true
 		}
 	}
@@ -435,7 +436,7 @@ func (valid *validator) indexValid(importFile *Import) {
 		if metaData.GetEntityType() == entitytype.Index {
 			strArr := strings.Split(metaData.value, metaIndexSeparator)
 			for j := 0; j < len(strArr); j++ {
-				key := strings.Trim(strings.ToUpper(strArr[j]), "") + strconv.Itoa(int(metaData.refId))
+				key := strArr[j] + strconv.Itoa(int(metaData.refId))
 				if _, ok := dicoField[key]; !ok {
 					var description = fmt.Sprintf("invalid indexed field or relation '%s' "+validatorAtLine, strArr[j], metaData.lineNumber)
 					importFile.logErrorStr(861, invalidIndexValue, description)

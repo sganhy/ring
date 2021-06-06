@@ -13,8 +13,8 @@ func Test__Language__toMeta(t *testing.T) {
 	// id int32, name string, description string, parameterType entitytype.EntityType, fieldType fieldtype.FieldType, value string
 	eleml0.Init(1, "es-MX")
 
-	meta := eleml0.toMeta()
-	eleml1 := meta.toLanguage()
+	metaData := eleml0.toMeta()
+	eleml1 := metaData.toLanguage()
 
 	if eleml0.GetId() != eleml1.GetId() {
 		t.Errorf("Language.toMeta() ==> l0.GetId() must be equal to l1.GetId()")
@@ -35,8 +35,8 @@ func Test__Language__toMeta(t *testing.T) {
 		t.Errorf("Language.toMeta() ==> l0.GetEntityType() must be equal to entitytype.Language")
 	}
 
-	meta.objectType = int8(entitytype.Constraint)
-	eleml2 := meta.toLanguage()
+	metaData.objectType = int8(entitytype.Constraint)
+	eleml2 := metaData.toLanguage()
 	if eleml2 != nil {
 		t.Errorf("Language.toMeta() ==> l2 must be equal NULL")
 	}

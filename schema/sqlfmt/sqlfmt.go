@@ -658,6 +658,7 @@ func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName str
 	switch provider {
 	case databaseprovider.PostgreSql:
 		fieldSeparator = doubleQuotes
+		entityName = strings.ToLower(entityName)
 		break
 	case databaseprovider.MySql:
 		fieldSeparator = mysqlQuotes

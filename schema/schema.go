@@ -36,6 +36,7 @@ const (
 	metaSchemaName        string = "@meta"
 	metaSchemaDescription string = "@meta"
 	postgreSqlSchema      string = "rpg_sheet_test"
+	emptySchemaName       string = ""
 )
 
 var (
@@ -61,11 +62,11 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 
 	if disablePool == false {
 		// load sequences ==> before log init
-		logger.Init(id, false)
+		logger.Init(id, 0, false)
 		schema.connections.Init(id, connectionString, provider, minConnection, maxConnection)
 	} else {
 		// load sequences ==> before log init
-		logger.Init(id, true)
+		logger.Init(id, 0, true)
 		// instanciate connectionPool without database connections
 		schema.connections.connectionString = connectionString
 		schema.connections.provider = provider
@@ -131,6 +132,14 @@ func (schema *Schema) setId(id int32) {
 
 func (schema *Schema) setName(name string) {
 	schema.name = name
+}
+
+func (schema *Schema) IsEmpty() bool {
+	return schema.name == emptySchemaName
+}
+
+func (schema *Schema) getLogger() *log {
+	return schema.logger
 }
 
 //******************************
@@ -309,7 +318,7 @@ func (schema *Schema) execute(query Query) error {
 	return nil
 }
 
-func (schema *Schema) create() error {
+func (schema *Schema) create(jobId int64) error {
 	var metaQuery = metaQuery{}
 	var creationTime = time.Now()
 	var logger = schema.logger
@@ -325,7 +334,7 @@ func (schema *Schema) create() error {
 	}
 
 	duration := time.Now().Sub(creationTime)
-	logger.info(16, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Schema.String()), fmt.Sprintf("name=%s; execution_time=%d (ms)",
+	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf("name=%s (done) | time=%dms",
 		schema.physicalName, int(duration.Seconds()*1000)))
 	return nil
 }
@@ -335,9 +344,63 @@ func (schema *Schema) exists() bool {
 	return cata.exists(schema, schema)
 }
 
+func (prevSchema *Schema) alter(jobId int64, newSchema *Schema) {
+	// borrow connection pool to meta schema
+	metaSchema := GetSchemaByName(metaSchemaName)
+	newSchema.connections = metaSchema.connections
+
+	// create physical schema
+	if !newSchema.exists() {
+		// initialize logger
+		newSchema.logger.Init(newSchema.id, jobId, false)
+		newSchema.create(jobId)
+	}
+
+	newDico := newSchema.getTableDictionary()
+	prevDico := prevSchema.getTableDictionary()
+
+	newSchema.dropTables(prevDico, newDico)
+	newSchema.createTables(prevDico, newDico)
+}
+
 func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *tablespace {
-	result := new(tablespace)
-	result.name = "rpg_data"
+	for i := 0; i < len(schema.tablespaces); i++ {
+		tablespace := schema.tablespaces[i]
+		if table != nil && tablespace.table {
+			return tablespace
+		}
+		if index != nil && tablespace.index {
+			return tablespace
+		}
+		if constr != nil && tablespace.constraint {
+			return tablespace
+		}
+	}
+	return nil
+}
+
+func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]string) {
+
+}
+
+func (schema *Schema) createTables(prevDico map[string]string, newDico map[string]string) {
+	for tablePhysName, tableName := range newDico {
+		if _, ok := prevDico[tablePhysName]; !ok {
+			table := schema.GetTableByName(tableName)
+			if table.exists(schema) == false {
+				table.create(schema)
+			}
+			//TODO logs
+		}
+	}
+}
+
+// get dictionary of table <physicalName, name>
+func (schema *Schema) getTableDictionary() map[string]string {
+	result := make(map[string]string, len(schema.tables))
+	for _, tbl := range schema.tables {
+		result[tbl.GetPhysicalName()] = tbl.GetName()
+	}
 	return result
 }
 
@@ -364,6 +427,10 @@ func (schema *Schema) loadTablespaces(tablespaces []tablespace) {
 	for i := 0; i < len(tablespaces); i++ {
 		schema.tablespaces = append(schema.tablespaces, &tablespaces[i])
 	}
+	// sort tablespaces by name
+	sort.Slice(schema.tablespaces, func(i, j int) bool {
+		return schema.tablespaces[i].name < schema.tablespaces[j].name
+	})
 }
 
 func (schema *Schema) loadSequences(sequences []Sequence) {
@@ -387,7 +454,7 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 		}
 	}
 
-	// sort sequences
+	// sort sequences by name
 	sort.Slice(schema.sequences, func(i, j int) bool {
 		return schema.sequences[i].name < schema.sequences[j].name
 	})
@@ -404,10 +471,6 @@ func (schema *Schema) loadParameters(parameters []parameter) {
 	sort.Slice(schema.parameters, func(i, j int) bool {
 		return schema.parameters[i].name < schema.parameters[j].name
 	})
-}
-
-func (schema *Schema) Test() string {
-	return schema.getPhysicalName(databaseprovider.PostgreSql, "  Rpg Sheet ")
 }
 
 func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
@@ -432,17 +495,39 @@ func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider
 	return strings.ToLower(sqlfmt.ToSnakeCase(result.String()))
 }
 
+func (schema *Schema) getEmptySchema() *Schema {
+	var tables = []*Table{}
+	var tablespaces = []tablespace{}
+	var minConnection uint16 = 5
+	var maxConnection uint16 = 20
+	var sequences = []Sequence{}
+	var parameters = []parameter{}
+	var result = new(Schema)
+	var language = Language{}
+	language.Init(1, "en-US")
+
+	var connectionstring string = ""
+	var disablePool = true
+	var provider = databaseprovider.NotDefined
+
+	result.Init(-1, emptySchemaName, "", "", connectionstring, language, tables,
+		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
+		disablePool)
+
+	return result
+}
+
 func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []metaId) *Schema {
 	schemaName, schemaDescription, physicalName, provider := schema.getSchemaInfo(metaList)
 
 	var tables = schema.getTables(provider, physicalName, schemaId, metaList, metaIdList)
-	var tablespaces []tablespace
+	var tablespaces = schema.getTableSpaces(metaList)
 	var minConnection uint16 = 5
 	var maxConnection uint16 = 20
-	var sequences []Sequence
-	var parameters []parameter
+	var sequences = schema.getSequences(schemaId, metaList)
+	var parameters = schema.getParameters(metaList)
 	var result = new(Schema)
-	var language = Language{}
+	var language = schema.getDefaultLanguage(metaList)
 	var connectionstring string = ""
 	var disablePool = true
 
@@ -467,12 +552,12 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, phys
 
 	// {1} init metaTablesItemCount map
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		if val, ok := metaRefItemCount[meta.refId]; ok {
-			metaRefItemCount[meta.refId] = val + 1
+		var metaData = metaList[i]
+		if val, ok := metaRefItemCount[metaData.refId]; ok {
+			metaRefItemCount[metaData.refId] = val + 1
 		} else {
 			// new item + tableId
-			metaRefItemCount[meta.refId] = 2
+			metaRefItemCount[metaData.refId] = 2
 		}
 	}
 
@@ -489,10 +574,10 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, phys
 	// {3} build metaTables
 	result = make([]*Table, 0, len(metaTables))
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		if val, ok := metaTables[meta.refId]; ok {
-			val = append(val, &meta)
-			metaTables[meta.refId] = val
+		var metaData = metaList[i]
+		if val, ok := metaTables[metaData.refId]; ok {
+			val = append(val, &metaData)
+			metaTables[metaData.refId] = val
 		}
 	}
 
@@ -501,6 +586,55 @@ func (schema *Schema) getTables(provider databaseprovider.DatabaseProvider, phys
 		result = append(result, table.getTable(provider, physicalSchemaName, schemaId, element))
 	}
 	schema.loadRelations(result, metaList)
+	return result
+}
+
+func (schema *Schema) getTableSpaces(metaList []meta) []tablespace {
+	var result []tablespace
+	result = make([]tablespace, 0, 3)
+	for i := 0; i < len(metaList); i++ {
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Tablespace {
+			result = append(result, *metaData.toTablespace())
+		}
+	}
+	return result
+}
+
+func (schema *Schema) getDefaultLanguage(metaList []meta) Language {
+	for i := 0; i < len(metaList); i++ {
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Language {
+			return *metaData.toLanguage()
+		}
+	}
+
+	// get language from @meta schema
+	var metaSchema = GetSchemaByName(metaSchemaName)
+	return metaSchema.language
+}
+
+func (schema *Schema) getSequences(schemaId int32, metaList []meta) []Sequence {
+	var result []Sequence
+	result = make([]Sequence, 0, 3)
+	for i := 0; i < len(metaList); i++ {
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Sequence {
+			result = append(result, *metaData.toSequence(schemaId))
+		}
+	}
+	return result
+}
+
+func (schema *Schema) getParameters(metaList []meta) []parameter {
+	var result []parameter
+	result = make([]parameter, 0, 3)
+	for i := 0; i < len(metaList); i++ {
+		var metaData = metaList[i]
+		if metaData.GetEntityType() == entitytype.Parameter {
+			result = append(result, *metaData.toParameter())
+		}
+	}
 	return result
 }
 
@@ -513,11 +647,11 @@ func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 		tableDico[table.id] = table
 	}
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Relation {
-			var fromTable = tableDico[meta.refId]
-			var toTable = tableDico[meta.dataType]
-			var relation = fromTable.GetRelationByName(meta.name)
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Relation {
+			var fromTable = tableDico[metaData.refId]
+			var toTable = tableDico[metaData.dataType]
+			var relation = fromTable.GetRelationByName(metaData.name)
 			relation.setToTable(toTable)
 		}
 	}

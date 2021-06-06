@@ -64,6 +64,11 @@ func (param *parameter) GetValue() string {
 	return param.value
 }
 
+func (param *parameter) setValue(value string) {
+	//TODO validate type
+	param.value = value
+}
+
 //******************************
 // public methods
 //******************************

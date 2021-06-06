@@ -42,7 +42,7 @@ func init() {
 	metaTableExist = false
 }
 
-func (logger *log) Init(schemaId int32, disableDbLogs bool) {
+func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 	logger.schemaId = schemaId
 	logger.active = !disableDbLogs
 
@@ -55,10 +55,8 @@ func (logger *log) Init(schemaId int32, disableDbLogs bool) {
 		// get metas chema to fetch current JobId
 		if schemaId == 0 {
 			logger.info(0, 0, "Baseline Logger Initialized", "")
-		} else {
-			metaSchema := GetSchemaById(0)
-			jobId := metaSchema.getJobIdNextValue()
-			logger.info(0, jobId, "Logger Initialized", "")
+		} else if jobId == 0 {
+			logger.info(0, 0, "Logger Initialized", "")
 		}
 	}
 }

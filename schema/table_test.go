@@ -5,6 +5,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
+	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
@@ -125,6 +126,9 @@ func Test__Table__Init(t *testing.T) {
 	}
 	if table.IsActive() != false {
 		t.Errorf("Table.Init() ==> IsActive() <> false")
+	}
+	if table.GetEntityType() != entitytype.Table {
+		t.Errorf("Table.Init() ==>  GetEntityType() <> entitytype.Table")
 	}
 
 }
@@ -408,8 +412,8 @@ func Test__Table__toMeta(t *testing.T) {
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
 	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
 
-	meta := elemt.toMeta()
-	newTable := meta.toTable(fields, relations, indexes)
+	metaData := elemt.toMeta()
+	newTable := metaData.toTable(fields, relations, indexes)
 
 	if elemt.GetId() != newTable.GetId() {
 		t.Errorf("Table.toMeta() ==> t0.GetId() must be equal to t1.GetId()")

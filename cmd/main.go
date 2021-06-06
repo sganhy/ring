@@ -45,7 +45,7 @@ func main() {
 	importFile.Upgrade()
 
 	schema2 := importFile.GetSchema()
-	table2 := schema2.GetTableByName("alignment")
+	table2 := schema2.GetTableByName("weapon")
 	fmt.Println(table2.GetName())
 
 	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")

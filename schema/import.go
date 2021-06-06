@@ -87,7 +87,7 @@ func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
 	importFile.initialized = true
 	importFile.source = source
 	importFile.logger = new(log)
-	importFile.logger.Init(schemaNotDefined, false)
+	importFile.logger.Init(schemaNotDefined, 0, false)
 	importFile.loaded = false
 }
 
@@ -156,7 +156,7 @@ func (importFile *Import) Load() {
 }
 
 func (importFile *Import) Upgrade() {
-	const upgradeSchema string = "Upgrade schema"
+	//const upgradeSchema string = "Upgrade schema"
 
 	if importFile.IsValid() == true {
 		var err error
@@ -176,6 +176,8 @@ func (importFile *Import) Upgrade() {
 		importFile.loaded = false
 		importFile.metaList = nil
 		importFile.newSchema = getSchemaById(importFile.schemaId)
+		// database.go
+		upgradeSchema(importFile.jobId, importFile.newSchema)
 		runtime.GC()
 	}
 }
@@ -707,10 +709,9 @@ func (importFile *Import) getSchemaVersion(value string) *meta {
 	parameter := new(parameter)
 
 	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, entitytype.Schema, value)
-	var meTa = schemaVersion.toMeta(importFile.schemaId)
-	meTa.refId = importFile.schemaId
-
-	return meTa
+	var metaData = schemaVersion.toMeta(importFile.schemaId)
+	metaData.refId = importFile.schemaId
+	return metaData
 }
 
 func (importFile *Import) getSchemaLanguage(value string) *meta {
@@ -756,15 +757,15 @@ func (importFile *Import) saveMetaIdList() error {
 	queryExist.addFilter(metaObjectType, operatorEqual, int8(entitytype.Table))
 
 	for i := 0; i < len(metaList); i++ {
-		meta := metaList[i]
-		if meta.GetEntityType() == entitytype.Table {
-			queryExist.setParamValue(meta.id, 0)
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Table {
+			queryExist.setParamValue(metaData.id, 0)
 			exist, err := queryExist.exists()
 			if err != nil {
 				return err
 			}
 			if exist == false {
-				metaid.id = meta.id
+				metaid.id = metaData.id
 				queryInsert.insertMetaId(metaid)
 			}
 		}

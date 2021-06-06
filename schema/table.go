@@ -18,11 +18,10 @@ import (
 )
 
 type Table struct {
-	id          int32
-	name        string
-	description string
-	fields      []*Field // sorted by name
-	//fieldsById   []*Field    // sorted by id
+	id           int32
+	name         string
+	description  string
+	fields       []*Field    // sorted by name
 	relations    []*Relation // sorted by name
 	indexes      []*Index    // sorted by name
 	mapper       []uint16    // mapping from .fieldsById to .fields ==> max number of column 65535!!
@@ -39,7 +38,6 @@ type Table struct {
 	readonly     bool
 	baseline     bool
 	active       bool
-	//internal readonly LexiconIndex[] LexiconIndexes;
 }
 
 const (
@@ -199,6 +197,7 @@ func (table *Table) setDatabaseProvider(provider databaseprovider.DatabaseProvid
 func (table *Table) getSqlCapacity() uint16 {
 	return table.sqlCapacity
 }
+
 func (table *Table) GetFieldIdByIndex(index int) *Field {
 	return table.fields[table.mapper[index]]
 }
@@ -603,11 +602,6 @@ func (table *Table) getSchemaName() string {
 	return ""
 }
 
-func (table *Table) getLogger() *log {
-	var schema = GetSchemaById(table.schemaId)
-	return schema.logger
-}
-
 func (table *Table) getFieldList() string {
 	// reduce memory usage
 	// capacity
@@ -691,7 +685,7 @@ func (table *Table) copyIndexes(indexes []Index) {
 		} else {
 			validIndex = true
 			for _, field := range indexes[i].fields {
-				if table.GetFieldIndexByName(field) == fieldNotFound {
+				if table.GetFieldByName(field) == nil && table.GetRelationByName(field) == nil {
 					//TODO add logger here for i := 0; i < len(indexes); i++ {
 					validIndex = false
 				}
@@ -897,7 +891,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 func (table *Table) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	//	var firstUniqueIndex = true
-	var logger = table.getLogger()
+	var logger = schema.getLogger()
 	var creationTime = time.Now()
 	var err error
 
@@ -931,7 +925,7 @@ func (table *Table) create(schema *Schema) error {
 }
 
 func (table *Table) createIndexes(schema *Schema) {
-	var logger = table.getLogger()
+	var logger = schema.getLogger()
 
 	if table.tableType != tabletype.Meta && table.tableType != tabletype.MetaId {
 		for i := 0; i < len(table.indexes); i++ {
@@ -947,7 +941,7 @@ func (table *Table) createIndexes(schema *Schema) {
 func (table *Table) createConstraints(schema *Schema) {
 	// add primary key
 	var primaryKey = new(constraint)
-	var logger = table.getLogger()
+	var logger = schema.getLogger()
 
 	primaryKey.Init(constrainttype.PrimaryKey, table)
 	err := primaryKey.create(schema)
@@ -1163,11 +1157,11 @@ func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physica
 	var indexCount = 0
 
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		var metaType = meta.GetEntityType()
+		var metaData = metaList[i]
+		var metaType = metaData.GetEntityType()
 		switch metaType {
 		case entitytype.Table:
-			metaTable = meta
+			metaTable = metaData
 			break
 		case entitytype.Index:
 			indexCount++
@@ -1186,18 +1180,18 @@ func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physica
 	indexes = make([]Index, 0, indexCount)
 
 	for i := 0; i < len(metaList); i++ {
-		var meta = metaList[i]
-		var metaType = meta.GetEntityType()
+		var metaData = metaList[i]
+		var metaType = metaData.GetEntityType()
 		switch metaType {
 		case entitytype.Index:
-			indexes = append(indexes, *meta.toIndex())
+			indexes = append(indexes, *metaData.toIndex())
 			break
 		case entitytype.Field:
-			fields = append(fields, *meta.toField())
+			fields = append(fields, *metaData.toField())
 			break
 		case entitytype.Relation:
 			// load table information later
-			relations = append(relations, *meta.toRelation(nil))
+			relations = append(relations, *metaData.toRelation(nil))
 			break
 		}
 	}

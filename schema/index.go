@@ -223,7 +223,7 @@ func (index *Index) create(schema *Schema) error {
 	var metaQuery = metaQuery{}
 	var table = schema.GetTableById(index.tableId)
 
-	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(table, nil, nil))
+	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
 	metaQuery.setSchema(schema.GetName())
 	metaQuery.setTable(table.GetName())
 

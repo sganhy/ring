@@ -8,6 +8,7 @@ import (
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/tabletype"
+	"strconv"
 	"strings"
 )
 
@@ -155,9 +156,21 @@ func (metaData *meta) toIndex() *Index {
 func (metaData *meta) toTablespace() *tablespace {
 	if metaData.GetEntityType() == entitytype.Tablespace {
 		var tableSpace = new(tablespace)
-		// Init(id int32, name string, description string, fileName string, table bool, index bool) {
+		// id int32, name string, description string, fileName string, table bool, index bool
 		tableSpace.Init(metaData.id, metaData.name, metaData.description, metaData.value, metaData.IsTablespaceTable(), metaData.IsTablespaceIndex())
 		return tableSpace
+	}
+	return nil
+}
+
+func (metaData *meta) toSequence(schemaId int32) *Sequence {
+	if metaData.GetEntityType() == entitytype.Sequence {
+		var sequence = new(Sequence)
+		// id int32, name string, description string, schemaId int32, maxValue int64, baseline bool, active bool
+		value, _ := strconv.ParseInt(metaData.value, 10, 64)
+		sequence.Init(metaData.id, metaData.name, metaData.description, schemaId, value,
+			metaData.IsEntityBaseline(), metaData.enabled)
+		return sequence
 	}
 	return nil
 }
