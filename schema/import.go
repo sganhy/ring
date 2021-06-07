@@ -260,6 +260,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		metaData = importFile.getXmlMeta(&ty.Attr, entitytype.Table, 0, 0, reflect.ValueOf(d).Elem().FieldByName("line").Int())
 		metaData.flags = importFile.getTableFlags(&ty.Attr)
 		metaData.description = importFile.getDescription(&ty.Attr)
+		metaData.loadPhysicalName(importFile.provider, importFile.schemaName)
 		*referenceId = metaData.id
 	}
 	// FIELDS
@@ -269,6 +270,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		metaData = importFile.getXmlMeta(&ty.Attr, entitytype.Field, *referenceId, *fieldId, line)
 		metaData.flags = importFile.getFieldFlags(&ty.Attr, line)
 		metaData.description = importFile.getDescription(&ty.Attr)
+		metaData.loadPhysicalName(importFile.provider, importFile.schemaName)
 	}
 	// RELATIONS
 	if strings.ToLower(ty.Name.Local) == importRelationTag {
@@ -296,7 +298,6 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 
 func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *meta {
 	var result = new(meta)
-	var schema = new(Schema)
 
 	result.flags = uint64(importFile.provider)
 	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
@@ -305,7 +306,7 @@ func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *
 	result.id = 0
 	result.lineNumber = line
 	result.enabled = true
-	result.value = schema.getPhysicalName(importFile.provider, result.name)
+	result.loadPhysicalName(importFile.provider, importFile.schemaName)
 
 	return result
 }
@@ -723,18 +724,20 @@ func (importFile *Import) getSchemaLanguage(value string) *meta {
 func (importFile *Import) saveMetaList() error {
 	existingMetaList := getMetaList(importFile.schemaId)
 	var metaList = importFile.metaList
+	var err error
 
+	err = nil
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
 
 	// create new schema
 	if len(existingMetaList) == 0 {
-		for i := 0; i < len(metaList); i++ {
-			_ = query.insertMeta(metaList[i], importFile.schemaId)
+		for i := 0; i < len(metaList) && err == nil; i++ {
+			err = query.insertMeta(metaList[i], importFile.schemaId)
 		}
 	}
-	return nil
+	return err
 }
 
 func (importFile *Import) saveMetaIdList() error {

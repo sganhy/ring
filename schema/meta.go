@@ -13,37 +13,52 @@ import (
 )
 
 type meta struct {
-	id          int32
-	dataType    int32
-	name        string
-	description string
-	flags       uint64
-	lineNumber  int64
-	objectType  int8
-	refId       int32 // ref id to Id
-	value       string
-	enabled     bool
+	id           int32
+	dataType     int32
+	name         string
+	physicalName string
+	description  string
+	flags        uint64
+	lineNumber   int64
+	objectType   int8
+	refId        int32 // ref id to Id
+	value        string
+	enabled      bool
 }
 
 const (
-	bitPositionFieldCaseSensitive    uint8  = 2
-	bitPositionFieldNotNull          uint8  = 3
-	bitPositionFieldMultilingual     uint8  = 4
-	bitPositionIndexBitmap           uint8  = 9
-	bitPositionIndexUnique           uint8  = 10
-	bitPositionEntityBaseline        uint8  = 14
-	bitPositionFirstPositionSize     uint8  = 17 // max value bit pos for field=16 !!!
-	bitPositionFirstPositionRelType  uint8  = 18 // max value bit pos for field=17 !!!
-	bitPositionRelationNotNull       uint8  = 4  // max value bit pos for relation =17 !!!
-	bitPositionFirstPositionDataType uint8  = 14 // max value bit pos for field=16 !!!
-	bitPositionTableCached           uint8  = 9
-	bitPositionTableReadonly         uint8  = 10
-	bitPositionTablespaceIndex       uint8  = 11
-	bitPositionTablespaceTable       uint8  = 12
-	metaMaxInt32                     int64  = 2147483647
-	metaMaxInt8                      int64  = 127
-	metaIndexSeparator               string = ";"
+	bitPositionFieldCaseSensitive     uint8  = 2
+	bitPositionFieldNotNull           uint8  = 3
+	bitPositionFieldMultilingual      uint8  = 4
+	bitPositionIndexBitmap            uint8  = 9
+	bitPositionIndexUnique            uint8  = 10
+	bitPositionEntityBaseline         uint8  = 14
+	bitPositionFirstPositionSize      uint8  = 17 // max value bit pos for field=16 !!!
+	bitPositionFirstPositionRelType   uint8  = 18 // max value bit pos for field=17 !!!
+	bitPositionRelationNotNull        uint8  = 4  // max value bit pos for relation =17 !!!
+	bitPositionFirstPositionParamType uint8  = 14 // max value bit pos for field=16 !!!
+	bitPositionTableCached            uint8  = 9
+	bitPositionTableReadonly          uint8  = 10
+	bitPositionTablespaceIndex        uint8  = 11
+	bitPositionTablespaceTable        uint8  = 12
+	metaMaxInt32                      int64  = 2147483647
+	metaMaxInt8                       int64  = 127
+	metaIndexSeparator                string = ";"
 )
+
+var (
+	dummySchema   *Schema
+	dummyTable    *Table
+	dummyField    *Field
+	dummyRelation *Relation
+)
+
+func init() {
+	dummySchema = new(Schema)
+	dummyTable = new(Table)
+	dummyField = new(Field)
+	dummyRelation = new(Relation)
+}
 
 //******************************
 // getters and setters
@@ -110,8 +125,8 @@ func (metaData *meta) String() string {
 		metaData.value, metaData.lineNumber, metaData.description)
 }
 
-func (metaData *meta) GetParameterType() fieldtype.FieldType {
-	return fieldtype.GetFieldTypeById(int((metaData.flags >> bitPositionFirstPositionDataType) & 127))
+func (metaData *meta) GetParameterType() entitytype.EntityType {
+	return entitytype.GetEntityTypeById(int((metaData.flags >> bitPositionFirstPositionParamType) & 127))
 }
 
 //******************************
@@ -195,8 +210,8 @@ func (metaData *meta) toTable(fields []Field, relations []Relation, indexes []In
 func (metaData *meta) toParameter() *parameter {
 	if metaData.GetEntityType() == entitytype.Parameter {
 		var param = new(parameter)
-		var entityType = entitytype.GetEntityTypeById(int(metaData.dataType))
-		var fieldType = metaData.GetParameterType()
+		var entityType = metaData.GetParameterType()
+		var fieldType = fieldtype.FieldType(int(metaData.dataType))
 		param.Init(metaData.id, metaData.name, metaData.description, entityType, fieldType, metaData.value)
 		return param
 	}
@@ -232,9 +247,9 @@ func (metaData *meta) setFieldSize(size uint32) {
 	metaData.flags += temp
 }
 
-func (metaData *meta) setParameterDataType(fieldType fieldtype.FieldType) {
-	var temp = uint64(fieldType)
-	temp <<= bitPositionFirstPositionDataType
+func (metaData *meta) setParameterType(parameterType entitytype.EntityType) {
+	var temp = uint64(parameterType)
+	temp <<= bitPositionFirstPositionParamType
 	metaData.flags &= 65535
 	metaData.flags += temp
 }
@@ -291,4 +306,25 @@ func (metaData *meta) writeFlag(bitPosition uint8, value bool) {
 
 func (metaData *meta) readFlag(bitPosition uint8) bool {
 	return ((metaData.flags >> (bitPosition - 1)) & 1) > 0
+}
+
+func (metaData *meta) loadPhysicalName(provider databaseprovider.DatabaseProvider, schemaName string) {
+	var entType = metaData.GetEntityType()
+	var result string
+	switch entType {
+	case entitytype.Schema:
+		result = dummySchema.getPhysicalName(provider, metaData.name)
+		break
+	case entitytype.Table:
+		var physicalSchemaName = dummySchema.getPhysicalName(provider, schemaName)
+		result = dummyTable.getPhysicalName(provider, tabletype.Business, metaData.name, physicalSchemaName)
+		break
+	case entitytype.Field:
+		result = dummyField.getPhysicalName(provider, metaData.name)
+	case entitytype.Relation:
+		result = dummyRelation.getPhysicalName(provider, metaData.name)
+	}
+	if result != "" && result != metaData.name {
+		metaData.physicalName = result
+	}
 }

@@ -118,10 +118,10 @@ func (param *parameter) toMeta(objectId int32) *meta {
 	metaParam.description = param.description
 	metaParam.refId = objectId
 	metaParam.objectType = int8(entitytype.Parameter)
-	metaParam.dataType = int32(param.parameterType)
+	metaParam.dataType = int32(param.dataType)
 	metaParam.setEntityBaseline(true)
 	metaParam.setEntityBaseline(true)
-	metaParam.setParameterDataType(param.dataType)
+	metaParam.setParameterType(param.parameterType)
 	metaParam.value = param.value
 	metaParam.enabled = true
 

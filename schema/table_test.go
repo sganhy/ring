@@ -457,7 +457,7 @@ func Test__Table__GetDml(t *testing.T) {
 	}
 	// table @meta
 	table = tbl.getMetaTable(databaseprovider.PostgreSql, "information_schema")
-	expectedSQl = "INSERT INTO information_schema.\"@meta\" (id,schema_id,object_type,reference_id,data_type,flags,\"name\",description,\"value\",active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
+	expectedSQl = "INSERT INTO information_schema.\"@meta\" (id,schema_id,object_type,reference_id,data_type,flags,\"name\",physical_name,description,\"value\",active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)"
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
@@ -518,22 +518,24 @@ func Test__Table__GetQueryResult(t *testing.T) {
 	var flags int32 = 554545
 	var value int64 = 2222222
 	var name string = "testName"
+	var physicalName string = "phys Name"
 	var nameDesc string = "testName DESC"
 	var active bool = true
 
 	//======================
 	//==== TEST 1
 	//======================
-	result = append(result, id)          //0
-	result = append(result, nil)         //1
-	result = append(result, objectType)  //2
-	result = append(result, referenceId) //3
-	result = append(result, dataType)    //4
-	result = append(result, flags)       //5
-	result = append(result, name)        //6
-	result = append(result, nameDesc)    //7
-	result = append(result, value)       //8
-	result = append(result, active)      //9
+	result = append(result, id)           //0
+	result = append(result, nil)          //1
+	result = append(result, objectType)   //2
+	result = append(result, referenceId)  //3
+	result = append(result, dataType)     //4
+	result = append(result, flags)        //5
+	result = append(result, name)         //6
+	result = append(result, physicalName) //7
+	result = append(result, nameDesc)     //8
+	result = append(result, value)        //9
+	result = append(result, active)       //10
 
 	for i := 0; i < len(result); i++ {
 		resultPtr = append(resultPtr, &result[i])

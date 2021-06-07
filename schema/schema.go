@@ -334,7 +334,7 @@ func (schema *Schema) create(jobId int64) error {
 	}
 
 	duration := time.Now().Sub(creationTime)
-	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf("name=%s (done) | time=%dms",
+	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf("name: %s (done) | time=%dms",
 		schema.physicalName, int(duration.Seconds()*1000)))
 	return nil
 }
@@ -375,6 +375,12 @@ func (schema *Schema) findTablespace(table *Table, index *Index, constr *constra
 		if constr != nil && tablespace.constraint {
 			return tablespace
 		}
+	}
+	// not found tablespace for constraints  use index one
+	// recursive call
+	if constr != nil && len(schema.tablespaces) > 0 {
+		index := new(Index)
+		return schema.findTablespace(nil, index, nil)
 	}
 	return nil
 }
@@ -714,7 +720,8 @@ func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, da
 	for i := 0; i < len(metaList); i++ {
 		var metaData = metaList[i]
 		if metaData.GetEntityType() == entitytype.Schema {
-			return metaData.name, metaData.description, metaData.value, databaseprovider.GetDatabaseProviderById(int(metaData.flags))
+			return metaData.name, metaData.description, metaData.physicalName,
+				databaseprovider.GetDatabaseProviderById(int(metaData.flags))
 		}
 	}
 	return "", "", "", databaseprovider.NotDefined

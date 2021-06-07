@@ -343,7 +343,7 @@ func (field *Field) GetParameterValue(value string) interface{} {
 }
 
 func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
-	return sqlfmt.FormatEntityName(provider, field.name)
+	return field.getPhysicalName(provider, field.name)
 }
 
 //******************************
@@ -534,4 +534,8 @@ func (field *Field) getDateTimeIso8601(value string) (*time.Time, error) {
 	} else {
 		return nil, errors.New(errorInvalidDateTimeFormat)
 	}
+}
+
+func (field *Field) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
+	return sqlfmt.FormatEntityName(provider, name)
 }

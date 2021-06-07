@@ -185,7 +185,7 @@ func (index *Index) getDdlDrop(table *Table) string {
 	query.WriteString(ddlSpace)
 	query.WriteString(entitytype.Index.String())
 	query.WriteString(ddlSpace)
-	query.WriteString(table.getSchemaName())
+	//query.WriteString(table.getSchemaName())
 	query.WriteString(".")
 	query.WriteString(index.GetPhysicalName(table))
 	return query.String()

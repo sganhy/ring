@@ -655,15 +655,7 @@ func PadLeft(input string, padString string, repeat int) string {
 
 func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName string) string {
 	var fieldSeparator = ""
-	switch provider {
-	case databaseprovider.PostgreSql:
-		fieldSeparator = doubleQuotes
-		entityName = strings.ToLower(entityName)
-		break
-	case databaseprovider.MySql:
-		fieldSeparator = mysqlQuotes
-		break
-	}
+
 	var modifyFieldName = false
 	if strings.Contains(entityName, "@") == true {
 		modifyFieldName = true
@@ -672,6 +664,16 @@ func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName str
 			modifyFieldName = true
 		}
 	}
+
+	switch provider {
+	case databaseprovider.PostgreSql:
+		fieldSeparator = doubleQuotes
+		break
+	case databaseprovider.MySql:
+		fieldSeparator = mysqlQuotes
+		break
+	}
+
 	if modifyFieldName == true {
 		var sb strings.Builder
 		sb.Grow(len(entityName) + 2)

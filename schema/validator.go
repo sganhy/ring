@@ -179,6 +179,7 @@ func (valid *validator) checkEntityName(importFile *Import, metaData *meta, meta
 			unPrefixedEntityMaxLength, metaData.lineNumber)
 		importFile.logErrorStr(505, message, description)
 	}
+	// schema name cannot be equal to "@meta"
 	if metaType == entitytype.Schema && strings.ToLower(strings.Trim(metaData.name, " ")) == strings.ToLower(metaSchemaName) {
 		var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
 		var description = fmt.Sprintf("invalid schema name '%s'. A schema name cannot be equal to '@meta'."+validatorAtLine,

@@ -40,7 +40,7 @@ func (relation *Relation) Init(id int32, name string, description string, invers
 	relation.active = active
 	// at the end ==>
 	if toTable != nil {
-		relation.physicalName = relation.getPhysicalName(toTable.GetDatabaseProvider())
+		relation.physicalName = relation.getPhysicalName(toTable.GetDatabaseProvider(), name)
 	} else {
 		relation.physicalName = name
 	}
@@ -153,8 +153,8 @@ func (relation *Relation) getToTableName() string {
 	return relation.toTable.name
 }
 
-func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider) string {
-	return sqlfmt.FormatEntityName(provider, relation.name)
+func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
+	return sqlfmt.FormatEntityName(provider, name)
 }
 
 func (relation *Relation) toMeta(tableId int32) *meta {

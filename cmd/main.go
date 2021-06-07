@@ -44,6 +44,10 @@ func main() {
 	importFile.Load()
 	importFile.Upgrade()
 
+	var metaSchema = schema.GetSchemaByName("@meta")
+	var metaTable = metaSchema.GetTableByName("@meta")
+	metaTable.Truncate(77)
+
 	schema2 := importFile.GetSchema()
 	table2 := schema2.GetTableByName("weapon")
 	fmt.Println(table2.GetName())

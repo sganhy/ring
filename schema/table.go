@@ -71,6 +71,7 @@ const (
 	metaLogTableName     string = "@log"
 	metaLogThreadId      string = "thread_id"
 	metaName             string = "name"
+	metaPhysicalName     string = "physical_name"
 	metaObjectType       string = "object_type"
 	metaReferenceId      string = "reference_id"
 	metaSchemaId         string = "schema_id"
@@ -80,6 +81,7 @@ const (
 	metaValue            string = "value"
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
+	postGreVacuum        string = "VACUUM %s"
 	mysqlParameterName   string = "?"
 	relationNotFound     int    = -1
 )
@@ -109,7 +111,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.baseline = baseline
 	table.active = active
 	if provider != databaseprovider.NotDefined {
-		table.physicalName = table.getPhysicalName(provider, schemaPhysicalName)
+		table.physicalName = table.getPhysicalName(provider, tableType, table.name, schemaPhysicalName)
 		table.fieldList = table.getFieldList()
 		table.loadSqlCapacity(provider) // !!!load after loadFields
 	}
@@ -336,6 +338,13 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
 		break
+	case ddlstatement.Truncate:
+		query = ddlstatement.Truncate.String()
+		query += ddlSpace
+		query += entitytype.Table.String()
+		query += ddlSpace
+		query += table.physicalName
+		break
 	}
 	return query
 }
@@ -544,7 +553,6 @@ func (table *Table) toMeta() *meta {
 
 	// flags
 	metaTable.flags = 0
-
 	metaTable.setEntityBaseline(table.baseline)
 	metaTable.setTableCached(table.cached)
 	metaTable.setTableReadonly(table.readonly)
@@ -577,29 +585,20 @@ func (table *Table) getVariableInfo() (string, int) {
 	}
 	return "", 0
 }
-func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, physicalSchemaName string) string {
+func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType, tableName string,
+	physicalSchemaName string) string {
 	var physicalName = physicalSchemaName
-	var tableName = table.name
 
 	if physicalName != "" {
 		physicalName += "."
 	}
-	if table.tableType == tabletype.Business {
+	if tableType == tabletype.Business {
 		// add prefix
 		tableName = "t_" + tableName
 	}
-	physicalName += sqlfmt.FormatEntityName(table.provider, tableName)
+	physicalName += sqlfmt.FormatEntityName(provider, tableName)
 	//.getPhysicalName(provider)
 	return physicalName
-}
-
-// Get physical schema name
-func (table *Table) getSchemaName() string {
-	index := strings.Index(table.physicalName, ".")
-	if index >= 0 {
-		return table.physicalName[:index]
-	}
-	return ""
 }
 
 func (table *Table) getFieldList() string {
@@ -913,12 +912,12 @@ func (table *Table) create(schema *Schema) error {
 
 	duration := time.Now().Sub(creationTime)
 	if table.tableType == tabletype.Business {
-		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
-			fmt.Sprintf("id=%d | name=%s | time=%dms",
+		logger.info(17, 0, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+			fmt.Sprintf("id: %d | name: %s  (done) | time=%dms",
 				table.id, table.physicalName, int(duration.Seconds()*1000)))
 	} else {
-		logger.info(17, 0, "Create "+sqlfmt.ToPascalCase(entitytype.Table.String()),
-			fmt.Sprintf("name=%s | time=%dms",
+		logger.info(17, 0, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+			fmt.Sprintf("name: %s  (done) | time=%dms",
 				table.physicalName, int(duration.Seconds()*1000)))
 	}
 	return err
@@ -1028,6 +1027,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	var flags = Field{}
 	var value = Field{}
 	var name = Field{}
+	var physicalName = Field{}
 	var description = Field{}
 	var active = Field{}
 
@@ -1040,24 +1040,27 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 
 	flags.Init(1039, metaFlags, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	name.Init(1061, metaName, "", fieldtype.String, 30, "", true, true, true, false, true)
-	description.Init(1069, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
-	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
-	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
+	// metaName size * 2 ~ schema.name(max 30) + "." + table_name (max 28)
+	physicalName.Init(1069, metaPhysicalName, "", fieldtype.String, 60, "", true, false, true, false, true)
+	description.Init(1087, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
+	value.Init(1093, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
+	active.Init(1103, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.name, objectType.name, referenceId.name}
 	uk.Init(1, metaTableName, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
 
-	fields = append(fields, id)          //1
-	fields = append(fields, schemaId)    //2
-	fields = append(fields, objectType)  //3
-	fields = append(fields, referenceId) //4
-	fields = append(fields, dataType)    //5
-	fields = append(fields, flags)       //6
-	fields = append(fields, name)        //7
-	fields = append(fields, description) //8
-	fields = append(fields, value)       //9
-	fields = append(fields, active)      //10
+	fields = append(fields, id)           //1
+	fields = append(fields, schemaId)     //2
+	fields = append(fields, objectType)   //3
+	fields = append(fields, referenceId)  //4
+	fields = append(fields, dataType)     //5
+	fields = append(fields, flags)        //6
+	fields = append(fields, name)         //7
+	fields = append(fields, physicalName) //8
+	fields = append(fields, description)  //9
+	fields = append(fields, value)        //10
+	fields = append(fields, active)       //11
 
 	indexes = append(indexes, uk)
 
@@ -1201,4 +1204,54 @@ func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physica
 		metaTable.IsTableReadonly(), metaTable.IsEntityBaseline(), metaTable.enabled)
 
 	return result
+}
+
+func (table *Table) Vacuum() error {
+	var sql string
+
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		sql = postGreVacuum
+		break
+	}
+
+	if sql != "" {
+
+	}
+	return nil
+}
+
+func (table *Table) Analyze() error {
+	return nil
+}
+
+func (table *Table) Truncate(jobId int64) error {
+	// truncate not allowed on meta tables
+	if table.schemaId == 0 {
+		return nil
+	}
+	var metaQuery = metaQuery{}
+
+	//	var firstUniqueIndex = true
+	var schema = GetSchemaById(table.schemaId)
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	metaQuery.Init(schema, table)
+	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil)
+
+	// create table
+	err = metaQuery.truncate()
+	if err != nil {
+		logger.error(-1, 0, err)
+		return err
+	}
+	duration := time.Now().Sub(creationTime)
+
+	logger.info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+		fmt.Sprintf("name: %s (done) | time=%dms",
+			table.physicalName, int(duration.Seconds()*1000)))
+
+	return err
 }

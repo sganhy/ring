@@ -1,6 +1,7 @@
 package sqlfmt
 
 import (
+	"ring/schema/databaseprovider"
 	"testing"
 )
 
@@ -100,6 +101,24 @@ func Test__Sqlfmt__ToCamelCase(t *testing.T) {
 	}
 	if ToSnakeCase("") != "" {
 		t.Errorf("Sqlfmt.ToSnakeCase() ==> result must be empty")
+	}
+
+}
+
+func Test__Sqlfmt__FormatEntityName(t *testing.T) {
+	//======================
+	//==== testing postgreSQL
+	//======================
+	provider := databaseprovider.PostgreSql
+	expectedResult := "table_testa"
+	if FormatEntityName(provider, "TableTesta") != expectedResult {
+		t.Errorf("Sqlfmt.FormatEntityName() ==> result must be equal to %s", expectedResult)
+	}
+
+	expectedResult = "\"@meta\""
+	t.Errorf(FormatEntityName(provider, "@meta"))
+	if FormatEntityName(provider, "@meta") != expectedResult {
+		t.Errorf("Sqlfmt.FormatEntityName() ==> result must be equal to %s", expectedResult)
 	}
 
 }
