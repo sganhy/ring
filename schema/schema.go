@@ -5,6 +5,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
+	"ring/schema/relationtype"
 	"ring/schema/sourcetype"
 	"ring/schema/sqlfmt"
 	"sort"
@@ -318,6 +319,7 @@ func (schema *Schema) execute(query Query) error {
 	return nil
 }
 
+// create physical schema
 func (schema *Schema) create(jobId int64) error {
 	var metaQuery = metaQuery{}
 	var creationTime = time.Now()
@@ -334,7 +336,7 @@ func (schema *Schema) create(jobId int64) error {
 	}
 
 	duration := time.Now().Sub(creationTime)
-	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf("name: %s (done) | time=%dms",
+	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf(tableChangeMessage,
 		schema.physicalName, int(duration.Seconds()*1000)))
 	return nil
 }
@@ -360,7 +362,8 @@ func (prevSchema *Schema) alter(jobId int64, newSchema *Schema) {
 	prevDico := prevSchema.getTableDictionary()
 
 	newSchema.dropTables(prevDico, newDico)
-	newSchema.createTables(prevDico, newDico)
+	newSchema.createTables(jobId, prevDico, newDico)
+	newSchema.connections = nil
 }
 
 func (schema *Schema) findTablespace(table *Table, index *Index, constr *constraint) *tablespace {
@@ -389,12 +392,12 @@ func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]
 
 }
 
-func (schema *Schema) createTables(prevDico map[string]string, newDico map[string]string) {
+func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
 	for tablePhysName, tableName := range newDico {
 		if _, ok := prevDico[tablePhysName]; !ok {
 			table := schema.GetTableByName(tableName)
-			if table.exists(schema) == false {
-				table.create(schema)
+			if table.exists() == false {
+				table.create(jobId)
 			}
 			//TODO logs
 		}
@@ -638,7 +641,7 @@ func (schema *Schema) getParameters(metaList []meta) []parameter {
 	for i := 0; i < len(metaList); i++ {
 		var metaData = metaList[i]
 		if metaData.GetEntityType() == entitytype.Parameter {
-			result = append(result, *metaData.toParameter())
+			result = append(result, *metaData.toParameter(schema.id))
 		}
 	}
 	return result
@@ -661,6 +664,17 @@ func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 			relation.setToTable(toTable)
 		}
 	}
+	// load mtm
+	for i := 0; i < len(metaList); i++ {
+		metaData := metaList[i]
+		if metaData.GetEntityType() == entitytype.Relation && metaData.GetRelationType() == relationtype.Mtm {
+			var fromTable = tableDico[metaData.refId]
+			var relation = fromTable.GetRelationByName(metaData.name)
+			relation.loadMtmName(fromTable.id)
+			fmt.Println(relation.GetMtmTableName())
+		}
+	}
+
 }
 
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
@@ -678,6 +692,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaLogTable = table.getLogTable(provider, physicalName)
 	var metaLongTable = table.getLongTable()
 	var param = new(parameter)
+	var ver = new(version)
 
 	language.Init(1, "en-US")
 
@@ -686,9 +701,9 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, metaLogTable)
 	tables = append(tables, metaLongTable)
 
-	parameters = append(parameters, *param.getCreationTimeParameter(0, entitytype.Schema))
-	parameters = append(parameters, *param.getVersionParameter(0, entitytype.Schema, ""))
-	parameters = append(parameters, *param.getLastUpgradeParameter(0, entitytype.Schema))
+	parameters = append(parameters, *param.getCreationTimeParameter(schemaId, schemaId, entitytype.Schema))
+	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.GetCurrentVersion()))
+	parameters = append(parameters, *param.getLastUpgradeParameter(schemaId, schemaId, entitytype.Schema))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
 	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables,

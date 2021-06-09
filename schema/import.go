@@ -171,6 +171,7 @@ func (importFile *Import) Upgrade() {
 			importFile.logError(err)
 			return
 		}
+		go importFile.analyzeMetaTables()
 		//TODO rollback !!
 		// no error
 		importFile.loaded = false
@@ -257,7 +258,8 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		*fieldId = 0
 		*relationId = 0
 		*indexId = 0
-		metaData = importFile.getXmlMeta(&ty.Attr, entitytype.Table, 0, 0, reflect.ValueOf(d).Elem().FieldByName("line").Int())
+		metaData = importFile.getXmlMeta(&ty.Attr, entitytype.Table, importFile.schemaId, 0,
+			reflect.ValueOf(d).Elem().FieldByName("line").Int())
 		metaData.flags = importFile.getTableFlags(&ty.Attr)
 		metaData.description = importFile.getDescription(&ty.Attr)
 		metaData.loadPhysicalName(importFile.provider, importFile.schemaName)
@@ -709,7 +711,7 @@ func (importFile *Import) loadSchemaInfo() {
 func (importFile *Import) getSchemaVersion(value string) *meta {
 	parameter := new(parameter)
 
-	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, entitytype.Schema, value)
+	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, importFile.schemaId, entitytype.Schema, value)
 	var metaData = schemaVersion.toMeta(importFile.schemaId)
 	metaData.refId = importFile.schemaId
 	return metaData
@@ -737,6 +739,7 @@ func (importFile *Import) saveMetaList() error {
 			err = query.insertMeta(metaList[i], importFile.schemaId)
 		}
 	}
+
 	return err
 }
 
@@ -773,5 +776,19 @@ func (importFile *Import) saveMetaIdList() error {
 			}
 		}
 	}
+
 	return nil
+}
+
+func (importFile *Import) analyzeMetaTables() {
+	var table *Table
+	var metaSchema = GetSchemaByName(metaSchemaName)
+
+	table = metaSchema.GetTableByName(metaIdTableName)
+	table.Vacuum(importFile.jobId)
+	table.Analyze(importFile.jobId)
+
+	table = metaSchema.GetTableByName(metaTableName)
+	table.Vacuum(importFile.jobId)
+	table.Analyze(importFile.jobId)
 }

@@ -70,6 +70,10 @@ func (query *metaQuery) setParamValue(param interface{}, index int) {
 	(*query.params)[index] = param
 }
 
+func (query *metaQuery) getTable() *Table {
+	return query.table
+}
+
 //******************************
 // public methods
 //******************************
@@ -368,6 +372,14 @@ func (query *metaQuery) create() error {
 }
 
 func (query *metaQuery) truncate() error {
+	return query.create()
+}
+
+func (query *metaQuery) vacuum() error {
+	return query.create()
+}
+
+func (query *metaQuery) analyze() error {
 	return query.create()
 }
 

@@ -91,7 +91,7 @@ func Test__Meta__toField(t *testing.T) {
 	if metaData.toTable(nil, nil, nil) != nil {
 		t.Errorf("meta.toTable() ==> objectType==4 must return nil")
 	}
-	if metaData.toParameter() != nil {
+	if metaData.toParameter(54) != nil {
 		t.Errorf("meta.toParameter() ==> objectType==4 must return nil")
 	}
 }

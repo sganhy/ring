@@ -30,7 +30,6 @@ const minint32 string = "-2147483648"
 func main() {
 
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-
 	var lang = new(schema.Language)
 
 	lang.Init(1, "eu-ES")
@@ -44,9 +43,11 @@ func main() {
 	importFile.Load()
 	importFile.Upgrade()
 
-	var metaSchema = schema.GetSchemaByName("@meta")
-	var metaTable = metaSchema.GetTableByName("@meta")
-	metaTable.Truncate(77)
+	/*
+		var metaSchema = schema.GetSchemaByName("@meta")
+		var metaTable = metaSchema.GetTableByName("@meta")
+		metaTable.Analyze(7548)
+	*/
 
 	schema2 := importFile.GetSchema()
 	table2 := schema2.GetTableByName("weapon")
@@ -141,9 +142,9 @@ func main() {
 	elemt := new(schema.Table)
 	elemr := schema.Relation{}
 
-	elemr.Init(21, "rel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
+	elemr.Init(21, "rel test", "hellkzae", "hell1", elemt, relationtype.Mto, false, true, false)
 	elemr0 := schema.Relation{}
-	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
+	elemr0.Init(-23, "arel test", "hellkzae", "hell1", elemt, relationtype.Mto, false, true, false)
 
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := schema.Index{}

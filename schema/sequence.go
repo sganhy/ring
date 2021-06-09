@@ -96,8 +96,9 @@ func (sequence *Sequence) Clone() *Sequence {
 //******************************
 // private methods
 //******************************
-func (sequence *Sequence) exists(schema *Schema) bool {
+func (sequence *Sequence) exists() bool {
 	query := new(metaQuery)
+
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
 	query.addFilter(metaFieldId, operatorEqual, sequence.id)
@@ -105,13 +106,16 @@ func (sequence *Sequence) exists(schema *Schema) bool {
 	query.addFilter(metaObjectType, operatorEqual, int8(entitytype.Sequence))
 	query.addFilter(metaReferenceId, operatorEqual, sequence.schemaId)
 	result, _ := query.exists()
+
 	return result
 }
 
-func (sequence *Sequence) create(schema *Schema) error {
+func (sequence *Sequence) create() error {
+
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
+
 	return query.insertMeta(sequence.toMeta(), sequence.schemaId)
 }
 

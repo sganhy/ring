@@ -150,7 +150,7 @@ func (metaData *meta) toRelation(table *Table) *Relation {
 	if metaData.GetEntityType() == entitytype.Relation {
 		var relation = new(Relation)
 		relation.Init(metaData.id, metaData.name, metaData.description,
-			metaData.value, metaData.value, table, metaData.GetRelationType(),
+			metaData.value, table, metaData.GetRelationType(),
 			metaData.IsRelationNotNull(), metaData.IsEntityBaseline(), metaData.enabled)
 		return relation
 	}
@@ -207,12 +207,12 @@ func (metaData *meta) toTable(fields []Field, relations []Relation, indexes []In
 	return nil
 }
 
-func (metaData *meta) toParameter() *parameter {
+func (metaData *meta) toParameter(schemaId int32) *parameter {
 	if metaData.GetEntityType() == entitytype.Parameter {
 		var param = new(parameter)
 		var entityType = metaData.GetParameterType()
 		var fieldType = fieldtype.FieldType(int(metaData.dataType))
-		param.Init(metaData.id, metaData.name, metaData.description, entityType, fieldType, metaData.value)
+		param.Init(metaData.id, metaData.name, metaData.description, schemaId, entityType, fieldType, metaData.value)
 		return param
 	}
 	return nil

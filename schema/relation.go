@@ -6,6 +6,8 @@ import (
 	"ring/schema/entitytype"
 	"ring/schema/relationtype"
 	"ring/schema/sqlfmt"
+	"strconv"
+	"strings"
 )
 
 type Relation struct {
@@ -24,15 +26,17 @@ type Relation struct {
 
 const (
 	relationToStringFormat string = "name=%s; description=%s; type=%s; to=%s; baseline=%t; not_null=%t; inverse_relation=%s"
+	mtmTableNamePrefix     string = "@mtm"
+	mtmSeperator           string = "_"
+	mtmLeftPadding         string = "0"
 )
 
 func (relation *Relation) Init(id int32, name string, description string, inverseRelationName string,
-	mtmTable string, toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool) {
+	toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool) {
 	relation.id = id
 	relation.name = name
 	relation.description = description
 	relation.inverseRelationName = inverseRelationName
-	relation.mtmTable = mtmTable
 	relation.toTable = toTable
 	relation.relationType = relationType
 	relation.notNull = notNull
@@ -101,6 +105,13 @@ func (relation *Relation) setToTable(table *Table) {
 	relation.toTable = table
 }
 
+func (relation *Relation) GetInverseRelation() *Relation {
+	if relation.toTable != nil {
+		return relation.toTable.GetRelationByName(relation.inverseRelationName)
+	}
+	return nil
+}
+
 //******************************
 // public methods
 //******************************
@@ -117,13 +128,6 @@ func (relation *Relation) GetDdl(provider databaseprovider.DatabaseProvider) str
 	return ""
 }
 
-func (relation *Relation) GetInverseRelation() *Relation {
-	if relation.toTable != nil {
-		return relation.toTable.GetRelationByName(relation.inverseRelationName)
-	}
-	return nil
-}
-
 func (relation *Relation) Clone() *Relation {
 	newRelation := new(Relation)
 	/*
@@ -132,7 +136,7 @@ func (relation *Relation) Clone() *Relation {
 	*/
 	// don't clone ToTable for reflexive relationship (recursive call)
 	newRelation.Init(relation.id, relation.name, relation.description,
-		relation.inverseRelationName, relation.mtmTable, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
+		relation.inverseRelationName, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
 		relation.active)
 	return newRelation
 }
@@ -183,4 +187,51 @@ func (relation *Relation) toMeta(tableId int32) *meta {
 	result.description = relation.description
 	result.enabled = relation.active
 	return result
+}
+
+func (relation *Relation) loadMtmName(fromTableId int32) {
+	if relation.relationType == relationtype.Mtm && relation.toTable != nil && relation.mtmTable == "" {
+		relation.mtmTable = relation.getMtmName(fromTableId)
+	}
+}
+
+func (relation *Relation) getMtmName(fromTableId int32) string {
+	var b strings.Builder
+	var toTableid = relation.toTable.id
+	var strTo = strconv.FormatInt(int64(toTableid), 10)
+	var strFrom = strconv.FormatInt(int64(fromTableId), 10)
+	var strRelId string
+	var inverseRel = relation.GetInverseRelation()
+
+	b.Grow(30)
+	b.WriteString(mtmTableNamePrefix)
+	b.WriteString(mtmSeperator)
+
+	if fromTableId < toTableid {
+		strRelId = strconv.FormatInt(int64(relation.id), 10)
+		b.WriteString(sqlfmt.PadLeft(strFrom, mtmLeftPadding, 5))
+		b.WriteString(mtmSeperator)
+		b.WriteString(sqlfmt.PadLeft(strTo, mtmLeftPadding, 5))
+	} else {
+		strRelId = strconv.FormatInt(int64(inverseRel.id), 10)
+		b.WriteString(sqlfmt.PadLeft(strTo, mtmLeftPadding, 5))
+		b.WriteString(mtmSeperator)
+		b.WriteString(sqlfmt.PadLeft(strFrom, mtmLeftPadding, 5))
+	}
+	b.WriteString(mtmSeperator)
+
+	if fromTableId != toTableid {
+		b.WriteString(sqlfmt.PadLeft(strRelId, mtmLeftPadding, 3))
+	} else {
+		b.WriteString(sqlfmt.PadLeft(relation.getMinId(inverseRel.id, relation.id), mtmLeftPadding, 3))
+	}
+
+	return b.String()
+}
+
+func (relation *Relation) getMinId(valA int32, valB int32) string {
+	if valA < valB {
+		return strconv.FormatInt(int64(valA), 10)
+	}
+	return strconv.FormatInt(int64(valB), 10)
 }

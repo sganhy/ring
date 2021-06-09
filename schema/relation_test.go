@@ -16,7 +16,7 @@ func Test__Relation__Init(t *testing.T) {
 	table := new(Table)
 	elemr0 := Relation{}
 	elemt := table.getMetaTable(databaseprovider.PostgreSql, metaSchemaName)
-	elemr0.Init(-23, "arel test", "hellkzae", "hell1", "52", elemt, relationtype.Mto, false, true, false)
+	elemr0.Init(-23, "arel test", "hellkzae", "hell1", elemt, relationtype.Mto, false, true, false)
 
 	if elemr0.GetName() != "arel test" {
 		t.Errorf("Relation.Init() ==> name <> GetName()")
@@ -29,9 +29,6 @@ func Test__Relation__Init(t *testing.T) {
 	}
 	if elemr0.GetInverseRelationName() != "hell1" {
 		t.Errorf("Relationeld.Init() ==> inverseRelationNam <> GetInverseRelationName()")
-	}
-	if elemr0.GetMtmTableName() != "52" {
-		t.Errorf("Relationeld.Init() ==> GetMtmTable() <> mtm table")
 	}
 	if elemr0.GetType() != relationtype.Mto {
 		t.Errorf("Relationeld.Init() ==> type <> GetType()")
@@ -73,7 +70,7 @@ func Test__Relation__toMeta(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", &elemt, relationtype.Otop, false, true, false)
 
 	metaData := elemr0.toMeta(777)
 	elemr1 := metaData.toRelation(&elemt)
@@ -126,7 +123,7 @@ func Test__Relation__GetDdl(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", &elemt, relationtype.Otop, false, true, false)
 
 	var sql = elemr0.GetDdl(databaseprovider.PostgreSql)
 	if strings.ToUpper(sql) != "REL TEST INT8" {
@@ -156,7 +153,7 @@ func Test__Relation__Clone(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", "hell1", "52", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", "hell1", &elemt, relationtype.Otop, false, true, false)
 	elemr1 := elemr0.Clone()
 
 	if elemr0.GetId() != elemr1.GetId() {
@@ -176,5 +173,78 @@ func Test__Relation__Clone(t *testing.T) {
 	}
 	if elemr0.IsBaseline() != elemr1.IsBaseline() {
 		t.Errorf("Relation.Clone() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
+	}
+}
+
+func Test__Relation__getMtmName(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+
+	elemr0 := Relation{}
+	elemr0.Init(23, "test", "hellkzae", "test inv", nil, relationtype.Mtm, false, true, false)
+
+	//*****
+	//***** REFLEXIVE MTM RELATIONS (fromTableId == toTableId)
+	//*****
+	elemr1 := Relation{}
+	elemr1.Init(24, "test inv", "hellkzae", "test", nil, relationtype.Mtm, false, true, false)
+
+	relations = append(relations, elemr0)
+	relations = append(relations, elemr1)
+
+	elemt01 := Table{}
+	elemt01.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
+
+	elemr0.setToTable(&elemt01)
+	elemr1.setToTable(&elemt01)
+
+	if elemr0.getMtmName(22) != elemr1.getMtmName(22) {
+		t.Errorf("Relation.getMtmName() ==>	r1 should be equal to r0")
+	}
+
+	if elemr0.getMtmName(22) != "@mtm_00022_00022_023" {
+		t.Errorf("Relation.getMtmName() ==>	r0 should be equal to '@mtm_00022_00022_023'")
+	}
+
+	//*****
+	//***** MTM RELATIONS (fromTableId > toTableId || fromTableId < toTableId)
+	//*****
+	// fromTableId > toTableId
+	//TABLE 1
+	relations = make([]Relation, 1, 1)
+	elemr3 := Relation{}
+	elemr3.Init(25, "test2", "[description]", "test2 inv", nil, relationtype.Mtm, false, true, false)
+	relations[0] = elemr3
+	elemt01.Init(22, "rel test", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
+
+	//TABLE 2
+	relations = make([]Relation, 1, 1)
+	elemr4 := Relation{}
+	elemr4.Init(24, "test2 inv", "[description]", "test2", nil, relationtype.Mtm, false, true, false)
+	relations[0] = elemr4
+	elemt02 := Table{}
+	elemt02.Init(23, "rel test33", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+		true, false, true, false)
+
+	elemt01.relations[0].setToTable(&elemt02)
+	elemt02.relations[0].setToTable(&elemt01)
+
+	elemt01.relations[0].GetInverseRelation()
+	if elemt01.relations[0].getMtmName(22) != "@mtm_00022_00023_025" {
+		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to '@mtm_00022_00023_025'")
+	}
+	if elemt01.relations[0].getMtmName(22) != elemt02.relations[0].getMtmName(23) {
+		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to r4")
+	}
+	// fromTableId < toTableId
+	elemt02.id = 21
+	if elemt01.relations[0].getMtmName(22) != "@mtm_00021_00022_024" {
+		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to '@mtm_00021_00022_024'")
+	}
+	if elemt01.relations[0].getMtmName(22) != elemt02.relations[0].getMtmName(21) {
+		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to r4")
 	}
 }

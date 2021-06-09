@@ -26,6 +26,7 @@ var (
 	databaseInitialized = false
 	schemaCacheId       *cacheId         // used to generate new schema Id
 	schemaReservedId    map[string]int32 // [schema_name] schema_id
+	upgradingSchema     *Schema
 )
 
 func init() {
@@ -36,11 +37,15 @@ func init() {
 	schemaCacheId = new(cacheId)
 	schemaCacheId.currentId = 0
 	schemaReservedId = make(map[string]int32)
+	upgradingSchema = nil
 }
 
 //******************************
 // getters and setters
 //******************************
+func getUpgradingSchema() *Schema {
+	return upgradingSchema
+}
 
 //******************************
 // public methods
@@ -243,8 +248,8 @@ func createPhysicalSchema(schema *Schema) {
 func createMetaTables(schema *Schema) {
 	// first create log table
 	logTable := schema.GetTableByName(metaLogTableName)
-	if logTable.exists(schema) == false {
-		err := logTable.create(schema)
+	if logTable.exists() == false {
+		err := logTable.create(0)
 		if err != nil {
 			panic(err)
 		}
@@ -252,8 +257,8 @@ func createMetaTables(schema *Schema) {
 	// create other meta tables
 	for _, table := range schema.tables {
 		if table.GetId() != logTable.GetId() && table.GetType() != tabletype.Logical &&
-			table.exists(schema) == false {
-			err := table.create(schema)
+			table.exists() == false {
+			err := table.create(0)
 			if err != nil {
 				panic(err)
 			}
@@ -265,8 +270,8 @@ func createMetaTables(schema *Schema) {
 
 func createMetaSequences(schema *Schema) {
 	for _, sequence := range schema.sequences {
-		if sequence.exists(schema) == false {
-			sequence.create(schema)
+		if sequence.exists() == false {
+			sequence.create()
 		}
 		var cacheId = sequence.getCacheId()
 		if cacheId.exists(entitytype.Sequence, sequence.GetId(), schema.id) == false {
@@ -277,8 +282,8 @@ func createMetaSequences(schema *Schema) {
 
 func createMetaParameters(schema *Schema) {
 	for _, parameter := range schema.parameters {
-		if parameter.exists(schema) == false {
-			parameter.create(schema)
+		if parameter.exists() == false {
+			parameter.create()
 		}
 	}
 	if schema.language.exists(schema) == false {
@@ -355,5 +360,7 @@ func upgradeSchema(jobId int64, schema *Schema) {
 		schema := new(Schema)
 		currentSchema = schema.getEmptySchema()
 	}
+	upgradingSchema = schema
 	currentSchema.alter(jobId, schema)
+	upgradingSchema = nil
 }

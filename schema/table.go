@@ -82,7 +82,9 @@ const (
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	postGreVacuum        string = "VACUUM %s"
+	postGreAnalyze       string = "ANALYZE %s"
 	mysqlParameterName   string = "?"
+	tableChangeMessage   string = "name: %s (done) | time=%dms"
 	relationNotFound     int    = -1
 )
 
@@ -333,7 +335,7 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 		}
 		query = fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
 			strings.Join(fields, ",\n"))
-		query += table.getCreateOptions()
+		query += table.getOptions()
 		if tableSpace != nil {
 			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
@@ -534,6 +536,107 @@ func (table *Table) GetPrimaryKeyIndex() int {
 	return -1
 }
 
+func (table *Table) Vacuum(jobId int64) error {
+	var sql string
+
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		sql = fmt.Sprintf(postGreVacuum, table.physicalName)
+		break
+	}
+
+	if sql != "" {
+		var metaQuery = metaQuery{}
+
+		//	var firstUniqueIndex = true
+		var schema = GetSchemaById(table.schemaId)
+		var logger = schema.getLogger()
+		var creationTime = time.Now()
+		var err error
+
+		metaQuery.Init(schema, table)
+		metaQuery.query = sql
+
+		// create table
+		err = metaQuery.vacuum()
+		if err != nil {
+			logger.error(-1, 0, err)
+			return err
+		}
+		duration := time.Now().Sub(creationTime)
+
+		logger.info(20, jobId, "Vacuum "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+	}
+	return nil
+}
+
+func (table *Table) Analyze(jobId int64) error {
+	var sql string
+
+	switch table.provider {
+	case databaseprovider.PostgreSql:
+		sql = fmt.Sprintf(postGreAnalyze, table.physicalName)
+		break
+	}
+
+	if sql != "" {
+		var metaQuery = metaQuery{}
+
+		//	var firstUniqueIndex = true
+		var schema = GetSchemaById(table.schemaId)
+		var logger = schema.getLogger()
+		var creationTime = time.Now()
+		var err error
+
+		metaQuery.Init(schema, table)
+		metaQuery.query = sql
+
+		// create table
+		err = metaQuery.analyze()
+		if err != nil {
+			logger.error(-1, 0, err)
+			return err
+		}
+		duration := time.Now().Sub(creationTime)
+
+		logger.info(21, jobId, "Analyze "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+	}
+	return nil
+}
+
+func (table *Table) Truncate(jobId int64) error {
+	// truncate not allowed on meta tables
+	if table.schemaId == 0 {
+		// ? create an error ?
+		return nil
+	}
+	var metaQuery = metaQuery{}
+
+	//	var firstUniqueIndex = true
+	var schema = GetSchemaById(table.schemaId)
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	metaQuery.Init(schema, table)
+	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil)
+
+	// create table
+	err = metaQuery.truncate()
+	if err != nil {
+		logger.error(-1, 0, err)
+		return err
+	}
+	duration := time.Now().Sub(creationTime)
+
+	logger.info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+
+	return err
+}
+
 //******************************
 // private methods
 //******************************
@@ -542,7 +645,7 @@ func (table *Table) toMeta() *meta {
 
 	// key
 	metaTable.id = table.id
-	metaTable.refId = 0
+	metaTable.refId = table.schemaId
 	metaTable.objectType = int8(entitytype.Table)
 
 	// others
@@ -829,7 +932,7 @@ func (table *Table) getVariableName(index int) string {
 	return result
 }
 
-func (table *Table) getCreateOptions() string {
+func (table *Table) getOptions() string {
 	switch table.provider {
 	case databaseprovider.PostgreSql:
 		return postGreCreateOptions
@@ -887,9 +990,11 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 	}
 }
 
-func (table *Table) create(schema *Schema) error {
+// create physical table
+func (table *Table) create(jobId int64) error {
 	var metaQuery = metaQuery{}
 	//	var firstUniqueIndex = true
+	var schema = table.getSchema()
 	var logger = schema.getLogger()
 	var creationTime = time.Now()
 	var err error
@@ -911,15 +1016,10 @@ func (table *Table) create(schema *Schema) error {
 	table.createConstraints(schema)
 
 	duration := time.Now().Sub(creationTime)
-	if table.tableType == tabletype.Business {
-		logger.info(17, 0, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-			fmt.Sprintf("id: %d | name: %s  (done) | time=%dms",
-				table.id, table.physicalName, int(duration.Seconds()*1000)))
-	} else {
-		logger.info(17, 0, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-			fmt.Sprintf("name: %s  (done) | time=%dms",
-				table.physicalName, int(duration.Seconds()*1000)))
-	}
+
+	logger.info(17, jobId, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+
 	return err
 }
 
@@ -967,10 +1067,19 @@ func (table *Table) createConstraints(schema *Schema) {
 	}
 }
 
-// is table exists in the specified schema
-func (table *Table) exists(schema *Schema) bool {
+// is physical table exists
+func (table *Table) exists() bool {
+	var schema = table.getSchema()
 	cata := new(catalogue)
 	return cata.exists(schema, table)
+}
+
+func (table *Table) getSchema() *Schema {
+	var schema = GetSchemaById(table.schemaId)
+	if schema == nil {
+		schema = getUpgradingSchema()
+	}
+	return schema
 }
 
 func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
@@ -1204,54 +1313,4 @@ func (table *Table) getTable(provider databaseprovider.DatabaseProvider, physica
 		metaTable.IsTableReadonly(), metaTable.IsEntityBaseline(), metaTable.enabled)
 
 	return result
-}
-
-func (table *Table) Vacuum() error {
-	var sql string
-
-	switch table.provider {
-	case databaseprovider.PostgreSql:
-		sql = postGreVacuum
-		break
-	}
-
-	if sql != "" {
-
-	}
-	return nil
-}
-
-func (table *Table) Analyze() error {
-	return nil
-}
-
-func (table *Table) Truncate(jobId int64) error {
-	// truncate not allowed on meta tables
-	if table.schemaId == 0 {
-		return nil
-	}
-	var metaQuery = metaQuery{}
-
-	//	var firstUniqueIndex = true
-	var schema = GetSchemaById(table.schemaId)
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
-	var err error
-
-	metaQuery.Init(schema, table)
-	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil)
-
-	// create table
-	err = metaQuery.truncate()
-	if err != nil {
-		logger.error(-1, 0, err)
-		return err
-	}
-	duration := time.Now().Sub(creationTime)
-
-	logger.info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-		fmt.Sprintf("name: %s (done) | time=%dms",
-			table.physicalName, int(duration.Seconds()*1000)))
-
-	return err
 }

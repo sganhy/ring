@@ -12,6 +12,7 @@ type parameter struct {
 	id            int32
 	name          string
 	description   string
+	schemaId      int32
 	dataType      fieldtype.FieldType
 	parameterType entitytype.EntityType
 	value         string
@@ -24,11 +25,13 @@ const (
 	parameterLastUpgrade    string = "@last_upgrade"
 )
 
-func (param *parameter) Init(id int32, name string, description string, parameterType entitytype.EntityType, fieldType fieldtype.FieldType, value string) {
+func (param *parameter) Init(id int32, name string, description string, schemaId int32, parameterType entitytype.EntityType,
+	fieldType fieldtype.FieldType, value string) {
 	param.id = id
 	param.name = name
 	param.description = description
 	param.parameterType = parameterType
+	param.schemaId = schemaId
 	if fieldType == fieldtype.NotDefined {
 		param.dataType = fieldtype.String
 	} else {
@@ -60,6 +63,7 @@ func (param *parameter) GetEntityType() entitytype.EntityType {
 func (param *parameter) GetDataType() fieldtype.FieldType {
 	return param.dataType
 }
+
 func (param *parameter) GetValue() string {
 	return param.value
 }
@@ -74,20 +78,20 @@ func (param *parameter) setValue(value string) {
 //******************************
 func (param *parameter) Clone() *parameter {
 	var newParam = new(parameter)
-	//id int32, name string, description string, parameterType entitytype.EntityType, value string
-	newParam.Init(param.id, param.name, param.description, param.parameterType, param.dataType, param.value)
+	newParam.Init(param.id, param.name, param.description, param.schemaId, param.parameterType, param.dataType, param.value)
 	return newParam
 }
 
 func (param *parameter) String() string {
-	// "name=%s; description=%s"
 	return fmt.Sprintf(parameterToStringFormat, param.name, param.description)
 }
 
 //******************************
 // private methods
 //******************************
-func (param *parameter) exists(schema *Schema) bool {
+func (param *parameter) exists() bool {
+	var schema = param.getSchema()
+
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
@@ -101,12 +105,22 @@ func (param *parameter) exists(schema *Schema) bool {
 	return result
 }
 
-func (param *parameter) create(schema *Schema) error {
+func (param *parameter) create() error {
+	var schema = param.getSchema()
 	var schemaId = schema.GetId()
+
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
 	return query.insertMeta(param.toMeta(schemaId), schemaId)
+}
+
+func (param *parameter) getSchema() *Schema {
+	var currSchema = GetSchemaById(param.schemaId)
+	if currSchema == nil {
+		currSchema = getUpgradingSchema()
+	}
+	return currSchema
 }
 
 func (param *parameter) toMeta(objectId int32) *meta {
@@ -128,33 +142,32 @@ func (param *parameter) toMeta(objectId int32) *meta {
 	return metaParam
 }
 
-func (param *parameter) getVersionParameter(refId int32, parameterType entitytype.EntityType, value string) *parameter {
+func (param *parameter) getVersionParameter(schemaId int32, refId int32, parameterType entitytype.EntityType, value string) *parameter {
 	result := new(parameter)
 	switch parameterType {
 	case entitytype.Schema:
 		if refId > 0 {
-			result.Init(refId+41, parameterVersion, "Schema version", parameterType, fieldtype.String, value)
+			result.Init(refId+41, parameterVersion, "Schema version", schemaId, parameterType, fieldtype.String, value)
 		} else {
-			var ver = new(version)
-			result.Init(3, parameterVersion, "Ring version", parameterType, fieldtype.String, ver.GetCurrentVersion())
+			result.Init(3, parameterVersion, "Ring version", schemaId, parameterType, fieldtype.String, value)
 		}
 		break
 	}
 	return result
 }
 
-func (param *parameter) getCreationTimeParameter(refId int32, parameterType entitytype.EntityType) *parameter {
+func (param *parameter) getCreationTimeParameter(schemaId int32, refId int32, parameterType entitytype.EntityType) *parameter {
 	result := new(parameter)
 	value := time.Now().UTC().Format(time.RFC3339)
 	message := strings.Title(strings.ToLower(parameterType.String())) + " creation time"
-	result.Init(1, parameterCreationTime, message, parameterType, fieldtype.DateTime, value)
+	result.Init(1, parameterCreationTime, message, schemaId, parameterType, fieldtype.DateTime, value)
 	return result
 }
 
-func (param *parameter) getLastUpgradeParameter(refId int32, parameterType entitytype.EntityType) *parameter {
+func (param *parameter) getLastUpgradeParameter(schemaId int32, refId int32, parameterType entitytype.EntityType) *parameter {
 	result := new(parameter)
 	value := time.Now().UTC().Format(time.RFC3339)
 	message := "Last " + strings.Title(strings.ToLower(parameterType.String())) + " upgrade"
-	result.Init(2, parameterLastUpgrade, message, parameterType, fieldtype.DateTime, value)
+	result.Init(2, parameterLastUpgrade, message, schemaId, parameterType, fieldtype.DateTime, value)
 	return result
 }
