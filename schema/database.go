@@ -37,7 +37,7 @@ func init() {
 	schemaCacheId = new(cacheId)
 	schemaCacheId.currentId = 0
 	schemaReservedId = make(map[string]int32)
-	upgradingSchema = nil
+	setUpgradingSchema(nil)
 }
 
 //******************************
@@ -47,54 +47,59 @@ func getUpgradingSchema() *Schema {
 	return upgradingSchema
 }
 
+func setUpgradingSchema(schema *Schema) {
+	upgradingSchema = schema
+}
+
 //******************************
 // public methods
 //******************************
 
 func Init(provider databaseprovider.DatabaseProvider, connectionString string, minConnection uint16, maxConnection uint16) {
 	// perform just once
-	schema := new(Schema)
-
-	if databaseInitialized == false {
-		databaseInitialized = true
-		var disableConnectionPool = false
-		// disable connection pool for unit testing ??
-		if minConnection == 0 && maxConnection == 0 && connectionString == "" {
-			disableConnectionPool = true
-		}
-		// 1> instanciate meta schema
-		var metaSchema = schema.getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
-		defaultSchemaName = metaSchema.GetName()
-
-		// 2> add meta schema to collection
-		addSchema(metaSchema)
-
-		// 3> initialize logger
-		initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
-
-		// 4> load other schemas if connection pool is not disable
-		if disableConnectionPool == false {
-			// create physical schema if it doesn't exist
-			createPhysicalSchema(metaSchema)
-
-			// generate meta tables first before getSchemaIdList()
-			createMetaTables(metaSchema)
-
-			// generate meta sequences
-			createMetaSequences(metaSchema)
-
-			// generate meta parameters
-			createMetaParameters(metaSchema)
-
-			var schemas = getSchemaIdList()
-			for i := 0; i < len(schemas); i++ {
-				//				addSchema(getSchemaById(schemas[i].id))
-				//getSchemaById(schemas[i])
-			}
-		}
-		// call garbage collector
-		runtime.GC()
+	if databaseInitialized == true {
+		return
 	}
+
+	schema := new(Schema)
+	databaseInitialized = true
+	var disableConnectionPool = false
+	// disable connection pool for unit testing ??
+	if minConnection == 0 && maxConnection == 0 && connectionString == "" {
+		disableConnectionPool = true
+	}
+	// 1> instanciate meta schema
+	var metaSchema = schema.getMetaSchema(provider, connectionString, minConnection, maxConnection, disableConnectionPool)
+	defaultSchemaName = metaSchema.GetName()
+
+	// 2> add meta schema to collection
+	addSchema(metaSchema)
+
+	// 3> initialize logger
+	initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
+
+	// 4> load other schemas if connection pool is not disable
+	if disableConnectionPool == false {
+		// create physical schema if it doesn't exist
+		createPhysicalSchema(metaSchema)
+
+		// generate meta tables first before getSchemaIdList()
+		createMetaTables(metaSchema)
+
+		// generate meta sequences
+		createMetaSequences(metaSchema)
+
+		// generate meta parameters
+		createMetaParameters(metaSchema)
+
+		var schemas = getSchemaIdList()
+		for i := 0; i < len(schemas); i++ {
+			//				addSchema(getSchemaById(schemas[i].id))
+			//getSchemaById(schemas[i])
+		}
+	}
+	// call garbage collector
+	runtime.GC()
 }
 
 func GetDefaultSchema() *Schema {
@@ -360,7 +365,7 @@ func upgradeSchema(jobId int64, schema *Schema) {
 		schema := new(Schema)
 		currentSchema = schema.getEmptySchema()
 	}
-	upgradingSchema = schema
+	setUpgradingSchema(schema)
 	currentSchema.alter(jobId, schema)
-	upgradingSchema = nil
+	setUpgradingSchema(nil)
 }

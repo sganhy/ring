@@ -15,7 +15,7 @@ func Test__Index__Init(t *testing.T) {
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := Index{}
 	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, -17, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
 
 	if elemi.GetName() != "rel test" {
 		t.Errorf("Index.Init() ==> name <> GetName()")
@@ -33,9 +33,6 @@ func Test__Index__Init(t *testing.T) {
 	} else {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
-	if elemi.GetTableId() != -17 {
-		t.Errorf("Index.Init() ==> tableId <> GetTableId()")
-	}
 	if elemi.IsBaseline() != true {
 		t.Errorf("Index.Init() ==> IsBaseline() <> true")
 	}
@@ -51,7 +48,7 @@ func Test__Index__Init(t *testing.T) {
 	if elemi.GetEntityType() != entitytype.Index {
 		t.Errorf("Index.Init() ==>  GetEntityType() <> entitytype.Index")
 	}
-	elemi.Init(21, "rel test", "hellkzae", nil, 0, false, true, true, true)
+	elemi.Init(21, "rel test", "hellkzae", nil, false, true, true, true)
 	if elemi.GetFields() == nil {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
@@ -64,9 +61,9 @@ func Test__Index__ToMeta(t *testing.T) {
 	aarr := []string{"Gga", "Zorba", "testllk", "testllk22"}
 
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemi0.Init(21, "rel test", "hellkzae", aarr, -11, false, true, false, true)
+	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
 
-	metaData := elemi0.toMeta()
+	metaData := elemi0.toMeta(21)
 	elemi1 := metaData.toIndex()
 
 	if elemi0.GetId() != elemi1.GetId() {
@@ -93,9 +90,6 @@ func Test__Index__ToMeta(t *testing.T) {
 	if elemi0.IsActive() != elemi1.IsActive() {
 		t.Errorf("Index.toMeta() ==> i0.IsActive() must be equal to i1.IsActive()")
 	}
-	if elemi0.GetTableId() != elemi1.GetTableId() {
-		t.Errorf("Index.toMeta() ==> i0.GetTableId() must be equal to i1.GetTableId()")
-	}
 	// test fields
 	if elemi1.fields == nil {
 		t.Errorf("Index.toMeta() ==> i1.fields cannot be nil")
@@ -114,7 +108,7 @@ func Test__Index__Clone(t *testing.T) {
 	aarr := []string{"Gga", "Zorba", "testllk", "testllk22", "xxxxxx", "x44"}
 
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemi0.Init(21, "rel test", "hellkzae", aarr, 77, false, true, false, true)
+	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
 	elemi1 := elemi0.Clone()
 
 	if elemi0.GetId() != elemi1.GetId() {
@@ -188,7 +182,7 @@ func Test__Index__GetDdl(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, int32(tabletype.MetaId), false, false, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, false, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -213,20 +207,20 @@ func Test__Index__GetDdl(t *testing.T) {
 	var query = "CREATE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id)"
 	// without tablespace
 	if uk.GetDdl(ddlstatement.Create, table, nil) != query {
-		t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
+		t.Errorf("Index.GetDdl(Create) ==> should be equal to %s", query)
 	}
 
 	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id)"
 	//if CREATE UNIQUE INDEX "pk_@meta" ON information_schema."@meta" (id,schema_id,,reference_id)
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, 55, false, true, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
 	if uk.GetDdl(ddlstatement.Create, table, nil) != query {
-		t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
+		t.Errorf("Index.GetDdl(Create) ==> should be equal to %s", query)
 	}
 
 	// test with tablespace
 	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id) TABLESPACE rpg_index"
 	if uk.GetDdl(ddlstatement.Create, table, &tableSpace) != query {
-		t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
+		t.Errorf("Index.GetDdl(Create) ==> should be equal to %s", query)
 	}
 
 	table.Init(1077, "@meta", "ATable Test", fields, relations, indexes,
@@ -246,16 +240,19 @@ func Test__Index__GetDdl(t *testing.T) {
 	}
 
 	// test DROP
-	query = "DROP INDEX information_schema.idx_mtm_0001"
-	/*
-		if uk.GetDdl(ddlstatement.Drop, table, nil) != query {
-			t.Errorf("Index.GetDdl() ==> should be equal to %s", query)
-		}
-	*/
+	query = "DROP INDEX " + postgreSqlSchema + ".idx_mtm_0001"
+	metaSchema := new(Schema)
+	metaSchema = metaSchema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+	metaLogTable := metaSchema.GetTableByName(metaLogTableName)
+	metaLogIndex := metaLogTable.GetIndexByName(metaLogEntryTime)
+	setUpgradingSchema(metaSchema)
+	if metaLogIndex.GetDdl(ddlstatement.Drop, table, nil) != query {
+		t.Errorf("Index.GetDdl(Drop) ==> should be equal to %s", query)
+	}
 
 	// no alter on indexes !!
 	if uk.GetDdl(ddlstatement.Alter, table, nil) != "" {
-		t.Errorf("Index.GetDdl() ==> should be equal to null")
+		t.Errorf("Index.GetDdl(Alter) ==> should be equal to null")
 	}
 
 	// unknown db provider
@@ -264,11 +261,24 @@ func Test__Index__GetDdl(t *testing.T) {
 		"[subject]", true, false, true, false)
 
 	if uk.GetDdl(ddlstatement.Create, table, nil) != "" {
-		t.Errorf("Index.GetDdl() ==> should be equal to null")
+		t.Errorf("Index.GetDdl(Create) ==> should be equal to null")
 	}
 
 	if uk.GetDdl(ddlstatement.Drop, table, nil) != "" {
-		t.Errorf("Index.GetDdl() ==> should be equal to null")
+		t.Errorf("Index.GetDdl(Drop) ==> should be equal to null")
 	}
 
+}
+
+func Test__Index__equal(t *testing.T) {
+	elemi0 := Index{}
+	aarr := []string{"Gga", "Zorba", "testllk", "testllk22", "xxxxxx", "x44"}
+
+	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
+	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
+	elemi1 := elemi0.Clone()
+
+	if elemi0.equal(elemi1) == false {
+		t.Errorf("Index.equal() ==> i0 should be equal to i1")
+	}
 }

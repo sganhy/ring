@@ -176,7 +176,8 @@ func Test__Relation__Clone(t *testing.T) {
 	}
 }
 
-func Test__Relation__getMtmName(t *testing.T) {
+// test loadMtmName, getMtmName, and getToTableName
+func Test__Relation__loadMtmName(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
@@ -246,5 +247,13 @@ func Test__Relation__getMtmName(t *testing.T) {
 	}
 	if elemt01.relations[0].getMtmName(22) != elemt02.relations[0].getMtmName(21) {
 		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to r4")
+	}
+
+	//*****
+	//***** loadMtmName
+	//*****
+	elemt01.relations[0].loadMtm(22)
+	if elemt01.relations[0].GetMtmTableName() != "@mtm_00021_00022_024" {
+		t.Errorf("Relation.GetMtmTableName() ==>	r3 should be equal to '@mtm_00021_00022_024'")
 	}
 }

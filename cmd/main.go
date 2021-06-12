@@ -29,6 +29,11 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 
+	schema.Init(databaseprovider.PostgreSql, "", 0, 0)
+
+	var testMeta = schema.GetSchemaByName("@meta")
+	var testTblMeta = testMeta.GetTableById(7)
+	fmt.Println(testTblMeta.GetName())
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	var lang = new(schema.Language)
 

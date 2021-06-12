@@ -1017,7 +1017,7 @@ func (table *Table) create(jobId int64) error {
 
 	duration := time.Now().Sub(creationTime)
 
-	logger.info(17, jobId, "Create "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 
 	return err
@@ -1029,7 +1029,7 @@ func (table *Table) createIndexes(schema *Schema) {
 	if table.tableType != tabletype.Meta && table.tableType != tabletype.MetaId {
 		for i := 0; i < len(table.indexes); i++ {
 			index := table.indexes[i]
-			err := index.create(schema)
+			err := index.create(schema, table)
 			if err != nil {
 				logger.error(-1, 0, err)
 			}
@@ -1103,7 +1103,7 @@ func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, s
 	value.Init(1181, metaValue, "", fieldtype.Long, 0, "", true, true, true, false, true)
 
 	var indexedFields = []string{metaFieldId, metaSchemaId, metaObjectType}
-	uk.Init(1, metaIdTableName, "", indexedFields, int32(tabletype.MetaId), false, true, true, true)
+	uk.Init(1, metaIdTableName, "", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)
 	fields = append(fields, schemaId)
@@ -1157,7 +1157,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, metaTableName, "", indexedFields, int32(tabletype.Meta), false, true, true, true)
+	uk.Init(1, metaTableName, "", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)           //1
 	fields = append(fields, schemaId)     //2
@@ -1228,9 +1228,9 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 
 	// indexes
 	var indexedFields = []string{entryTime.GetName()}
-	idxEntryTime.Init(1, entryTime.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)
+	idxEntryTime.Init(1, entryTime.name, "", indexedFields, false, false, true, true)
 	indexedFields = []string{jobId.name}
-	idxJobId.Init(2, jobId.name, "", indexedFields, int32(tabletype.Log), false, false, true, true)
+	idxJobId.Init(2, jobId.name, "", indexedFields, false, false, true, true)
 	indexes = append(indexes, idxEntryTime)
 	indexes = append(indexes, idxJobId)
 

@@ -15,7 +15,6 @@ type Index struct {
 	id          int32
 	name        string
 	description string
-	tableId     int32
 	fields      []string
 	bitmap      bool
 	unique      bool
@@ -29,7 +28,7 @@ const (
 	indexToStringFormat   string = "name=%s; description=%s; bitmap=%t; unique=%t; baseline=%t; fields=%s"
 )
 
-func (index *Index) Init(id int32, name string, description string, fields []string, tableId int32, bitmap bool,
+func (index *Index) Init(id int32, name string, description string, fields []string, bitmap bool,
 	unique bool, baseline bool, active bool) {
 	index.id = id
 	index.name = name
@@ -39,7 +38,6 @@ func (index *Index) Init(id int32, name string, description string, fields []str
 	index.unique = unique
 	index.baseline = baseline
 	index.active = active
-	index.tableId = tableId
 }
 
 //******************************
@@ -77,10 +75,6 @@ func (index *Index) IsActive() bool {
 	return index.active
 }
 
-func (index *Index) GetTableId() int32 {
-	return index.tableId
-}
-
 func (index *Index) GetEntityType() entitytype.EntityType {
 	return entitytype.Index
 }
@@ -95,7 +89,7 @@ func (index *Index) Clone() *Index {
 	fields := make([]string, len(index.fields))
 	copy(fields, index.fields)
 	newIndex.Init(index.id, index.name, index.description,
-		fields, index.tableId, index.bitmap, index.unique, index.baseline, index.active)
+		fields, index.bitmap, index.unique, index.baseline, index.active)
 
 	return newIndex
 }
@@ -142,13 +136,13 @@ func (index *Index) String() string {
 //******************************
 // private methods
 //******************************
-func (index *Index) toMeta() *meta {
+func (index *Index) toMeta(tableId int32) *meta {
 	// we cannot have error here
 	var result = new(meta)
 
 	// key
 	result.id = index.id
-	result.refId = index.tableId
+	result.refId = tableId
 	result.objectType = int8(entitytype.Index)
 
 	// others
@@ -181,14 +175,28 @@ func (index *Index) getDdlDrop(table *Table) string {
 		return ""
 	}
 	var query strings.Builder
-	query.WriteString(ddlstatement.Drop.String())
-	query.WriteString(ddlSpace)
-	query.WriteString(entitytype.Index.String())
-	query.WriteString(ddlSpace)
-	//query.WriteString(table.getSchemaName())
-	query.WriteString(".")
-	query.WriteString(index.GetPhysicalName(table))
+	var schema = index.getSchema(table.GetSchemaId())
+
+	// generate error later !!
+	if schema != nil {
+		query.WriteString(ddlstatement.Drop.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(entitytype.Index.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(schema.GetPhysicalName())
+		query.WriteString(".")
+		query.WriteString(index.GetPhysicalName(table))
+	}
+
 	return query.String()
+}
+
+func (index *Index) getSchema(schemaId int32) *Schema {
+	var schema = GetSchemaById(schemaId)
+	if schema == nil {
+		schema = getUpgradingSchema()
+	}
+	return schema
 }
 
 func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
@@ -219,13 +227,20 @@ func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	return ""
 }
 
-func (index *Index) create(schema *Schema) error {
+func (index *Index) create(schema *Schema, table *Table) error {
 	var metaQuery = metaQuery{}
-	var table = schema.GetTableById(index.tableId)
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
 	metaQuery.setSchema(schema.GetName())
 	metaQuery.setTable(table.GetName())
 
 	return metaQuery.create()
+}
+
+func (indexA *Index) equal(indexB *Index) bool {
+	fieldListA := strings.Join(indexA.fields, metaIndexSeparator)
+	fieldListB := strings.Join(indexB.fields, metaIndexSeparator)
+
+	return fieldListA == fieldListB && indexA.unique == indexB.unique &&
+		indexA.bitmap == indexB.bitmap
 }

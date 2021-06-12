@@ -63,7 +63,7 @@ func Test__Table__Init(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, 55, false, true, true, true)
+	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -305,7 +305,7 @@ func Test__Table__GetIndexByName(t *testing.T) {
 		nameLenght := (abs(i) % 30) + 2
 		// fixture
 		indexName := randStringBytes(nameLenght)
-		index.Init(21, indexName, "hellkzae", aarr, 55, false, true, false, true)
+		index.Init(21, indexName, "hellkzae", aarr, false, true, false, true)
 		indexes = append(indexes, *index)
 	}
 
@@ -354,7 +354,7 @@ func Test__Table__Clone(t *testing.T) {
 	fields = append(fields, field1)
 
 	var indexedFields = []string{"Zorba"}
-	uk.Init(1, "uk_test", "ATable Test", indexedFields, 1154, false, false, true, true)
+	uk.Init(1, "uk_test", "ATable Test", indexedFields, false, false, true, true)
 	indexes = append(indexes, uk)
 
 	t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,

@@ -189,7 +189,7 @@ func (relation *Relation) toMeta(tableId int32) *meta {
 	return result
 }
 
-func (relation *Relation) loadMtmName(fromTableId int32) {
+func (relation *Relation) loadMtm(fromTableId int32) {
 	if relation.relationType == relationtype.Mtm && relation.toTable != nil && relation.mtmTable == "" {
 		relation.mtmTable = relation.getMtmName(fromTableId)
 	}

@@ -670,7 +670,7 @@ func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 		if metaData.GetEntityType() == entitytype.Relation && metaData.GetRelationType() == relationtype.Mtm {
 			var fromTable = tableDico[metaData.refId]
 			var relation = fromTable.GetRelationByName(metaData.name)
-			relation.loadMtmName(fromTable.id)
+			relation.loadMtm(fromTable.id)
 			fmt.Println(relation.GetMtmTableName())
 		}
 	}
