@@ -281,4 +281,9 @@ func Test__Index__equal(t *testing.T) {
 	if elemi0.equal(elemi1) == false {
 		t.Errorf("Index.equal() ==> i0 should be equal to i1")
 	}
+
+	elemi1.Init(22, "rel test 22 ", "22354 54 hellkzae", aarr, false, true, true, false)
+	if elemi0.equal(elemi1) == false {
+		t.Errorf("Index.equal() ==> i0 should be equal to i1")
+	}
 }

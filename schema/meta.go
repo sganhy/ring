@@ -149,8 +149,7 @@ func (metaData *meta) toField() *Field {
 func (metaData *meta) toRelation(table *Table) *Relation {
 	if metaData.GetEntityType() == entitytype.Relation {
 		var relation = new(Relation)
-		relation.Init(metaData.id, metaData.name, metaData.description,
-			metaData.value, table, metaData.GetRelationType(),
+		relation.Init(metaData.id, metaData.name, metaData.description, table, metaData.GetRelationType(),
 			metaData.IsRelationNotNull(), metaData.IsEntityBaseline(), metaData.enabled)
 		return relation
 	}

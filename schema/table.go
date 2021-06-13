@@ -9,6 +9,7 @@ import (
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
+	"ring/schema/relationtype"
 	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"sort"
@@ -99,9 +100,13 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadRelations(relations)
 	table.loadMapper()         // !!! load after loadFields()
 	table.loadIndexes(indexes) // !!! run at the end only
+
 	// initialize cacheId
-	table.cacheid = new(cacheId)
-	table.cacheid.Init(id, schemaId, table.GetEntityType())
+	if tableType == tabletype.Business {
+		table.cacheid = new(cacheId)
+		table.cacheid.Init(id, schemaId, table.GetEntityType())
+	}
+
 	table.tableType = tableType
 	table.schemaId = schemaId
 	table.tableType = tableType
@@ -714,6 +719,20 @@ func (table *Table) getFieldList() string {
 			b.WriteString(fieldListSeparator)
 		}
 	}
+	// add relations
+	if table.tableType == tabletype.Mtm {
+		relationsById := make([]*Relation, len(table.relations), len(table.relations))
+		for i := 0; i < len(table.relations); i++ {
+			relationsById[i] = table.relations[i]
+		}
+		sort.Slice(relationsById, func(i, j int) bool {
+			return relationsById[i].id < relationsById[j].id
+		})
+		for i := 0; i < len(table.relations); i++ {
+			b.WriteString(table.relations[i].GetPhysicalName(table.provider))
+		}
+
+	}
 	return b.String()
 }
 
@@ -736,6 +755,12 @@ func (table *Table) getUniqueFieldList() string {
 		var ukIndex = table.GetIndexByName(metaIdTableName)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
+			b.WriteString(fieldListSeparator)
+		}
+		break
+	case tabletype.Mtm:
+		for i := 0; i < len(table.relations); i++ {
+			b.WriteString(table.relations[i].GetPhysicalName(table.provider))
 			b.WriteString(fieldListSeparator)
 		}
 		break
@@ -864,7 +889,6 @@ func (table *Table) loadFields(fields []Field, tableType tabletype.TableType) {
 
 		table.sortFields()
 	} else {
-		//TODO throw an error + logging
 		table.fields = make([]*Field, 0, 1)
 	}
 }
@@ -1082,10 +1106,40 @@ func (table *Table) getSchema() *Schema {
 	return schema
 }
 
+func (table *Table) getMtmTable(schema *Schema, relation *Relation, name string) *Table {
+	var fields = make([]Field, 0, 0)
+	var relations = make([]Relation, 0, 2)
+	var indexes = make([]Index, 1, 1)
+	var result = new(Table)
+	var inverseRelation = relation.GetInverseRelation()
+
+	// index
+	var uk = Index{}
+	var indexedFields = []string{relation.GetName(), inverseRelation.GetName()}
+	uk.Init(1, relation.GetName(), "", indexedFields, false, true, true, true)
+	indexes = append(indexes, uk)
+
+	// relations
+	var relationA = Relation{}
+	var relationB = Relation{}
+
+	relationA.Init(1, relation.GetName(), "", relation.GetToTable(), relationtype.Mto, true, true, true)
+	relationB.Init(2, inverseRelation.GetName(), "", inverseRelation.GetToTable(), relationtype.Mto, true, true, true)
+
+	relations = append(relations, relationA)
+	relations = append(relations, relationB)
+
+	result.Init(relation.GetId(), name, "", fields, relations, indexes, physicaltype.Table,
+		schema.GetId(), schema.GetPhysicalName(), tabletype.Mtm, schema.GetDatabaseProvider(), "",
+		true, false, true, true)
+
+	return result
+}
+
 func (table *Table) getMetaIdTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
-	var fields = make([]Field, 0, 16)
-	var relations = make([]Relation, 0, 16)
-	var indexes = make([]Index, 0, 16)
+	var fields = make([]Field, 0, 4)
+	var relations = make([]Relation, 0, 0)
+	var indexes = make([]Index, 0, 0)
 	var result = new(Table)
 
 	// physical_name is built later

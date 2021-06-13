@@ -79,9 +79,11 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.baseline = baseline
 	schema.active = active
 
-	// at end only sequences
+	// !!! at end only sequences !!!
 	schema.loadSequences(sequences)
 	schema.loadParameters(parameters)
+	schema.loadMtmTables()
+
 }
 
 //******************************
@@ -152,6 +154,7 @@ func (schema *Schema) GetTableByName(name string) *Table {
 	}
 	return nil
 }
+
 func (schema *Schema) GetSequenceByName(name string) *Sequence {
 	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(schema.sequences) - 1, 0, 0
 	for indexerLeft <= indexerRight {
@@ -393,13 +396,25 @@ func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]
 }
 
 func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
+	// create missing tables
 	for tablePhysName, tableName := range newDico {
 		if _, ok := prevDico[tablePhysName]; !ok {
 			table := schema.GetTableByName(tableName)
 			if table.exists() == false {
 				table.create(jobId)
 			}
-			//TODO logs
+		}
+	}
+	// create missing mtm relations
+	for tablePhysName, tableName := range newDico {
+		if _, ok := prevDico[tablePhysName]; !ok {
+			table := schema.GetTableByName(tableName)
+			for i := 0; i < len(table.relations); i++ {
+				relation := table.relations[i]
+				if relation.GetType() == relationtype.Mtm && relation.GetMtmTable().exists() == false {
+					relation.GetMtmTable().create(jobId)
+				}
+			}
 		}
 	}
 }
@@ -650,11 +665,13 @@ func (schema *Schema) getParameters(metaList []meta) []parameter {
 func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 	// build map of table
 	var tableDico map[int32]*Table
+
 	tableDico = make(map[int32]*Table, len(tables))
 	for i := 0; i < len(tables); i++ {
 		table := tables[i]
 		tableDico[table.id] = table
 	}
+	// load toTable, and inverseRelation
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
 		if metaData.GetEntityType() == entitytype.Relation {
@@ -662,19 +679,9 @@ func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 			var toTable = tableDico[metaData.dataType]
 			var relation = fromTable.GetRelationByName(metaData.name)
 			relation.setToTable(toTable)
+			relation.setInverseRelation(toTable.GetRelationByName(metaData.value))
 		}
 	}
-	// load mtm
-	for i := 0; i < len(metaList); i++ {
-		metaData := metaList[i]
-		if metaData.GetEntityType() == entitytype.Relation && metaData.GetRelationType() == relationtype.Mtm {
-			var fromTable = tableDico[metaData.refId]
-			var relation = fromTable.GetRelationByName(metaData.name)
-			relation.loadMtm(fromTable.id)
-			fmt.Println(relation.GetMtmTableName())
-		}
-	}
-
 }
 
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
@@ -740,4 +747,33 @@ func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, da
 		}
 	}
 	return "", "", "", databaseprovider.NotDefined
+}
+
+func (schema *Schema) loadMtmTables() {
+	var mtmDico map[string]*Table
+	mtmDico = make(map[string]*Table, len(schema.tables))
+
+	for _, table := range schema.tables {
+		for i := 0; i < len(table.relations); i++ {
+			var relation = table.relations[i]
+			if relation.GetType() == relationtype.Mtm {
+				mtmName := relation.getMtmName(table.GetId())
+				if _, ok := mtmDico[mtmName]; !ok {
+					mtmDico[mtmName] = table.getMtmTable(schema, relation, mtmName)
+				}
+			}
+		}
+	}
+
+	// load tables
+	for _, table := range schema.tables {
+		for i := 0; i < len(table.relations); i++ {
+			var relation = table.relations[i]
+			if relation.GetType() == relationtype.Mtm {
+				mtmName := relation.getMtmName(table.GetId())
+				relation.setMtmTable(mtmDico[mtmName])
+			}
+		}
+	}
+
 }

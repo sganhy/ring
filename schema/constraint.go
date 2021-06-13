@@ -93,13 +93,15 @@ func (constr *constraint) getPhysicalName() string {
 	switch constr.constType {
 	case constrainttype.PrimaryKey:
 		var tableName = constr.table.GetName()
+		if constr.table.GetType() == tabletype.Mtm {
+			tableName = strings.Replace(tableName, mtmTableNamePrefix+mtmSeperator, "@", 1)
+		}
 		// keep constraint lenght less or equal to 30
 		if len(tableName) > 27 {
 			result = constraintPkShortPrefix + tableName
 		} else {
 			result = constraintPkPrefix + tableName
 		}
-
 		break
 	case constrainttype.Check:
 		result = constr.getCheckName()

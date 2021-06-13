@@ -29,11 +29,6 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 
-	schema.Init(databaseprovider.PostgreSql, "", 0, 0)
-
-	var testMeta = schema.GetSchemaByName("@meta")
-	var testTblMeta = testMeta.GetTableById(7)
-	fmt.Println(testTblMeta.GetName())
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	var lang = new(schema.Language)
 
@@ -55,7 +50,7 @@ func main() {
 	*/
 
 	schema2 := importFile.GetSchema()
-	table2 := schema2.GetTableByName("weapon")
+	table2 := schema2.GetTableByName("ability")
 	fmt.Println(table2.GetName())
 
 	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
@@ -147,14 +142,14 @@ func main() {
 	elemt := new(schema.Table)
 	elemr := schema.Relation{}
 
-	elemr.Init(21, "rel test", "hellkzae", "hell1", elemt, relationtype.Mto, false, true, false)
+	elemr.Init(21, "rel test", "hellkzae", elemt, relationtype.Mto, false, true, false)
 	elemr0 := schema.Relation{}
-	elemr0.Init(-23, "arel test", "hellkzae", "hell1", elemt, relationtype.Mto, false, true, false)
+	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, false, true, false)
 
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := schema.Index{}
-	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool, actif bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, 55, false, true, true, true)
+	// id int32, name string, description string, fields []string, bitmap bool,	unique bool, baseline bool, active bool
+	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
 	fmt.Println(elemr.GetName())
 	var fields = []schema.Field{}
 	//var prim = schema.GetDefaultPrimaryKey()

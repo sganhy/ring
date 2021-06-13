@@ -98,7 +98,7 @@ func Test__Table__Init(t *testing.T) {
 		t.Errorf("Table.Init() ==> physical name <> information_schema.\"@meta\"")
 	}
 	if table.GetType() != tabletype.MetaId {
-		t.Errorf("Table.Init() ==> description <> GetDescription()")
+		t.Errorf("Table.Init() ==> GetType <> tabletype.MetaId")
 	}
 	if table.GetPhysicalType() != physicaltype.Table {
 		t.Errorf("Table.Init() ==> physicaltype <> GetPhysicalType()")
@@ -112,7 +112,7 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetDatabaseProvider() != databaseprovider.PostgreSql {
 		t.Errorf("Table.Init() ==> GetDatabaseProvider() <> databaseprovider.Oracle")
 	}
-	if table.getCacheId() == nil {
+	if table.getCacheId() != nil {
 		t.Errorf("Table.Init() ==> GetCacheId() cannot be null")
 	}
 	if table.IsCached() != true {
@@ -235,7 +235,7 @@ func Test__Table__GetRelationByName(t *testing.T) {
 		nameLenght := (abs(i) % 30) + 2
 		// fixture
 		relationName := randStringBytes(nameLenght)
-		relation.Init(int32(i), relationName, "11", "hell1", nil, relationtype.Mtm, false, true, false)
+		relation.Init(int32(i), relationName, "11", nil, relationtype.Mtm, false, true, false)
 		relations = append(relations, *relation)
 	}
 
@@ -410,7 +410,7 @@ func Test__Table__toMeta(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", "hell1", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, true, false)
 
 	metaData := elemt.toMeta()
 	newTable := metaData.toTable(fields, relations, indexes)

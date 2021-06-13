@@ -11,17 +11,17 @@ import (
 )
 
 type Relation struct {
-	id                  int32
-	name                string
-	description         string
-	physicalName        string
-	inverseRelationName string
-	mtmTable            string
-	toTable             *Table
-	relationType        relationtype.RelationType
-	notNull             bool
-	baseline            bool
-	active              bool
+	id              int32
+	name            string
+	description     string
+	mtmTable        *Table
+	inverseRelation *Relation
+	toTable         *Table
+	relationType    relationtype.RelationType
+	constraint      bool
+	notNull         bool
+	baseline        bool
+	active          bool
 }
 
 const (
@@ -31,23 +31,16 @@ const (
 	mtmLeftPadding         string = "0"
 )
 
-func (relation *Relation) Init(id int32, name string, description string, inverseRelationName string,
-	toTable *Table, relationType relationtype.RelationType, notNull bool, baseline bool, active bool) {
+func (relation *Relation) Init(id int32, name string, description string, toTable *Table, relationType relationtype.RelationType,
+	notNull bool, baseline bool, active bool) {
 	relation.id = id
 	relation.name = name
 	relation.description = description
-	relation.inverseRelationName = inverseRelationName
 	relation.toTable = toTable
 	relation.relationType = relationType
 	relation.notNull = notNull
 	relation.baseline = baseline
 	relation.active = active
-	// at the end ==>
-	if toTable != nil {
-		relation.physicalName = relation.getPhysicalName(toTable.GetDatabaseProvider(), name)
-	} else {
-		relation.physicalName = name
-	}
 }
 
 //******************************
@@ -65,11 +58,7 @@ func (relation *Relation) GetDescription() string {
 	return relation.description
 }
 
-func (relation *Relation) GetInverseRelationName() string {
-	return relation.inverseRelationName
-}
-
-func (relation *Relation) GetMtmTableName() string {
+func (relation *Relation) GetMtmTable() *Table {
 	return relation.mtmTable
 }
 
@@ -93,35 +82,40 @@ func (relation *Relation) IsActive() bool {
 	return relation.active
 }
 
-func (relation *Relation) GetPhysicalName() string {
-	return relation.physicalName
-}
-
 func (relation *Relation) GetEntityType() entitytype.EntityType {
 	return entitytype.Relation
+}
+
+func (relation *Relation) GetInverseRelation() *Relation {
+	return relation.inverseRelation
 }
 
 func (relation *Relation) setToTable(table *Table) {
 	relation.toTable = table
 }
 
-func (relation *Relation) GetInverseRelation() *Relation {
-	if relation.toTable != nil {
-		return relation.toTable.GetRelationByName(relation.inverseRelationName)
-	}
-	return nil
+func (relation *Relation) setInverseRelation(inverseRelation *Relation) {
+	relation.inverseRelation = inverseRelation
+}
+
+func (relation *Relation) setMtmTable(table *Table) {
+	relation.mtmTable = table
 }
 
 //******************************
 // public methods
 //******************************
+func (relation *Relation) GetPhysicalName(provider databaseprovider.DatabaseProvider) string {
+	return relation.getPhysicalName(provider, relation.name)
+}
+
 func (relation *Relation) GetDdl(provider databaseprovider.DatabaseProvider) string {
 	if relation.toTable != nil {
 		targetPrimaryKey := relation.toTable.GetPrimaryKey()
 		if targetPrimaryKey != nil {
 			datatype := targetPrimaryKey.getSqlDataType(provider)
 			if datatype != unknownFieldDataType {
-				return relation.name + ddlSpace + datatype
+				return relation.GetPhysicalName(provider) + ddlSpace + datatype
 			}
 		}
 	}
@@ -130,13 +124,9 @@ func (relation *Relation) GetDdl(provider databaseprovider.DatabaseProvider) str
 
 func (relation *Relation) Clone() *Relation {
 	newRelation := new(Relation)
-	/*
-		id int32, name string, description string, inverseRelationName string,
-			mtmTable string, toTable *Table, relationType relationType.RelationType, notNull bool, baseline bool, active bool
-	*/
+
 	// don't clone ToTable for reflexive relationship (recursive call)
-	newRelation.Init(relation.id, relation.name, relation.description,
-		relation.inverseRelationName, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
+	newRelation.Init(relation.id, relation.name, relation.description, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
 		relation.active)
 	return newRelation
 }
@@ -144,7 +134,7 @@ func (relation *Relation) Clone() *Relation {
 func (relation *Relation) String() string {
 	//"name=%s; description=%s; type=%s; "
 	return fmt.Sprintf(relationToStringFormat, relation.name, relation.description, relation.relationType.String(),
-		relation.getToTableName(), relation.baseline, relation.notNull, relation.GetInverseRelationName())
+		relation.getToTableName(), relation.baseline, relation.notNull, relation.GetInverseRelation().GetName())
 }
 
 //******************************
@@ -173,26 +163,23 @@ func (relation *Relation) toMeta(tableId int32) *meta {
 	// others
 	if relation.toTable != nil {
 		result.dataType = relation.toTable.GetId() // to table id
-	} else {
-		//TODO LOG
 	}
+
 	result.flags = 0
 	result.setEntityBaseline(relation.baseline)
 	// add flags for relation type
 	result.setRelationNotNull(relation.notNull)
 	result.setRelationType(relation.relationType)
 
-	result.value = relation.inverseRelationName
+	if relation.inverseRelation != nil {
+		result.value = relation.inverseRelation.name
+	}
+
 	result.name = relation.name // max length 30 !! must be validated before
 	result.description = relation.description
 	result.enabled = relation.active
-	return result
-}
 
-func (relation *Relation) loadMtm(fromTableId int32) {
-	if relation.relationType == relationtype.Mtm && relation.toTable != nil && relation.mtmTable == "" {
-		relation.mtmTable = relation.getMtmName(fromTableId)
-	}
+	return result
 }
 
 func (relation *Relation) getMtmName(fromTableId int32) string {
