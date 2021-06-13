@@ -1035,9 +1035,6 @@ func (table *Table) create(jobId int64) error {
 	// create indexes except for @meta & meta_id tables
 	table.createIndexes(schema)
 
-	// create field constraints
-	table.createConstraints(schema)
-
 	duration := time.Now().Sub(creationTime)
 
 	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()),
@@ -1061,31 +1058,67 @@ func (table *Table) createIndexes(schema *Schema) {
 }
 
 func (table *Table) createConstraints(schema *Schema) {
-	// add primary key
-	var primaryKey = new(constraint)
-	var logger = schema.getLogger()
-
-	primaryKey.Init(constrainttype.PrimaryKey, table)
-	err := primaryKey.create(schema)
-	if err != nil {
-		logger.error(-1, 0, err)
+	if table.tableType != tabletype.Mtm {
+		// add primary key
+		var primaryKey = new(constraint)
+		var logger = schema.getLogger()
+		primaryKey.Init(constrainttype.PrimaryKey, table)
+		err := primaryKey.create(schema)
+		if err != nil {
+			logger.error(-1, 0, err)
+		}
 	}
+	table.createFieldConstraints(schema)
+	table.createRelationConstraints(schema)
+}
+
+func (table *Table) createFieldConstraints(schema *Schema) {
 	var checkConstraint = new(constraint)
 	checkConstraint.Init(constrainttype.Check, table)
 	var notNullConstraint = new(constraint)
 	notNullConstraint.Init(constrainttype.NotNull, table)
+	var logger = schema.getLogger()
 
+	// not null constraints
 	for i := 0; i < len(table.fields); i++ {
 		field := table.fields[i]
 		checkConstraint.setField(field)
-		err = checkConstraint.create(schema)
+		err := checkConstraint.create(schema)
 		if err != nil {
 			logger.error(-1, 0, err)
 		}
-		notNullConstraint.setField(field)
-		err = notNullConstraint.create(schema)
+		if field.IsNotNull() {
+			notNullConstraint.setField(field)
+			err = notNullConstraint.create(schema)
+			if err != nil {
+				logger.error(-1, 0, err)
+			}
+		}
+	}
+}
+
+func (table *Table) createRelationConstraints(schema *Schema) {
+	var foreignKeyConstraint = new(constraint)
+	var notNullConstraint = new(constraint)
+	var logger = schema.getLogger()
+
+	foreignKeyConstraint.Init(constrainttype.ForeignKey, table)
+	notNullConstraint.Init(constrainttype.NotNull, table)
+
+	// foreign Key constraints
+	for i := 0; i < len(table.relations); i++ {
+		relation := table.relations[i]
+		foreignKeyConstraint.setRelation(relation)
+		notNullConstraint.setRelation(relation)
+		err := foreignKeyConstraint.create(schema)
 		if err != nil {
 			logger.error(-1, 0, err)
+		}
+		if relation.IsNotNull() == true {
+			err := notNullConstraint.create(schema)
+			if err != nil {
+				logger.error(-1, 0, err)
+			}
 		}
 	}
 }
@@ -1111,19 +1144,23 @@ func (table *Table) getMtmTable(schema *Schema, relation *Relation, name string)
 	var indexes = make([]Index, 1, 1)
 	var result = new(Table)
 	var inverseRelation = relation.GetInverseRelation()
-
+	var metaSchema = GetSchemaByName(metaSchemaName)
+	var indexIdSeq = metaSchema.GetSequenceByName(sequenceIndexId)
+	var indexId = int32(indexIdSeq.NextValue())
 	// index
 	var uk = Index{}
 	var indexedFields = []string{relation.GetName(), inverseRelation.GetName()}
-	uk.Init(1, relation.GetName(), "", indexedFields, false, true, true, true)
+
+	uk.Init(indexId, relation.GetName(), "", indexedFields, false, true, true, true)
 	indexes = append(indexes, uk)
 
 	// relations
 	var relationA = Relation{}
 	var relationB = Relation{}
 
-	relationA.Init(1, relation.GetName(), "", relation.GetToTable(), relationtype.Mto, true, true, true)
-	relationB.Init(2, inverseRelation.GetName(), "", inverseRelation.GetToTable(), relationtype.Mto, true, true, true)
+	relationA.Init(1, relation.GetName(), "", relation.GetToTable(), relationtype.Mto, relation.HasConstraint(), true, true, true)
+	relationB.Init(2, inverseRelation.GetName(), "", inverseRelation.GetToTable(), relationtype.Mto, relation.HasConstraint(),
+		true, true, true)
 
 	relations = append(relations, relationA)
 	relations = append(relations, relationB)

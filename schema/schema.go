@@ -396,7 +396,7 @@ func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]
 }
 
 func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
-	// create missing tables
+	// 1> create missing tables
 	for tablePhysName, tableName := range newDico {
 		if _, ok := prevDico[tablePhysName]; !ok {
 			table := schema.GetTableByName(tableName)
@@ -405,7 +405,18 @@ func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newD
 			}
 		}
 	}
-	// create missing mtm relations
+	// 2> create constraints
+	for tablePhysName, tableName := range newDico {
+		if _, ok := prevDico[tablePhysName]; !ok {
+			table := schema.GetTableByName(tableName)
+			table.createConstraints(schema)
+		}
+	}
+	schema.createMtmTables(jobId, prevDico, newDico)
+}
+
+func (schema *Schema) createMtmTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
+	// 3> create missing mtm relations
 	for tablePhysName, tableName := range newDico {
 		if _, ok := prevDico[tablePhysName]; !ok {
 			table := schema.GetTableByName(tableName)
@@ -413,6 +424,7 @@ func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newD
 				relation := table.relations[i]
 				if relation.GetType() == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 					relation.GetMtmTable().create(jobId)
+					relation.GetMtmTable().createConstraints(schema)
 				}
 			}
 		}
@@ -723,7 +735,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 func (schema *Schema) getJobIdValue() int64 {
 	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
 	if jobIdSequence != nil {
-		return jobIdSequence.GetValue()
+		return jobIdSequence.NextValue()
 
 	}
 	return -1
@@ -732,8 +744,7 @@ func (schema *Schema) getJobIdValue() int64 {
 func (schema *Schema) getJobIdNextValue() int64 {
 	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
 	if jobIdSequence != nil {
-		jobIdSequence.NextValue()
-		return jobIdSequence.GetValue()
+		return jobIdSequence.NextValue()
 	}
 	return -1
 }

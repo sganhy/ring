@@ -35,45 +35,46 @@ type Import struct {
 }
 
 const (
-	errorImportFileNotInitialized string = "Import File object is not initialized."
-	errorImportInvalidId          string = "Invalid attribute {id}"
-	errorImportFieldSize          string = "Invalid field size"
-	importTableTag1               string = "object"
-	importTableTag2               string = "table"
-	importFieldTag                string = "field"
-	importTablespaceTag           string = "tablespace"
-	importSchemaTag               string = "schema"
-	importDescriptionTag          string = "description"
-	importRelationTag             string = "relation"
-	importIndexTag                string = "index"
-	importIndexFieldTag           string = "index_field"
-	importXmlAttributeVersionTag  string = "version"
-	importXmlAttributeLangTag     string = "default_language"
-	importXmlAttributeFileTag     string = "file"
-	importXmlAttributeNameTag     string = "name"
-	importXmlAttributeSubjectTag  string = "suject"
-	importXmlAttributeTypeTag     string = "type"
-	importXmlAttributeDefaultTag  string = "default"
-	importXmlAttributeIdTag1      string = "id"
-	importXmlAttributeIdTag2      string = "type_id"
-	importXmlAttributeToTag       string = "to"
-	importXmlAttributeInverseTag  string = "inverse_relation"
-	importXmlAttributeBaseline    string = "baseline"
-	importXmlAttributeCached      string = "cached"
-	importXmlBoolTrueValue1       string = "true"
-	importXmlBoolTrueValue2       string = "1"
-	importXmlBoolFalseValue1      string = "false"
-	importXmlBoolFalseValue2      string = "0"
-	importXmlAttributeSize        string = "size"
-	importXmlAttributeReadonly    string = "readonly"
-	importXmlAttributeUnique      string = "unique"
-	importXmlAttributeBitmap      string = "bitmap"
-	importXmlAttributeNotNull     string = "not_null"
-	importXmlAttributeSensitive   string = "case_sensitive"
-	importXmlAttributeMultiLang   string = "multilingual"
-	importMinId                   int64  = -2147483648
-	importMaxId                   int64  = 2147483647
-	baseErrorId                   int32  = 11
+	errorImportFileNotInitialized   string = "Import File object is not initialized."
+	errorImportInvalidId            string = "Invalid attribute {id}"
+	errorImportFieldSize            string = "Invalid field size"
+	importTableTag1                 string = "object"
+	importTableTag2                 string = "table"
+	importFieldTag                  string = "field"
+	importTablespaceTag             string = "tablespace"
+	importSchemaTag                 string = "schema"
+	importDescriptionTag            string = "description"
+	importRelationTag               string = "relation"
+	importIndexTag                  string = "index"
+	importIndexFieldTag             string = "index_field"
+	importXmlAttributeVersionTag    string = "version"
+	importXmlAttributeLangTag       string = "default_language"
+	importXmlAttributeFileTag       string = "file"
+	importXmlAttributeNameTag       string = "name"
+	importXmlAttributeSubjectTag    string = "suject"
+	importXmlAttributeTypeTag       string = "type"
+	importXmlAttributeDefaultTag    string = "default"
+	importXmlAttributeIdTag1        string = "id"
+	importXmlAttributeIdTag2        string = "type_id"
+	importXmlAttributeToTag         string = "to"
+	importXmlAttributeInverseTag    string = "inverse_relation"
+	importXmlAttributeBaseline      string = "baseline"
+	importXmlAttributeConstraintTag string = "constraint"
+	importXmlAttributeCached        string = "cached"
+	importXmlBoolTrueValue1         string = "true"
+	importXmlBoolTrueValue2         string = "1"
+	importXmlBoolFalseValue1        string = "false"
+	importXmlBoolFalseValue2        string = "0"
+	importXmlAttributeSize          string = "size"
+	importXmlAttributeReadonly      string = "readonly"
+	importXmlAttributeUnique        string = "unique"
+	importXmlAttributeBitmap        string = "bitmap"
+	importXmlAttributeNotNull       string = "not_null"
+	importXmlAttributeSensitive     string = "case_sensitive"
+	importXmlAttributeMultiLang     string = "multilingual"
+	importMinId                     int64  = -2147483648
+	importMaxId                     int64  = 2147483647
+	baseErrorId                     int32  = 11
 )
 
 var (
@@ -442,6 +443,7 @@ func (importFile *Import) getRelationFlags(attributes *[]xml.Attr) uint64 {
 	metaData := meta{}
 	count := len(*attributes)
 	metaData.flags = 0
+	metaData.setRelationConstraint(true)
 
 	for i := 0; i < count; i++ {
 		var attribute = (*attributes)[i]
@@ -460,6 +462,11 @@ func (importFile *Import) getRelationFlags(attributes *[]xml.Attr) uint64 {
 		}
 		if strings.ToLower(attribute.Name.Local) == importXmlAttributeTypeTag {
 			metaData.setRelationType(relationtype.GetRelationType(attributeValue))
+		}
+		if strings.ToLower(attribute.Name.Local) == importXmlAttributeConstraintTag &&
+			(strings.EqualFold(attributeValue, importXmlBoolFalseValue1) ||
+				strings.EqualFold(attributeValue, importXmlBoolFalseValue2)) {
+			metaData.setRelationConstraint(false)
 		}
 	}
 	return metaData.flags

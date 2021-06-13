@@ -18,7 +18,7 @@ type Relation struct {
 	inverseRelation *Relation
 	toTable         *Table
 	relationType    relationtype.RelationType
-	constraint      bool
+	constraint      bool // add foreign key
 	notNull         bool
 	baseline        bool
 	active          bool
@@ -32,7 +32,7 @@ const (
 )
 
 func (relation *Relation) Init(id int32, name string, description string, toTable *Table, relationType relationtype.RelationType,
-	notNull bool, baseline bool, active bool) {
+	constraint bool, notNull bool, baseline bool, active bool) {
 	relation.id = id
 	relation.name = name
 	relation.description = description
@@ -40,6 +40,7 @@ func (relation *Relation) Init(id int32, name string, description string, toTabl
 	relation.relationType = relationType
 	relation.notNull = notNull
 	relation.baseline = baseline
+	relation.constraint = constraint
 	relation.active = active
 }
 
@@ -80,6 +81,10 @@ func (relation *Relation) IsBaseline() bool {
 
 func (relation *Relation) IsActive() bool {
 	return relation.active
+}
+
+func (relation *Relation) HasConstraint() bool {
+	return relation.constraint
 }
 
 func (relation *Relation) GetEntityType() entitytype.EntityType {
@@ -126,8 +131,9 @@ func (relation *Relation) Clone() *Relation {
 	newRelation := new(Relation)
 
 	// don't clone ToTable for reflexive relationship (recursive call)
-	newRelation.Init(relation.id, relation.name, relation.description, relation.toTable, relation.relationType, relation.notNull, relation.baseline,
-		relation.active)
+	newRelation.Init(relation.id, relation.name, relation.description, relation.toTable, relation.relationType,
+		relation.constraint, relation.notNull, relation.baseline, relation.active)
+
 	return newRelation
 }
 

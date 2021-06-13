@@ -50,7 +50,7 @@ func main() {
 	*/
 
 	schema2 := importFile.GetSchema()
-	table2 := schema2.GetTableByName("ability")
+	table2 := schema2.GetTableByName("class")
 	fmt.Println(table2.GetName())
 
 	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
@@ -142,9 +142,9 @@ func main() {
 	elemt := new(schema.Table)
 	elemr := schema.Relation{}
 
-	elemr.Init(21, "rel test", "hellkzae", elemt, relationtype.Mto, false, true, false)
+	elemr.Init(21, "rel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
 	elemr0 := schema.Relation{}
-	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, false, true, false)
+	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
 
 	var aarr = []string{"Gga", "Zorba"}
 	elemi := schema.Index{}

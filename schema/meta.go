@@ -35,6 +35,7 @@ const (
 	bitPositionFirstPositionSize      uint8  = 17 // max value bit pos for field=16 !!!
 	bitPositionFirstPositionRelType   uint8  = 18 // max value bit pos for field=17 !!!
 	bitPositionRelationNotNull        uint8  = 4  // max value bit pos for relation =17 !!!
+	bitPositionRelationConstraint     uint8  = 5
 	bitPositionFirstPositionParamType uint8  = 14 // max value bit pos for field=16 !!!
 	bitPositionTableCached            uint8  = 9
 	bitPositionTableReadonly          uint8  = 10
@@ -69,6 +70,9 @@ func (metaData *meta) IsEntityBaseline() bool {
 }
 func (metaData *meta) IsRelationNotNull() bool {
 	return metaData.readFlag(bitPositionRelationNotNull)
+}
+func (metaData *meta) IsRelationConstraint() bool {
+	return metaData.readFlag(bitPositionRelationConstraint)
 }
 func (metaData *meta) IsIndexUnique() bool {
 	return metaData.readFlag(bitPositionIndexUnique)
@@ -135,7 +139,7 @@ func (metaData *meta) toRelation(table *Table) *Relation {
 	if metaData.GetEntityType() == entitytype.Relation {
 		var relation = new(Relation)
 		relation.Init(metaData.id, metaData.name, metaData.description, table, metaData.GetRelationType(),
-			metaData.IsRelationNotNull(), metaData.IsEntityBaseline(), metaData.enabled)
+			metaData.IsRelationConstraint(), metaData.IsRelationNotNull(), metaData.IsEntityBaseline(), metaData.enabled)
 		return relation
 	}
 	return nil
@@ -244,7 +248,9 @@ func (metaData *meta) setEntityBaseline(value bool) {
 func (metaData *meta) setRelationNotNull(value bool) {
 	metaData.writeFlag(bitPositionRelationNotNull, value)
 }
-
+func (metaData *meta) setRelationConstraint(value bool) {
+	metaData.writeFlag(bitPositionRelationConstraint, value)
+}
 func (metaData *meta) setIndexBitmap(value bool) {
 	metaData.writeFlag(bitPositionIndexBitmap, value)
 }

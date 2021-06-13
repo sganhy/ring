@@ -17,6 +17,7 @@ type constraint struct {
 	constType constrainttype.ConstraintType
 	table     *Table
 	field     *Field
+	relation  *Relation
 }
 
 const (
@@ -24,7 +25,9 @@ const (
 	constraintPkShortPrefix string = "pk"
 	constraintCkPrefix      string = "ck_"
 	constraintFkPrefix      string = "fk_"
-	createPkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s PRIMARY KEY (%s) %s"
+	constraintSeparator     string = "_"
+	createFkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s %s (%s) REFERENCES %s (%s)"
+	createPkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s %s (%s) %s"
 	createNnPostGreSql      string = "%s %s %s ALTER COLUMN %s SET NOT NULL"
 	createNnMySql           string = "%s %s %s MODIFY %s NOT NULL"
 	createCkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN -128 AND 127)"
@@ -40,7 +43,12 @@ func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *T
 //******************************
 func (constr *constraint) GetEntityType() entitytype.EntityType {
 	return entitytype.Constraint
-
+}
+func (constr *constraint) setField(field *Field) {
+	constr.field = field
+}
+func (constr *constraint) setRelation(relation *Relation) {
+	constr.relation = relation
 }
 
 //******************************
@@ -50,9 +58,11 @@ func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tableSpace 
 	if statment == ddlstatement.Create {
 		switch constr.constType {
 		case constrainttype.PrimaryKey:
-			return constr.getDdlPrimaryKey(tableSpace)
+			return constr.getDdlCreatePrimaryKey(tableSpace)
 		case constrainttype.Check:
 			return constr.getDdlCheck()
+		case constrainttype.ForeignKey:
+			return constr.getDdlCreateForeignKey()
 		case constrainttype.NotNull:
 			return constr.getDdlNotNull()
 		}
@@ -84,10 +94,6 @@ func (constr *constraint) create(schema *Schema) error {
 	return nil
 }
 
-func (constr *constraint) setField(field *Field) {
-	constr.field = field
-}
-
 func (constr *constraint) getPhysicalName() string {
 	result := ""
 	switch constr.constType {
@@ -107,7 +113,14 @@ func (constr *constraint) getPhysicalName() string {
 		result = constr.getCheckName()
 		break
 	case constrainttype.ForeignKey:
-		result = ""
+		var tableId = ""
+		if constr.table.GetType() == tabletype.Mtm {
+			//TODO define fk name for MTM tables
+			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 4)
+		} else {
+			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 4)
+		}
+		result = constraintFkPrefix + tableId + constraintSeparator + constr.relation.GetName()
 		break
 	}
 	return sqlfmt.FormatEntityName(constr.table.GetDatabaseProvider(), result)
@@ -129,7 +142,7 @@ func (constr *constraint) getCheckName() string {
 	return result
 }
 
-func (constr *constraint) getDdlPrimaryKey(tableSpace *tablespace) string {
+func (constr *constraint) getDdlCreatePrimaryKey(tableSpace *tablespace) string {
 	var sqlTablespace = ""
 	var fields = constr.table.getUniqueFieldList()
 	var provider = constr.table.GetDatabaseProvider()
@@ -144,24 +157,51 @@ func (constr *constraint) getDdlPrimaryKey(tableSpace *tablespace) string {
 		switch provider {
 		case databaseprovider.PostgreSql, databaseprovider.MySql:
 			return strings.Trim(fmt.Sprintf(createPkPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
-				constr.table.GetPhysicalName(), constr.getPhysicalName(), fields, sqlTablespace), " ")
+				constr.table.GetPhysicalName(), constr.getPhysicalName(), constrainttype.PrimaryKey.String(),
+				fields, sqlTablespace), " ")
+		}
+	}
+	return ""
+}
+
+func (constr *constraint) getDdlCreateForeignKey() string {
+	if constr.relation != nil && constr.relation.HasConstraint() == true {
+
+		var provider = constr.table.GetDatabaseProvider()
+		switch provider {
+		case databaseprovider.PostgreSql, databaseprovider.MySql:
+			return strings.Trim(fmt.Sprintf(createFkPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
+				constr.table.GetPhysicalName(), constr.getPhysicalName(), constrainttype.ForeignKey.String(),
+				constr.relation.GetPhysicalName(provider), constr.relation.toTable.GetPhysicalName(),
+				constr.relation.toTable.GetPrimaryKey().GetPhysicalName(provider)), " ")
 		}
 	}
 	return ""
 }
 
 func (constr *constraint) getDdlNotNull() string {
+	var fieldName string
+	var provider = constr.table.GetDatabaseProvider()
+	var dataType string
+
 	if constr.field != nil && constr.field.IsNotNull() {
-		provider := constr.table.GetDatabaseProvider()
-		switch provider {
-		case databaseprovider.PostgreSql:
-			return strings.Trim(fmt.Sprintf(createNnPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
-				constr.table.GetPhysicalName(), constr.field.GetPhysicalName(provider)), ddlSpace)
-		case databaseprovider.MySql:
-			return strings.Trim(fmt.Sprintf(createNnMySql, ddlstatement.Alter.String(), entitytype.Table.String(),
-				constr.table.GetPhysicalName(), constr.field.GetDdl(provider, constr.table.GetType())), ddlSpace)
-		}
+		fieldName = constr.field.GetPhysicalName(provider)
+		dataType = constr.field.getSqlDataType(provider)
 	}
+	if constr.relation != nil && constr.relation.IsNotNull() {
+		fieldName = constr.relation.GetPhysicalName(provider)
+		//dataType = constr.relation.getSqlDataType(provider)
+	}
+	switch provider {
+	case databaseprovider.PostgreSql:
+		return strings.Trim(fmt.Sprintf(createNnPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
+			constr.table.GetPhysicalName(), fieldName), ddlSpace)
+	case databaseprovider.MySql:
+		return strings.Trim(fmt.Sprintf(createNnMySql, ddlstatement.Alter.String(), entitytype.Table.String(),
+			constr.table.GetPhysicalName(), fieldName+ddlSpace+dataType), ddlSpace)
+		//constr.field.GetDdl(provider, constr.table.GetType()))
+	}
+
 	return ""
 }
 

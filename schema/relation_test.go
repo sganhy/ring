@@ -16,7 +16,7 @@ func Test__Relation__Init(t *testing.T) {
 	table := new(Table)
 	elemr0 := Relation{}
 	elemt := table.getMetaTable(databaseprovider.PostgreSql, metaSchemaName)
-	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, false, true, false)
+	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
 
 	if elemr0.GetName() != "arel test" {
 		t.Errorf("Relation.Init() ==> name <> GetName()")
@@ -29,6 +29,9 @@ func Test__Relation__Init(t *testing.T) {
 	}
 	if elemr0.GetType() != relationtype.Mto {
 		t.Errorf("Relationeld.Init() ==> type <> GetType()")
+	}
+	if elemr0.HasConstraint() != true {
+		t.Errorf("Relationeld.Init() ==> HasConstraint() <> true")
 	}
 	if elemr0.IsNotNull() != false {
 		t.Errorf("Relationeld.Init() ==> IsNotNull() <> false")
@@ -67,7 +70,7 @@ func Test__Relation__toMeta(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, false, true, false)
 
 	metaData := elemr0.toMeta(777)
 	elemr1 := metaData.toRelation(&elemt)
@@ -90,6 +93,9 @@ func Test__Relation__toMeta(t *testing.T) {
 	}
 	if elemr0.IsBaseline() != elemr1.IsBaseline() {
 		t.Errorf("Relation.toMeta() ==> r0.IsBaseline() must be equal to r1.IsBaseline()")
+	}
+	if elemr0.HasConstraint() != elemr1.HasConstraint() {
+		t.Errorf("Relation.toMeta() ==> r0.HasConstraint() must be equal to r1.HasConstraint()")
 	}
 	if elemr0.IsNotNull() != elemr1.IsNotNull() {
 		t.Errorf("Relation.toMeta() ==> r0.IsNotNull() must be equal to r1.IsNotNull()")
@@ -117,7 +123,7 @@ func Test__Relation__GetDdl(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, false, true, false)
 
 	var sql = elemr0.GetDdl(databaseprovider.PostgreSql)
 	if strings.ToUpper(sql) != "REL TEST INT8" {
@@ -147,7 +153,7 @@ func Test__Relation__Clone(t *testing.T) {
 
 	elemr0 := Relation{}
 	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, true, false)
+	elemr0.Init(23, "rel test", "hellkzae", &elemt, relationtype.Otop, false, false, true, false)
 	elemr1 := elemr0.Clone()
 
 	if elemr0.GetId() != elemr1.GetId() {
@@ -170,20 +176,20 @@ func Test__Relation__Clone(t *testing.T) {
 	}
 }
 
-// test loadMtmName, getMtmName, and getToTableName
+// test getMtmName, and getToTableName
 func Test__Relation__loadMtmName(t *testing.T) {
 	var relations = []Relation{}
 	var indexes = []Index{}
 	var fields = []Field{}
 
 	elemr0 := Relation{}
-	elemr0.Init(23, "test", "hellkzae", nil, relationtype.Mtm, false, true, false)
+	elemr0.Init(23, "test", "hellkzae", nil, relationtype.Mtm, false, false, true, false)
 
 	//*****
 	//***** REFLEXIVE MTM RELATIONS (fromTableId == toTableId)
 	//*****
 	elemr1 := Relation{}
-	elemr1.Init(24, "test inv", "hellkzae", nil, relationtype.Mtm, false, true, false)
+	elemr1.Init(24, "test inv", "hellkzae", nil, relationtype.Mtm, false, false, true, false)
 
 	relations = append(relations, elemr0)
 	relations = append(relations, elemr1)
@@ -212,7 +218,7 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	//TABLE 1
 	relations = make([]Relation, 1, 1)
 	elemr3 := Relation{}
-	elemr3.Init(25, "test2", "[description]", nil, relationtype.Mtm, false, true, false)
+	elemr3.Init(25, "test2", "[description]", nil, relationtype.Mtm, false, false, true, false)
 	relations[0] = elemr3
 	elemt01.Init(22, "rel test", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
 		true, false, true, false)
@@ -220,7 +226,7 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	//TABLE 2
 	relations = make([]Relation, 1, 1)
 	elemr4 := Relation{}
-	elemr4.Init(24, "test2 inv", "[description]", nil, relationtype.Mtm, false, true, false)
+	elemr4.Init(24, "test2 inv", "[description]", nil, relationtype.Mtm, false, false, true, false)
 	relations[0] = elemr4
 	elemt02 := Table{}
 	elemt02.Init(23, "rel test33", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",

@@ -116,7 +116,9 @@ func (index *Index) GetPhysicalName(table *Table) string {
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	case tabletype.Mtm:
-		result.WriteString("mtm_")
+		var tableType = tabletype.Mtm
+		result.WriteString(tableType.String())
+		result.WriteString("_")
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	default:

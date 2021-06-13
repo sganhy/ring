@@ -74,14 +74,8 @@ func (sequence *Sequence) getCacheId() *cacheId {
 //******************************
 // public methods
 //******************************
-func (sequence *Sequence) GetValue() int64 {
-	if sequence.value.IsInitialized() == false {
-		sequence.NextValue()
-	}
-	return sequence.value.currentId
-}
-func (sequence *Sequence) NextValue() {
-	_ = sequence.value.GetNewId()
+func (sequence *Sequence) NextValue() int64 {
+	return sequence.value.GetNewId()
 }
 
 func (sequence *Sequence) Clone() *Sequence {
