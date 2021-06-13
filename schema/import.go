@@ -262,7 +262,6 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 			reflect.ValueOf(d).Elem().FieldByName("line").Int())
 		metaData.flags = importFile.getTableFlags(&ty.Attr)
 		metaData.description = importFile.getDescription(&ty.Attr)
-		metaData.loadPhysicalName(importFile.provider, importFile.schemaName)
 		*referenceId = metaData.id
 	}
 	// FIELDS
@@ -272,7 +271,6 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 		metaData = importFile.getXmlMeta(&ty.Attr, entitytype.Field, *referenceId, *fieldId, line)
 		metaData.flags = importFile.getFieldFlags(&ty.Attr, line)
 		metaData.description = importFile.getDescription(&ty.Attr)
-		metaData.loadPhysicalName(importFile.provider, importFile.schemaName)
 	}
 	// RELATIONS
 	if strings.ToLower(ty.Name.Local) == importRelationTag {
@@ -300,6 +298,7 @@ func (importFile *Import) manageElement(d *xml.Decoder, ty *xml.StartElement, fi
 
 func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *meta {
 	var result = new(meta)
+	var schema = new(Schema)
 
 	result.flags = uint64(importFile.provider)
 	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
@@ -308,7 +307,7 @@ func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *
 	result.id = 0
 	result.lineNumber = line
 	result.enabled = true
-	result.loadPhysicalName(importFile.provider, importFile.schemaName)
+	result.value = schema.getPhysicalName(importFile.provider, importFile.schemaName)
 
 	return result
 }

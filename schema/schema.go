@@ -742,7 +742,7 @@ func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, da
 	for i := 0; i < len(metaList); i++ {
 		var metaData = metaList[i]
 		if metaData.GetEntityType() == entitytype.Schema {
-			return metaData.name, metaData.description, metaData.physicalName,
+			return metaData.name, metaData.description, metaData.value,
 				databaseprovider.GetDatabaseProviderById(int(metaData.flags))
 		}
 	}

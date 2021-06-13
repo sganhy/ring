@@ -72,7 +72,6 @@ const (
 	metaLogTableName     string = "@log"
 	metaLogThreadId      string = "thread_id"
 	metaName             string = "name"
-	metaPhysicalName     string = "physical_name"
 	metaObjectType       string = "object_type"
 	metaReferenceId      string = "reference_id"
 	metaSchemaId         string = "schema_id"
@@ -1204,7 +1203,6 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	flags.Init(1039, metaFlags, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	name.Init(1061, metaName, "", fieldtype.String, 30, "", true, true, true, false, true)
 	// metaName size * 2 ~ schema.name(max 30) + "." + table_name (max 28)
-	physicalName.Init(1069, metaPhysicalName, "", fieldtype.String, 60, "", true, false, true, false, true)
 	description.Init(1087, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
 	value.Init(1093, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
 	active.Init(1103, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)

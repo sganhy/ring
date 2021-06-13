@@ -245,9 +245,6 @@ func (query *metaQuery) getMetaList() []meta {
 				case metaName:
 					result[i].name = record[j]
 					break
-				case metaPhysicalName:
-					result[i].physicalName = record[j]
-					break
 				case metaDescription:
 					result[i].description = record[j]
 					break
@@ -459,10 +456,9 @@ func (query *metaQuery) insertMeta(metaData *meta, schemaId int32) error {
 	params[4] = metaData.dataType
 	params[5] = metaData.flags
 	params[6] = metaData.name
-	params[7] = metaData.physicalName
-	params[8] = metaData.description
-	params[9] = metaData.value
-	params[10] = metaData.enabled
+	params[7] = metaData.description
+	params[8] = metaData.value
+	params[9] = metaData.enabled
 	return query.insert(params)
 }
 

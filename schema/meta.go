@@ -13,17 +13,16 @@ import (
 )
 
 type meta struct {
-	id           int32
-	dataType     int32
-	name         string
-	physicalName string
-	description  string
-	flags        uint64
-	lineNumber   int64
-	objectType   int8
-	refId        int32 // ref id to Id
-	value        string
-	enabled      bool
+	id          int32
+	dataType    int32
+	name        string
+	description string
+	flags       uint64
+	lineNumber  int64
+	objectType  int8
+	refId       int32 // ref id to Id
+	value       string
+	enabled     bool
 }
 
 const (
@@ -45,20 +44,6 @@ const (
 	metaMaxInt8                       int64  = 127
 	metaIndexSeparator                string = ";"
 )
-
-var (
-	dummySchema   *Schema
-	dummyTable    *Table
-	dummyField    *Field
-	dummyRelation *Relation
-)
-
-func init() {
-	dummySchema = new(Schema)
-	dummyTable = new(Table)
-	dummyField = new(Field)
-	dummyRelation = new(Relation)
-}
 
 //******************************
 // getters and setters
@@ -305,25 +290,4 @@ func (metaData *meta) writeFlag(bitPosition uint8, value bool) {
 
 func (metaData *meta) readFlag(bitPosition uint8) bool {
 	return ((metaData.flags >> (bitPosition - 1)) & 1) > 0
-}
-
-func (metaData *meta) loadPhysicalName(provider databaseprovider.DatabaseProvider, schemaName string) {
-	var entType = metaData.GetEntityType()
-	var result string
-	switch entType {
-	case entitytype.Schema:
-		result = dummySchema.getPhysicalName(provider, metaData.name)
-		break
-	case entitytype.Table:
-		var physicalSchemaName = dummySchema.getPhysicalName(provider, schemaName)
-		result = dummyTable.getPhysicalName(provider, tabletype.Business, metaData.name, physicalSchemaName)
-		break
-	case entitytype.Field:
-		result = dummyField.getPhysicalName(provider, metaData.name)
-	case entitytype.Relation:
-		result = dummyRelation.getPhysicalName(provider, metaData.name)
-	}
-	if result != "" && result != metaData.name {
-		metaData.physicalName = result
-	}
 }
