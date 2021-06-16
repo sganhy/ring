@@ -332,6 +332,10 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			index := table.mapper[i]
 			fieldSql := table.fields[index].GetDdl(table.provider, table.tableType)
 			fields = append(fields, fieldSql)
+			if table.fields[index].IsCaseSensitive() == false && table.fields[index].GetType() == fieldtype.String {
+				fieldSql := table.fields[index].getSearchableDdl(table.provider, table.tableType)
+				fields = append(fields, fieldSql)
+			}
 		}
 		for i := 0; i < len(table.relations); i++ {
 			relationSql := table.relations[i].GetDdl(table.provider)
@@ -1035,6 +1039,8 @@ func (table *Table) create(jobId int64) error {
 	// create indexes except for @meta & meta_id tables
 	table.createIndexes(schema)
 
+	//!!! cannot create constraints here due to foreign keys!!!
+
 	duration := time.Now().Sub(creationTime)
 
 	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()),
@@ -1110,9 +1116,11 @@ func (table *Table) createRelationConstraints(schema *Schema) {
 		relation := table.relations[i]
 		foreignKeyConstraint.setRelation(relation)
 		notNullConstraint.setRelation(relation)
-		err := foreignKeyConstraint.create(schema)
-		if err != nil {
-			logger.error(-1, 0, err)
+		if relation.HasConstraint() == true {
+			err := foreignKeyConstraint.create(schema)
+			if err != nil {
+				logger.error(-1, 0, err)
+			}
 		}
 		if relation.IsNotNull() == true {
 			err := notNullConstraint.create(schema)
@@ -1293,7 +1301,7 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	// "id","entry_time","level_id","thread_id","call_site","message","description","machine_name"
 	id.Init(2111, metaLogId, "", fieldtype.Long, 0, "", true, true, true, false, true)
 	entryTime.Init(2129, metaLogEntryTime, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
-	levelId.Init(2131, metaLogLevelId, "", fieldtype.Short, 0, "", true, false, true, false, true)
+	levelId.Init(2131, metaLogLevelId, "", fieldtype.Short, 0, "", true, true, true, false, true)
 	schemaId.Init(2137, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	threadId.Init(2143, metaLogThreadId, "", fieldtype.Int, 0, "", true, false, true, false, true)
 	callSite.Init(2161, metaLogCallSite, "", fieldtype.String, 255, "", true, false, true, false, true)

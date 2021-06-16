@@ -83,23 +83,23 @@ func Test__Constraint__getDdlCreateForeignKey(t *testing.T) {
 	var fields = []Field{}
 	constr := new(constraint)
 
-	//TABLE 1
+	//TABLE_A
 	relations = make([]Relation, 1, 1)
 	elemr3 := Relation{}
-	elemr3.Init(25, "test2", "[description]", nil, relationtype.Mtm, true, false, true, false)
+	elemr3.Init(25, "relation_to_B", "[description]", nil, relationtype.Mtm, true, false, true, false)
 	relations[0] = elemr3
 
 	elemt01 := Table{}
-	elemt01.Init(22, "rel_test", "[description]", fields, relations, indexes, physicaltype.Table, 64, "information_schema",
+	elemt01.Init(22, "table_a", "[description]", fields, relations, indexes, physicaltype.Table, 64, "information_schema",
 		tabletype.Business, databaseprovider.Oracle, "subject test", true, false, true, false)
 
 	//TABLE 2
 	relations = make([]Relation, 1, 1)
 	elemr4 := Relation{}
-	elemr4.Init(24, "test2 inv", "[description]", nil, relationtype.Mtm, true, false, true, false)
+	elemr4.Init(24, "relation_to_A", "[description]", nil, relationtype.Mtm, true, false, true, false)
 	relations[0] = elemr4
 	elemt02 := Table{}
-	elemt02.Init(23, "rel test33", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business,
+	elemt02.Init(23, "table_b", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business,
 		databaseprovider.Oracle, "subject test", true, false, true, false)
 
 	elemt01.relations[0].setToTable(&elemt02)
@@ -113,7 +113,7 @@ func Test__Constraint__getDdlCreateForeignKey(t *testing.T) {
 	elemt01.setDatabaseProvider(databaseprovider.PostgreSql)
 	constr.Init(constrainttype.ForeignKey, &elemt01)
 	constr.setRelation(elemt01.relations[0])
-	expectedSql := "ALTER TABLE information_schema.t_rel_test ADD CONSTRAINT fk_0022_test2 FOREIGN KEY (test2) REFERENCES t_rel test33 (id)"
+	expectedSql := "ALTER TABLE information_schema.t_table_a ADD CONSTRAINT fk_00022_00025 FOREIGN KEY (relation_to_B) REFERENCES t_table_b (id)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCreateForeignKey() ==> query must be equal to " + expectedSql)
 	}

@@ -12,6 +12,7 @@ import (
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/searchabletype"
+
 	"ring/schema/sourcetype"
 	"ring/schema/tabletype"
 	"runtime"
@@ -37,18 +38,14 @@ func main() {
 
 	//var metaSchema = schema.GetSchemaByName("@META")
 	//fmt.Println(metaSchema.GetId())
-
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
 
-	/*
-		var metaSchema = schema.GetSchemaByName("@meta")
-		var metaTable = metaSchema.GetTableByName("@meta")
-		metaTable.Analyze(7548)
-	*/
-
+	var metaSchema = schema.GetSchemaByName("@meta")
+	var metaTable = metaSchema.GetTableByName("@meta")
+	metaTable.Analyze(7548)
 	schema2 := importFile.GetSchema()
 	table2 := schema2.GetTableByName("class")
 	fmt.Println(table2.GetName())

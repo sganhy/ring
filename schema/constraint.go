@@ -110,6 +110,7 @@ func (constr *constraint) getPhysicalName() string {
 		}
 		break
 	case constrainttype.Check:
+		//name:  idx_{table_id}_{index_id}
 		result = constr.getCheckName()
 		break
 	case constrainttype.ForeignKey:
@@ -118,9 +119,11 @@ func (constr *constraint) getPhysicalName() string {
 			//TODO define fk name for MTM tables
 			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 4)
 		} else {
-			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 4)
+			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 5)
 		}
-		result = constraintFkPrefix + tableId + constraintSeparator + constr.relation.GetName()
+		result = constraintFkPrefix + tableId + constraintSeparator +
+			sqlfmt.PadLeft(strconv.FormatInt(int64(constr.relation.GetId()), 10), "0", 5)
+
 		break
 	}
 	return sqlfmt.FormatEntityName(constr.table.GetDatabaseProvider(), result)
@@ -130,10 +133,12 @@ func (constr *constraint) getCheckName() string {
 	result := ""
 	switch constr.table.GetType() {
 	case tabletype.Business:
+		//name: ck_{table_id}_{field_id}
 		result = constraintCkPrefix + strconv.Itoa(int(constr.table.GetId())) + "_" +
 			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break
 	case tabletype.Meta, tabletype.MetaId, tabletype.Log:
+		//name: ck_{table_name}_{field_id}
 		result = constraintCkPrefix + constr.table.GetName() + "_" +
 			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break

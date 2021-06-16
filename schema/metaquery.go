@@ -172,7 +172,7 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 		}
 		var variable = query.table.getVariableName(len(*query.params))
 		var queryFilter strings.Builder
-		var fieldPhysicalName = field.GetPhysicalName(query.table.provider)
+		var fieldPhysicalName = field.GetPhysicalName(query.table.GetDatabaseProvider())
 		// add single cote for varchar values
 		queryFilter.Grow(len(fieldPhysicalName) + len(operator) + 8 + len(variable))
 		queryFilter.WriteString(fieldPhysicalName)
@@ -187,9 +187,9 @@ func (query *metaQuery) addSort(fieldName string, ascending bool) {
 	var field = query.getField(fieldName)
 	if field != nil {
 		if query.sort != "" {
-			query.sort = query.sort + "," + field.GetPhysicalName(query.table.provider)
+			query.sort = query.sort + "," + field.GetPhysicalName(query.table.GetDatabaseProvider())
 		} else {
-			query.sort = field.GetPhysicalName(query.table.provider)
+			query.sort = field.GetPhysicalName(query.table.GetDatabaseProvider())
 		}
 		if ascending == false {
 			query.sort = " DESC"

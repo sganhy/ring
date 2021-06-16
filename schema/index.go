@@ -111,17 +111,18 @@ func (index *Index) GetPhysicalName(table *Table) string {
 
 	switch table.GetType() {
 	case tabletype.Business:
+		//name:  idx_{table_id}_{index_id}
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(table.GetId())), "0", 4))
 		result.WriteString("_")
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
 		break
 	case tabletype.Mtm:
-		var tableType = tabletype.Mtm
-		result.WriteString(tableType.String())
-		result.WriteString("_")
-		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 4))
+		//name:  idx_{from_table_id}_{to_table_id}_{from_relation_id}
+		var indexBody = strings.Replace(table.GetName(), mtmTableNamePrefix, "", 1)
+		result.WriteString(indexBody[1:])
 		break
 	default:
+		//name:  idx_{table_name}_{index_id}
 		result.WriteString(table.GetName()[1:])
 		result.WriteString("_")
 		result.WriteString(sqlfmt.PadLeft(strconv.Itoa(int(index.id)), "0", 3))

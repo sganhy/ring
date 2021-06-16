@@ -59,6 +59,7 @@ const (
 	postgreVarcharMaxSize      uint16 = 65535
 	mySqlVarcharMaxSize        uint16 = 65535
 	sqliteVarcharMaxSize       int64  = 1000000000
+	searchableFieldPrefix      string = "s_"
 	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
 )
 
@@ -194,6 +195,10 @@ func (field *Field) IsValid() bool {
 		return true
 	}
 	return field.id > 0
+}
+
+func (field *Field) getSearchableFieldName() string {
+	return fieldToStringFormat + field.GetName()
 }
 
 func (field *Field) IsPrimaryKey() bool {
@@ -349,6 +354,15 @@ func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) 
 //******************************
 // private methods
 //******************************
+func (field *Field) getSearchableDdl(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+	datatype := field.getSqlDataType(provider)
+	if datatype == unknownFieldDataType {
+		return unknownFieldDataType
+	}
+	return strings.TrimSpace(field.getPhysicalName(provider, field.getSearchableFieldName()+" "+
+		field.getSqlDataType(provider)))
+}
+
 func (field *Field) toMeta(tableId int32) *meta {
 	// we cannot have error here
 	var result = new(meta)

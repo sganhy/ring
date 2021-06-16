@@ -241,11 +241,20 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	if elemt01.relations[0].getMtmName(22) != "@mtm_00022_00023_025" {
 		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to '@mtm_00022_00023_025'")
 	}
+
+	// test GetTableId
+	if elemt01.relations[0].GetTableId() != elemt01.GetId() {
+		t.Errorf("Relation.GetTableId() ==>	GetTableId() should be equal to %d", elemt01.GetId())
+	}
+	if elemt02.relations[0].GetTableId() != elemt02.GetId() {
+		t.Errorf("Relation.GetTableId() ==>	GetTableId() should be equal to %d", elemt01.GetId())
+	}
+
 	if elemt01.relations[0].getMtmName(22) != elemt02.relations[0].getMtmName(23) {
 		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to r4")
 	}
 	// fromTableId < toTableId
-	elemt02.id = 21
+	elemt02.setId(21)
 	if elemt01.relations[0].getMtmName(22) != "@mtm_00021_00022_024" {
 		t.Errorf("Relation.getMtmName() ==>	r3 should be equal to '@mtm_00021_00022_024'")
 	}

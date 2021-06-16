@@ -228,19 +228,19 @@ func Test__Index__GetDdl(t *testing.T) {
 		"[subject]", true, false, true, false)
 
 	if uk.GetPhysicalName(table) != "idx_1077_0001" {
-		t.Errorf("Index.GetPhysicalName() ==> should be equal to idx_1077_0001")
+		t.Errorf("Index.GetPhysicalName() ==> should be equal to 'idx_01077_0001'")
 	}
 
-	table.Init(1077, "@meta", "ATable Test", fields, relations, indexes,
+	table.Init(1077, "@mtm_01021_01031_009", "ATable Test", fields, relations, indexes,
 		physicaltype.Table, -111, "information_schema", tabletype.Mtm, databaseprovider.PostgreSql,
 		"[subject]", true, false, true, false)
 
-	if uk.GetPhysicalName(table) != "idx_mtm_0001" {
-		t.Errorf("Index.GetPhysicalName() ==> should be equal to idx_mtm_0001")
+	if uk.GetPhysicalName(table) != "idx_01021_01031_009" {
+		t.Errorf("Index.GetPhysicalName() ==> should be equal to 'idx_01021_01031_009'")
 	}
 
 	// test DROP
-	query = "DROP INDEX " + postgreSqlSchema + ".idx_mtm_0001"
+	query = "DROP INDEX " + postgreSqlSchema + ".idx_01021_01031_009"
 	metaSchema := new(Schema)
 	metaSchema = metaSchema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
 	metaLogTable := metaSchema.GetTableByName(metaLogTableName)

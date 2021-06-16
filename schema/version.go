@@ -14,7 +14,7 @@ type version struct {
 const (
 	currentMajorVersion      int    = 1
 	currentMinorVersion      int    = 0
-	currentPatchVersion      int    = 3
+	currentPatchVersion      int    = 4
 	currentpreReleaseVersion string = "beta.2"
 
 	// display version

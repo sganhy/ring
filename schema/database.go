@@ -251,19 +251,27 @@ func createPhysicalSchema(schema *Schema) {
 }
 
 func createMetaTables(schema *Schema) {
-	// first create log table
+	// first: create log table
 	logTable := schema.GetTableByName(metaLogTableName)
 	if logTable.exists() == false {
 		err := logTable.create(0)
 		if err != nil {
 			panic(err)
 		}
+		logTable.createConstraints(schema)
+		if err != nil {
+			panic(err)
+		}
 	}
-	// create other meta tables
+	// second: create other meta tables
 	for _, table := range schema.tables {
 		if table.GetId() != logTable.GetId() && table.GetType() != tabletype.Logical &&
 			table.exists() == false {
 			err := table.create(0)
+			if err != nil {
+				panic(err)
+			}
+			table.createConstraints(schema)
 			if err != nil {
 				panic(err)
 			}

@@ -732,15 +732,6 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	return result
 }
 
-func (schema *Schema) getJobIdValue() int64 {
-	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
-	if jobIdSequence != nil {
-		return jobIdSequence.NextValue()
-
-	}
-	return -1
-}
-
 func (schema *Schema) getJobIdNextValue() int64 {
 	var jobIdSequence = schema.GetSequenceByName(sequenceJobIdName)
 	if jobIdSequence != nil {

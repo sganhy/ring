@@ -107,6 +107,10 @@ func (relation *Relation) setMtmTable(table *Table) {
 	relation.mtmTable = table
 }
 
+func (relation *Relation) setId(id int32) {
+	relation.id = id
+}
+
 //******************************
 // public methods
 //******************************
@@ -143,6 +147,13 @@ func (relation *Relation) String() string {
 		relation.getToTableName(), relation.baseline, relation.notNull, relation.GetInverseRelation().GetName())
 }
 
+func (relation *Relation) GetTableId() int32 {
+	if relation.inverseRelation != nil && relation.inverseRelation.toTable != nil {
+		return relation.inverseRelation.toTable.GetId()
+	}
+	return -1
+}
+
 //******************************
 // private methods
 //******************************
@@ -150,7 +161,7 @@ func (relation *Relation) getToTableName() string {
 	if relation.toTable == nil {
 		return ""
 	}
-	return relation.toTable.name
+	return relation.toTable.GetName()
 }
 
 func (relation *Relation) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
@@ -190,7 +201,7 @@ func (relation *Relation) toMeta(tableId int32) *meta {
 
 func (relation *Relation) getMtmName(fromTableId int32) string {
 	var b strings.Builder
-	var toTableid = relation.toTable.id
+	var toTableid = relation.toTable.GetId()
 	var strTo = strconv.FormatInt(int64(toTableid), 10)
 	var strFrom = strconv.FormatInt(int64(fromTableId), 10)
 	var strRelId string
