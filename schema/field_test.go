@@ -475,3 +475,20 @@ func Test__Field__GetValue(t *testing.T) {
 	}
 
 }
+
+func Test__Field__getSearchableDdl(t *testing.T) {
+	elemf0 := new(Field)
+	elemf0.Init(11, "a_name", "AField Test", fieldtype.String, 10, "test default", true, false, false, true, true)
+
+	var provider = databaseprovider.PostgreSql
+	var tableType = tabletype.Business
+
+	if elemf0.getSearchableDdl(provider, tableType) != "s_a_name varchar(10)" {
+		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl('a_name') must be equal to 's_a_name varchar(10)'")
+	}
+
+	if elemf0.getSearchableDdl(databaseprovider.NotDefined, tableType) != unknownFieldDataType {
+		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl(databaseprovider.NotDefined, 'a_name') must be empty")
+	}
+
+}

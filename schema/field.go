@@ -197,10 +197,6 @@ func (field *Field) IsValid() bool {
 	return field.id > 0
 }
 
-func (field *Field) getSearchableFieldName() string {
-	return fieldToStringFormat + field.GetName()
-}
-
 func (field *Field) IsPrimaryKey() bool {
 	// compare addresses
 	return defaultPrimaryKeyInt64 == field || defaultPrimaryKeyInt32 == field || defaultPrimaryKeyInt16 == field
@@ -361,6 +357,10 @@ func (field *Field) getSearchableDdl(provider databaseprovider.DatabaseProvider,
 	}
 	return strings.TrimSpace(field.getPhysicalName(provider, field.getSearchableFieldName()+" "+
 		field.getSqlDataType(provider)))
+}
+
+func (field *Field) getSearchableFieldName() string {
+	return searchableFieldPrefix + field.name
 }
 
 func (field *Field) toMeta(tableId int32) *meta {

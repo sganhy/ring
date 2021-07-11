@@ -361,6 +361,8 @@ func (prevSchema *Schema) alter(jobId int64, newSchema *Schema) {
 		newSchema.create(jobId)
 	}
 
+	newSchema.createTablespaces(jobId)
+
 	newDico := newSchema.getTableDictionary()
 	prevDico := prevSchema.getTableDictionary()
 
@@ -393,6 +395,15 @@ func (schema *Schema) findTablespace(table *Table, index *Index, constr *constra
 
 func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]string) {
 
+}
+
+func (schema *Schema) createTablespaces(jobId int64) {
+	for i := 0; i < len(schema.tablespaces); i++ {
+		var tableSpace = schema.tablespaces[i]
+		if tableSpace.exists(schema) == false {
+			tableSpace.create(schema)
+		}
+	}
 }
 
 func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {

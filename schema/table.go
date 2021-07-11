@@ -1033,6 +1033,7 @@ func (table *Table) create(jobId int64) error {
 	err = metaQuery.create()
 	if err != nil {
 		logger.error(-1, 0, err)
+		logger.error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
 		return err
 	}
 

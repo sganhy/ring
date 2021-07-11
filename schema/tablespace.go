@@ -19,7 +19,8 @@ type tablespace struct {
 }
 
 const (
-	tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
+	tablespaceToStringFormat   string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
+	createTablespacePostGreSql string = "%s %s %s LOCATION '%s'"
 )
 
 func (tableSpace *tablespace) Init(id int32, name string, description string, fileName string, table bool, index bool) {
@@ -40,6 +41,10 @@ func (tableSpace *tablespace) GetId() int32 {
 
 func (tableSpace *tablespace) GetName() string {
 	return tableSpace.name
+}
+
+func (tableSpace *tablespace) GetPhysicalName() string {
+	return tableSpace.GetName()
 }
 
 func (tableSpace *tablespace) GetDescription() string {
@@ -67,7 +72,9 @@ func (tableSpace *tablespace) Clone() *tablespace {
 func (tableSpace *tablespace) GetDdl(statement ddlstatement.DdlStatement, provider databaseprovider.DatabaseProvider) string {
 	switch statement {
 	case ddlstatement.NotDefined:
-		return "TABLESPACE " + tableSpace.name
+		return tableSpace.GetEntityType().String() + " " + tableSpace.name
+	case ddlstatement.Create:
+		return tableSpace.getDdlCreate(provider)
 	}
 	return ""
 }
@@ -76,4 +83,19 @@ func (tableSpace *tablespace) String() string {
 	// tablespaceToStringFormat string = "name=%s; description=%s; filename=%s; table=%t; index=%t"
 	return fmt.Sprintf(tablespaceToStringFormat, tableSpace.name, tableSpace.description, tableSpace.filName,
 		tableSpace.table, tableSpace.index)
+}
+
+//******************************
+// private methods
+//******************************
+func (tableSpace *tablespace) exists(schema *Schema) bool {
+	cata := new(catalogue)
+	return cata.exists(schema, tableSpace)
+}
+
+func (tableSpace *tablespace) create(schema *Schema) {
+}
+
+func (tableSpace *tablespace) getDdlCreate(provider databaseprovider.DatabaseProvider) string {
+	return ""
 }
