@@ -70,14 +70,18 @@ func (cata *catalogue) GetDql(provider databaseprovider.DatabaseProvider, entity
 		result.WriteString(mapper[entityType].fieldEntityName)
 		result.WriteString(")=")
 		result.WriteString(table.getVariableName(variableIndex))
-		result.WriteString(filterSeparator)
+		if entityType != entitytype.Tablespace {
+			result.WriteString(filterSeparator)
+		}
 		variableIndex++
 	}
+	if entityType != entitytype.Tablespace {
+		result.WriteString("upper(")
+		result.WriteString(mapper[entityType].fieldSchemaName)
+		result.WriteString(")=")
+		result.WriteString(table.getVariableName(variableIndex))
+	}
 
-	result.WriteString("upper(")
-	result.WriteString(mapper[entityType].fieldSchemaName)
-	result.WriteString(")=")
-	result.WriteString(table.getVariableName(variableIndex))
 	return result.String()
 }
 
@@ -93,7 +97,9 @@ func (cata *catalogue) exists(schema *Schema, ent entity) bool {
 		if ent.GetEntityType() != entitytype.Schema {
 			metaQuery.addParam(strings.ToUpper(ent.GetName()))
 		}
-		metaQuery.addParam(strings.ToUpper(schema.GetPhysicalName()))
+		if ent.GetEntityType() != entitytype.Tablespace {
+			metaQuery.addParam(strings.ToUpper(schema.GetPhysicalName()))
+		}
 		result, err := metaQuery.exists()
 		if err != nil {
 			panic(err)

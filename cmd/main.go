@@ -45,7 +45,6 @@ func main() {
 
 	var metaSchema = schema.GetSchemaByName("@meta")
 	var metaTable = metaSchema.GetTableByName("@meta")
-	metaTable.Analyze(7548)
 	schema2 := importFile.GetSchema()
 	table2 := schema2.GetTableByName("class")
 	fmt.Println(table2.GetName())

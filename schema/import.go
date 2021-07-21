@@ -138,7 +138,7 @@ func (importFile *Import) Load() {
 	importFile.errorCount = 0
 	importFile.jobId = metaSchema.getJobIdNextValue()
 	importFile.loadSchemaInfo()
-	importFile.logInfo("Load schema", "import_file: "+importFile.fileName)
+	importFile.logInfo("Load Schema", "import_file: "+importFile.fileName)
 
 	if importFile.schemaName == "" {
 		// no schema information
@@ -181,6 +181,7 @@ func (importFile *Import) Upgrade() {
 		// database.go
 		upgradeSchema(importFile.jobId, importFile.newSchema)
 		runtime.GC()
+
 	}
 }
 

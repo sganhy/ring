@@ -1044,7 +1044,8 @@ func (table *Table) create(jobId int64) error {
 
 	duration := time.Now().Sub(creationTime)
 
-	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+	logger.info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
+		sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 
 	return err

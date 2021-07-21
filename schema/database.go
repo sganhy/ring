@@ -366,7 +366,7 @@ func getMetaIdList(schemaId int32) []metaId {
 	return query.getMetaIdList()
 }
 
-func upgradeSchema(jobId int64, schema *Schema) {
+func upgradeSchema(jobId int64, schema *Schema) error {
 	// compare with previous
 	var currentSchema = GetSchemaByName(schema.name)
 	if currentSchema == nil {
@@ -376,4 +376,5 @@ func upgradeSchema(jobId int64, schema *Schema) {
 	setUpgradingSchema(schema)
 	currentSchema.alter(jobId, schema)
 	setUpgradingSchema(nil)
+	return nil
 }

@@ -339,8 +339,11 @@ func (schema *Schema) create(jobId int64) error {
 	}
 
 	duration := time.Now().Sub(creationTime)
-	logger.info(16, jobId, "Create "+strings.ToLower(entitytype.Schema.String()), fmt.Sprintf(tableChangeMessage,
+
+	logger.info(16, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
+		sqlfmt.ToCamelCase(entitytype.Schema.String()), fmt.Sprintf(tableChangeMessage,
 		schema.physicalName, int(duration.Seconds()*1000)))
+
 	return nil
 }
 
@@ -397,13 +400,17 @@ func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]
 
 }
 
-func (schema *Schema) createTablespaces(jobId int64) {
+func (schema *Schema) createTablespaces(jobId int64) error {
 	for i := 0; i < len(schema.tablespaces); i++ {
 		var tableSpace = schema.tablespaces[i]
 		if tableSpace.exists(schema) == false {
-			tableSpace.create(schema)
+			err := tableSpace.create(jobId, schema)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {

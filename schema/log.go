@@ -54,9 +54,9 @@ func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 	if schemaId != schemaNotDefined {
 		// get metas chema to fetch current JobId
 		if schemaId == 0 {
-			logger.info(0, 0, "Baseline Logger Initialized", "")
+			logger.info(0, 0, "Baseline logger initialized", "")
 		} else if jobId == 0 {
-			logger.info(0, 0, "Logger Initialized", "")
+			logger.info(0, 0, "Logger initialized", "")
 		}
 	}
 }

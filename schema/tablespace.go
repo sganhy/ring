@@ -5,6 +5,8 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
+	"ring/schema/sqlfmt"
+	"time"
 )
 
 type tablespace struct {
@@ -93,9 +95,39 @@ func (tableSpace *tablespace) exists(schema *Schema) bool {
 	return cata.exists(schema, tableSpace)
 }
 
-func (tableSpace *tablespace) create(schema *Schema) {
+func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
+	var metaQuery = metaQuery{}
+	//	var firstUniqueIndex = true
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	metaQuery.Init(schema, nil)
+	metaQuery.query = tableSpace.GetDdl(ddlstatement.Create, schema.GetDatabaseProvider())
+
+	// create table
+	err = metaQuery.create()
+	if err != nil {
+		logger.error(-1, 0, err)
+		logger.error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
+		return err
+	}
+
+	//!!! cannot create constraints here due to foreign keys!!!
+	duration := time.Now().Sub(creationTime)
+
+	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(tableSpace.GetEntityType().String()),
+		fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000)))
+
+	return err
 }
 
 func (tableSpace *tablespace) getDdlCreate(provider databaseprovider.DatabaseProvider) string {
-	return ""
+	var result = ""
+	switch provider {
+	case databaseprovider.PostgreSql:
+		result = fmt.Sprintf(createTablespacePostGreSql, ddlstatement.Create.String(), tableSpace.GetEntityType().String(),
+			tableSpace.GetPhysicalName(), tableSpace.filName)
+	}
+	return result
 }
