@@ -94,8 +94,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 		var schemas = getSchemaIdList()
 		for i := 0; i < len(schemas); i++ {
-			//				addSchema(getSchemaById(schemas[i].id))
-			//getSchemaById(schemas[i])
+			addSchema(getSchemaById(schemas[i]))
 		}
 	}
 	// call garbage collector

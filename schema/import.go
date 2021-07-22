@@ -138,7 +138,7 @@ func (importFile *Import) Load() {
 	importFile.errorCount = 0
 	importFile.jobId = metaSchema.getJobIdNextValue()
 	importFile.loadSchemaInfo()
-	importFile.logInfo("Load Schema", "import_file: "+importFile.fileName)
+	importFile.logInfo("Load schema", "import_file: "+importFile.fileName)
 
 	if importFile.schemaName == "" {
 		// no schema information
@@ -306,7 +306,7 @@ func (importFile *Import) getXmlMetaSchema(attributes *[]xml.Attr, line int64) *
 	result.name = importFile.getXmlAttribute(attributes, importXmlAttributeNameTag)
 	result.objectType = int8(entitytype.Schema)
 	result.refId = 0
-	result.id = 0
+	result.id = importFile.schemaId // copy schema_id
 	result.lineNumber = line
 	result.enabled = true
 	result.value = schema.getPhysicalName(importFile.provider, importFile.schemaName)

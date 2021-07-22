@@ -1044,6 +1044,18 @@ func (table *Table) create(jobId int64) error {
 
 	duration := time.Now().Sub(creationTime)
 
+	// add primary key
+	if table.tableType != tabletype.Mtm {
+		// add primary key
+		var primaryKey = new(constraint)
+		var logger = schema.getLogger()
+		primaryKey.Init(constrainttype.PrimaryKey, table)
+		err := primaryKey.create(schema)
+		if err != nil {
+			logger.error(-1, 0, err)
+		}
+	}
+
 	logger.info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
 		sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
@@ -1066,16 +1078,6 @@ func (table *Table) createIndexes(schema *Schema) {
 }
 
 func (table *Table) createConstraints(schema *Schema) {
-	if table.tableType != tabletype.Mtm {
-		// add primary key
-		var primaryKey = new(constraint)
-		var logger = schema.getLogger()
-		primaryKey.Init(constrainttype.PrimaryKey, table)
-		err := primaryKey.create(schema)
-		if err != nil {
-			logger.error(-1, 0, err)
-		}
-	}
 	table.createFieldConstraints(schema)
 	table.createRelationConstraints(schema)
 }
