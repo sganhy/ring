@@ -465,6 +465,23 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
+	expectedSQl = "UPDATE information_schema.\"@meta\" SET \"value\"=$1,id=$2,schema_id=$3,object_type=$4,reference_id=$5,data_type=$6,flags=$7,\"name\"=$8,description=$9,\"value\"=$10,active=$11 WHERE id=$12 AND schema_id=$13 AND object_type=$14 AND reference_id=$15"
+	field := table.GetFieldByName("value")
+	field1 := table.GetFieldByName("id")
+	field2 := table.GetFieldByName("schema_id")
+	field3 := table.GetFieldByName("object_type")
+	field4 := table.GetFieldByName("reference_id")
+	field5 := table.GetFieldByName("data_type")
+	field6 := table.GetFieldByName("flags")
+	field7 := table.GetFieldByName("name")
+	field8 := table.GetFieldByName("description")
+	field9 := table.GetFieldByName("value")
+	field10 := table.GetFieldByName("active")
+	fields := []*Field{field, field1, field2, field3, field4, field5, field6, field7, field8, field9, field10}
+	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
+
 	// table @meta_id
 	table = tbl.getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.\"@meta_id\" WHERE id=$1 AND schema_id=$2 AND object_type=$3"
@@ -472,8 +489,8 @@ func Test__Table__GetDml(t *testing.T) {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
 	expectedSQl = "UPDATE information_schema.\"@meta_id\" SET \"value\"=$1 WHERE id=$2 AND schema_id=$3 AND object_type=$4"
-	field := table.GetFieldByName("value")
-	fields := []*Field{field}
+	field = table.GetFieldByName("value")
+	fields = []*Field{field}
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}

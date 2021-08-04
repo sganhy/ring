@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"ring/schema/databaseprovider"
 	"ring/schema/dmlstatement"
 	"strconv"
 	"strings"
@@ -31,8 +32,24 @@ const (
 )
 
 var (
-	metaQueryLogger = new(log)
+	metaQueryLogger    = new(log)
+	metaQueryUpdateSet []*Field
 )
+
+func init() {
+
+	table := new(Table)
+	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "")
+	metaQueryUpdateSet = make([]*Field, 0, 6)
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaName))        // name
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaDescription)) // description
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaValue))       // value
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaActive))      // active
+	//
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaDataType)) // data_type
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaFlags))    // flags
+
+}
 
 func (query *metaQuery) Init(schema *Schema, table *Table) {
 	query.table = table
@@ -40,6 +57,7 @@ func (query *metaQuery) Init(schema *Schema, table *Table) {
 	if query.resultCount == nil {
 		query.resultCount = new(int)
 	}
+
 }
 
 //******************************
@@ -390,6 +408,15 @@ func (query *metaQuery) insert(params []interface{}) error {
 	return query.schema.execute(query)
 }
 
+func (query *metaQuery) update(params []interface{}) error {
+	query.returnResultList = false
+	query.query = query.table.GetDml(dmlstatement.Update, metaQueryUpdateSet)
+	query.params = &params
+	query.dml = true
+	query.ddl = false
+	return query.schema.execute(query)
+}
+
 func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, error) {
 	if query.params == nil {
 		return dbConn.Query(sql)
@@ -460,6 +487,28 @@ func (query *metaQuery) insertMeta(metaData *meta, schemaId int32) error {
 	params[8] = metaData.value
 	params[9] = metaData.enabled
 	return query.insert(params)
+}
+
+func (query *metaQuery) updateMeta(metaData *meta, schemaId int32) error {
+	var params []interface{}
+	params = make([]interface{}, len(query.table.fields), len(query.table.fields))
+
+	//meta(1) ==> SET name=$1, description=$2, value= $3, active= $5
+	params[0] = metaData.name
+	params[1] = metaData.description
+	params[2] = metaData.value
+	params[3] = metaData.enabled
+	//
+	params[4] = metaData.dataType
+	params[5] = metaData.flags
+
+	//meta(2) ==> key (id=$12 AND schema_id=$13 AND object_type=$14 AND reference_id=$15)
+	params[6] = metaData.id
+	params[7] = schemaId
+	params[8] = metaData.objectType
+	params[9] = metaData.refId
+
+	return query.update(params)
 }
 
 func (query *metaQuery) insertMetaId(metaid *metaId) error {

@@ -6,6 +6,7 @@ import (
 	"ring/schema/tabletype"
 	"runtime"
 	"strings"
+	"time"
 )
 
 type database struct {
@@ -375,5 +376,12 @@ func upgradeSchema(jobId int64, schema *Schema) error {
 	setUpgradingSchema(schema)
 	currentSchema.alter(jobId, schema)
 	setUpgradingSchema(nil)
+
+	// update parameter == '@last_upgrade'
+	metaMetaSchema := GetSchemaByName(metaSchemaName)
+	updateParam := metaMetaSchema.getParameterByName(parameterLastUpgrade)
+	updateParam.setValue(time.Now().UTC().Format(time.RFC3339))
+	updateParam.Save()
+
 	return nil
 }

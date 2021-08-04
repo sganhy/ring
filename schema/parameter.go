@@ -86,6 +86,21 @@ func (param *parameter) String() string {
 	return fmt.Sprintf(parameterToStringFormat, param.name, param.description)
 }
 
+func (param *parameter) Save() error {
+	if param.exists() == false {
+		return param.create()
+	}
+
+	var schema = param.getSchema()
+	var schemaId = schema.GetId()
+
+	query := new(metaQuery)
+	query.setSchema(metaSchemaName)
+	query.setTable(metaTableName)
+
+	return query.updateMeta(param.toMeta(schemaId), schemaId)
+}
+
 //******************************
 // private methods
 //******************************

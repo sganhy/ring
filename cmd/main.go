@@ -36,12 +36,16 @@ func main() {
 	lang.Init(1, "eu-ES")
 	_, _ = lang.IsCodeValid("FR")
 
-	//var metaSchema = schema.GetSchemaByName("@META")
-	//fmt.Println(metaSchema.GetId())
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
+
+	var metaSchema = schema.GetSchemaByName("RpgSheet")
+	fmt.Println(metaSchema.GetId())
+	var tableBook = metaSchema.GetTableByName("book")
+	fmt.Println(metaSchema.GetId())
+	fmt.Println(tableBook.GetId())
 
 	//var metaSchema = schema.GetSchemaByName("@meta")
 	//var metaTable = metaSchema.GetTableByName("@meta")

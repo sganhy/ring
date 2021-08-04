@@ -79,6 +79,7 @@ const (
 	metaIdTableName      string = "@meta_id"
 	metaLongTableName    string = "@long"
 	metaValue            string = "value"
+	metaActive           string = "active"
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	postGreVacuum        string = "VACUUM %s"
@@ -386,6 +387,9 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 			result.WriteString(operatorEqual)
 			result.WriteString(variableName)
 			result.WriteString(strconv.Itoa(index))
+			if i < len(fields)-1 {
+				result.WriteString(fieldListSeparator)
+			}
 			index++
 		}
 		result.WriteString(dqlWhere)
@@ -1156,9 +1160,9 @@ func (table *Table) getMtmTable(schema *Schema, relation *Relation, name string)
 	var indexes = make([]Index, 1, 1)
 	var result = new(Table)
 	var inverseRelation = relation.GetInverseRelation()
-	var metaSchema = GetSchemaByName(metaSchemaName)
-	var indexIdSeq = metaSchema.GetSequenceByName(sequenceIndexId)
-	var indexId = int32(indexIdSeq.NextValue())
+	//var metaSchema = GetSchemaByName(metaSchemaName)
+	//var indexIdSeq = metaSchema.GetSequenceByName(sequenceIndexId)
+	var indexId int32 = 1 //FIX: int32(indexIdSeq.NextValue())
 	// index
 	var uk = Index{}
 	var indexedFields = []string{relation.GetName(), inverseRelation.GetName()}
@@ -1171,7 +1175,7 @@ func (table *Table) getMtmTable(schema *Schema, relation *Relation, name string)
 	var relationB = Relation{}
 
 	relationA.Init(1, relation.GetName(), "", relation.GetToTable(), relationtype.Mto, relation.HasConstraint(), true, true, true)
-	relationB.Init(2, inverseRelation.GetName(), "", inverseRelation.GetToTable(), relationtype.Mto, relation.HasConstraint(),
+	relationB.Init(2, inverseRelation.GetName(), "", inverseRelation.GetToTable(), relationtype.Mto, inverseRelation.HasConstraint(),
 		true, true, true)
 
 	relations = append(relations, relationA)
@@ -1254,7 +1258,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	// metaName size * 2 ~ schema.name(max 30) + "." + table_name (max 28)
 	description.Init(1087, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
 	value.Init(1093, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
-	active.Init(1103, "active", "", fieldtype.Boolean, 0, "", true, true, true, false, true)
+	active.Init(1103, metaActive, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.name, objectType.name, referenceId.name}
