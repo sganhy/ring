@@ -297,3 +297,53 @@ func (metaData *meta) writeFlag(bitPosition uint8, value bool) {
 func (metaData *meta) readFlag(bitPosition uint8) bool {
 	return ((metaData.flags >> (bitPosition - 1)) & 1) > 0
 }
+
+func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
+	existingMetaList := getMetaList(schemaId)
+	var err error
+
+	err = nil
+	query := new(metaQuery)
+	query.setSchema(metaSchemaName)
+	query.setTable(metaTableName)
+
+	// create new schema - separated case to reduce allocation
+	if len(existingMetaList) == 0 {
+		for i := 0; i < len(metaList) && err == nil; i++ {
+			err = query.insertMeta(metaList[i], schemaId)
+		}
+	} else {
+		// create dictionary : object_type_id, [reference_id], [id]
+		dico := metaData.getMetaDictionary(existingMetaList)
+
+		//disallow slice
+		existingMetaList = []meta{}
+
+		metaData.updateMetaList(schemaId, metaList, dico)
+	}
+
+	return err
+}
+
+func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []map[int32]map[int32]*meta) error {
+	return nil
+}
+
+func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[int32]*meta {
+	result := make([]map[int32]map[int32]*meta, entitytype.MaxEntityTypeId+1, entitytype.MaxEntityTypeId+1)
+
+	for i := 0; i < len(currentMetaList); i++ {
+		var currMeta = &currentMetaList[i]
+		if currMeta.objectType >= 0 && currMeta.objectType <= entitytype.MaxEntityTypeId {
+			if result[currMeta.objectType] == nil {
+				result[currMeta.objectType] = make(map[int32]map[int32]*meta)
+			}
+			if result[currMeta.objectType][currMeta.refId] == nil {
+				result[currMeta.objectType][currMeta.refId] = make(map[int32]*meta)
+			}
+			result[currMeta.objectType][currMeta.refId][currMeta.id] = currMeta
+		}
+	}
+
+	return result
+}

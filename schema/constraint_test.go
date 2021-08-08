@@ -128,7 +128,7 @@ func Test__Constraint__getDdlCheck(t *testing.T) {
 	constr := new(constraint)
 	constr.Init(constrainttype.Check, metaTable)
 	constr.setField(metaTable.GetFieldByName("object_type"))
-	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"ck_@meta_1019\" CHECK (object_type BETWEEN -128 AND 127)"
+	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"ck_@meta_1019\" CHECK (object_type BETWEEN 0 AND 127)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCheck() ==> query must be equal to " + expectedSql)
 	}

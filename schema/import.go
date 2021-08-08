@@ -130,7 +130,7 @@ func (importFile *Import) GetDatabaseProvider() databaseprovider.DatabaseProvide
 //******************************
 // public methods
 //******************************
-func (importFile *Import) Load() {
+func (importFile *Import) Load() error {
 	var metaSchema = GetSchemaByName(metaSchemaName)
 	importFile.provider = getDefaultDbProvider()
 	importFile.tablespaceCount = 0
@@ -142,10 +142,10 @@ func (importFile *Import) Load() {
 
 	if importFile.schemaName == "" {
 		// no schema information
-		return
+		return nil
 	}
 	if importFile.initialized == false {
-		errors.New(errorImportFileNotInitialized)
+		return errors.New(errorImportFileNotInitialized)
 	}
 	if importFile.source == sourcetype.XmlDocument {
 		importFile.loadXml()
@@ -154,6 +154,7 @@ func (importFile *Import) Load() {
 		valid.ValidateImport(importFile)
 	}
 	importFile.loaded = true
+	return nil
 }
 
 func (importFile *Import) Upgrade() {
@@ -731,60 +732,13 @@ func (importFile *Import) getSchemaLanguage(value string) *meta {
 }
 
 func (importFile *Import) saveMetaList() error {
-	existingMetaList := getMetaList(importFile.schemaId)
-	var metaList = importFile.metaList
-	var err error
-
-	err = nil
-	query := new(metaQuery)
-	query.setSchema(metaSchemaName)
-	query.setTable(metaTableName)
-
-	// create new schema
-	if len(existingMetaList) == 0 {
-		for i := 0; i < len(metaList) && err == nil; i++ {
-			err = query.insertMeta(metaList[i], importFile.schemaId)
-		}
-	}
-
-	return err
+	metaData := new(meta)
+	return metaData.saveMetaList(importFile.schemaId, importFile.metaList)
 }
 
 func (importFile *Import) saveMetaIdList() error {
-	queryExist := new(metaQuery)
-	queryInsert := new(metaQuery)
-	metaid := new(metaId)
-	metaList := importFile.metaList
-
-	metaid.schemaId = importFile.schemaId
-	metaid.objectType = int8(entitytype.Table)
-	metaid.value = 0
-
-	queryExist.setSchema(metaSchemaName)
-	queryExist.setTable(metaIdTableName)
-	queryInsert.setSchema(metaSchemaName)
-	queryInsert.setTable(metaIdTableName)
-
-	queryExist.addFilter(metaFieldId, operatorEqual, 0)
-	queryExist.addFilter(metaSchemaId, operatorEqual, importFile.schemaId)
-	queryExist.addFilter(metaObjectType, operatorEqual, int8(entitytype.Table))
-
-	for i := 0; i < len(metaList); i++ {
-		metaData := metaList[i]
-		if metaData.GetEntityType() == entitytype.Table {
-			queryExist.setParamValue(metaData.id, 0)
-			exist, err := queryExist.exists()
-			if err != nil {
-				return err
-			}
-			if exist == false {
-				metaid.id = metaData.id
-				queryInsert.insertMetaId(metaid)
-			}
-		}
-	}
-
-	return nil
+	metaId := new(metaId)
+	return metaId.saveMetaIdList(importFile.schemaId, importFile.metaList)
 }
 
 func (importFile *Import) analyzeMetaTables() {

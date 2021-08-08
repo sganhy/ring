@@ -31,6 +31,7 @@ const minint32 string = "-2147483648"
 func main() {
 
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/rpg_sheet_test", 10, 20)
 	var lang = new(schema.Language)
 
 	lang.Init(1, "eu-ES")

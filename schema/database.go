@@ -251,7 +251,49 @@ func createPhysicalSchema(schema *Schema) {
 }
 
 func createMetaTables(schema *Schema) {
-	// first: create log table
+
+	createMetaLogTable(schema)
+	createMetaTable(schema)
+
+	// second: create other meta tables
+	for _, table := range schema.tables {
+		if table.tableType != tabletype.Log && table.GetType() != tabletype.Logical &&
+			table.tableType != tabletype.Meta && table.exists() == false {
+			err := table.create(0)
+			if err != nil {
+				panic(err)
+			}
+			table.createConstraints(schema)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
+
+	// now we can start sync logging
+	schema.logger.isMetaTable(true)
+}
+
+func createMetaTable(schema *Schema) {
+	metaTable := schema.GetTableByName(metaTableName)
+	if metaTable.exists() == false {
+		err := metaTable.create(0)
+		if err != nil {
+			panic(err)
+		}
+		metaTable.createConstraints(schema)
+		if err != nil {
+			panic(err)
+		}
+		metaData := new(meta)
+		metaData.saveMetaList(0, schema.toMeta())
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func createMetaLogTable(schema *Schema) {
 	logTable := schema.GetTableByName(metaLogTableName)
 	if logTable.exists() == false {
 		err := logTable.create(0)
@@ -263,22 +305,7 @@ func createMetaTables(schema *Schema) {
 			panic(err)
 		}
 	}
-	// second: create other meta tables
-	for _, table := range schema.tables {
-		if table.GetId() != logTable.GetId() && table.GetType() != tabletype.Logical &&
-			table.exists() == false {
-			err := table.create(0)
-			if err != nil {
-				panic(err)
-			}
-			table.createConstraints(schema)
-			if err != nil {
-				panic(err)
-			}
-		}
-	}
-	// now we can start sync logging
-	schema.logger.isMetaTable(true)
+
 }
 
 func createMetaSequences(schema *Schema) {

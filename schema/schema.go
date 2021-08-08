@@ -739,7 +739,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, metaLongTable)
 
 	parameters = append(parameters, *param.getCreationTimeParameter(schemaId, schemaId, entitytype.Schema))
-	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.GetCurrentVersion()))
+	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.String()))
 	parameters = append(parameters, *param.getLastUpgradeParameter(schemaId, schemaId, entitytype.Schema))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
@@ -770,20 +770,7 @@ func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, da
 }
 
 func (schema *Schema) loadMtmTables() {
-	var mtmDico map[string]*Table
-	mtmDico = make(map[string]*Table, len(schema.tables))
-
-	for _, table := range schema.tables {
-		for i := 0; i < len(table.relations); i++ {
-			var relation = table.relations[i]
-			if relation.GetType() == relationtype.Mtm {
-				mtmName := relation.getMtmName(table.GetId())
-				if _, ok := mtmDico[mtmName]; !ok {
-					mtmDico[mtmName] = table.getMtmTable(schema, relation, mtmName)
-				}
-			}
-		}
-	}
+	mtmDico := schema.getMtmDictionary()
 
 	// load tables
 	for _, table := range schema.tables {
@@ -795,5 +782,39 @@ func (schema *Schema) loadMtmTables() {
 			}
 		}
 	}
+}
 
+func (schema *Schema) getMtmDictionary() map[string]*Table {
+	result := make(map[string]*Table, len(schema.tables))
+
+	for _, table := range schema.tables {
+		for i := 0; i < len(table.relations); i++ {
+			var relation = table.relations[i]
+			if relation.GetType() == relationtype.Mtm {
+				mtmName := relation.getMtmName(table.GetId())
+				if _, ok := result[mtmName]; !ok {
+					result[mtmName] = table.getMtmTable(schema, relation, mtmName)
+				}
+			}
+		}
+	}
+
+	return result
+}
+
+func (schema *Schema) toMeta() []*meta {
+	var metaList = make([]*meta, 0, 100)
+	for _, table := range schema.tables {
+		metaList = append(metaList, table.toMeta())
+		for _, field := range table.fields {
+			metaList = append(metaList, field.toMeta(table.id))
+		}
+		for _, index := range table.indexes {
+			metaList = append(metaList, index.toMeta(table.id))
+		}
+		for _, relation := range table.relations {
+			metaList = append(metaList, relation.toMeta(table.id))
+		}
+	}
+	return metaList
 }

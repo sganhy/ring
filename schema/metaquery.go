@@ -68,6 +68,9 @@ func (query *metaQuery) setSchema(schemaName string) {
 	if query.resultCount == nil {
 		query.resultCount = new(int)
 	}
+	if query.schema == nil {
+		query.schema = getUpgradingSchema()
+	}
 }
 
 func (query *metaQuery) setTable(tableName string) {
@@ -80,7 +83,7 @@ func (query *metaQuery) setTable(tableName string) {
 		query.resultCount = new(int)
 	}
 	if query.table == nil {
-		fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.GetName())
+		panic(fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.GetName()))
 	}
 }
 

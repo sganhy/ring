@@ -107,5 +107,4 @@ func (cata *catalogue) exists(schema *Schema, ent entity) bool {
 		return result
 	}
 	panic("Unable to query from catalog")
-	return true
 }

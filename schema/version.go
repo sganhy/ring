@@ -28,7 +28,7 @@ const (
 //******************************
 // public methods
 //******************************
-func (ver *version) GetCurrentVersion() string {
+func (ver *version) String() string {
 	ver.getCurrentVersion()
 	var result = fmt.Sprintf(displayVersion, ver.majorVersion, ver.minorVersion, ver.patchVersion)
 	if currentpreReleaseVersion != "" {

@@ -234,8 +234,7 @@ func (index *Index) create(schema *Schema, table *Table) error {
 	var metaQuery = metaQuery{}
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
-	metaQuery.setSchema(schema.GetName())
-	metaQuery.setTable(table.GetName())
+	metaQuery.Init(schema, table)
 
 	return metaQuery.create()
 }

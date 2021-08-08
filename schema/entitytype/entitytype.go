@@ -4,6 +4,8 @@ type EntityType int8
 
 //!!! reserved value for unit testing {4, 5, 6} !!!
 
+const MaxEntityTypeId = 127
+
 const (
 	Table      EntityType = 0
 	Field      EntityType = 1
@@ -16,7 +18,7 @@ const (
 	Parameter  EntityType = 23
 	Alias      EntityType = 25
 	Constraint EntityType = 101 // not stored in @meta table
-	NotDefined EntityType = 127
+	NotDefined EntityType = MaxEntityTypeId
 )
 
 func (entityType EntityType) String() string {
@@ -39,6 +41,8 @@ func (entityType EntityType) String() string {
 		return "PARAMETER"
 	case Language:
 		return "LANGUAGE"
+	case Alias:
+		return "ALIAS"
 	case Constraint:
 		return "CONSTRAINT"
 	}
@@ -49,7 +53,7 @@ func GetEntityTypeById(entityId int) EntityType {
 	if entityId <= 127 && entityId >= -128 {
 		var newId = EntityType(entityId)
 		if newId == Table || newId == Field || newId == Relation || newId == Index || newId == Schema || newId == Sequence ||
-			newId == Language || newId == Tablespace || newId == Parameter || newId == Constraint {
+			newId == Language || newId == Tablespace || newId == Parameter || newId == Alias || newId == Constraint {
 			return newId
 		}
 	}

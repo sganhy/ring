@@ -30,7 +30,7 @@ const (
 	createPkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s %s (%s) %s"
 	createNnPostGreSql      string = "%s %s %s ALTER COLUMN %s SET NOT NULL"
 	createNnMySql           string = "%s %s %s MODIFY %s NOT NULL"
-	createCkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN -128 AND 127)"
+	createCkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN %d AND 127)"
 )
 
 func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *Table) {
@@ -114,16 +114,20 @@ func (constr *constraint) getPhysicalName() string {
 		result = constr.getCheckName()
 		break
 	case constrainttype.ForeignKey:
-		var tableId = ""
 		if constr.table.GetType() == tabletype.Mtm {
-			//TODO define fk name for MTM tables
-			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 4)
-		} else {
-			tableId = sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 5)
-		}
-		result = constraintFkPrefix + tableId + constraintSeparator +
-			sqlfmt.PadLeft(strconv.FormatInt(int64(constr.relation.GetId()), 10), "0", 5)
 
+			//TODO define fk name for MTM tables
+			result = constraintFkPrefix + strconv.FormatInt(int64(constr.relation.id), 10)
+			result += strings.ReplaceAll(constr.table.GetName(), mtmTableNamePrefix, "")
+
+		} else {
+
+			//==> OK
+			//name:  fk_{table_id}_{relation_id}
+			tableId := sqlfmt.PadLeft(strconv.FormatInt(int64(constr.table.GetId()), 10), "0", 5)
+			result = constraintFkPrefix + tableId + constraintSeparator +
+				sqlfmt.PadLeft(strconv.FormatInt(int64(constr.relation.GetId()), 10), "0", 5)
+		}
 		break
 	}
 	return sqlfmt.FormatEntityName(constr.table.GetDatabaseProvider(), result)
@@ -212,11 +216,19 @@ func (constr *constraint) getDdlNotNull() string {
 
 func (constr *constraint) getDdlCheck() string {
 	var provider = constr.table.GetDatabaseProvider()
-	// "%s %s %s ADD CONSTRAINT %s CHECK (%s>-129 AND %s<128)"
+
+	// %s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN %d AND 127)
 	if provider == databaseprovider.PostgreSql && constr.field != nil && constr.field.GetType() == fieldtype.Byte {
+		var minValue = -128
+
+		if constr.table.tableType == tabletype.Meta && constr.field.name == metaObjectType {
+			minValue = 0
+		}
+
 		return strings.Trim(fmt.Sprintf(createCkPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
-			constr.table.GetPhysicalName(), constr.getPhysicalName(), constr.field.GetPhysicalName(constr.table.GetDatabaseProvider())),
-			ddlSpace)
+			constr.table.GetPhysicalName(), constr.getPhysicalName(), constr.field.GetPhysicalName(constr.table.GetDatabaseProvider()),
+			minValue), ddlSpace)
+
 	}
 	return ""
 }
