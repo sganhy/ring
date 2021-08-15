@@ -215,6 +215,25 @@ func (metaData *meta) toLanguage() *Language {
 	return nil
 }
 
+func (metaA *meta) equal(metaB *meta) bool {
+	if metaA != nil && metaB != nil {
+		/* ==> don't compare key
+		dataType    int32
+		name        string
+		description string
+		flags       uint64
+		value       string
+		*/
+		if metaA.dataType == metaB.dataType && metaA.name == metaB.name &&
+			metaA.description == metaB.description && metaA.flags == metaB.flags &&
+			metaA.value == metaB.value {
+			return true
+		}
+		return false
+	}
+	return metaA == metaB
+}
+
 // flags
 func (metaData *meta) setFieldMultilingual(value bool) {
 	metaData.writeFlag(bitPositionFieldMultilingual, value)
@@ -299,7 +318,7 @@ func (metaData *meta) readFlag(bitPosition uint8) bool {
 }
 
 func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
-	existingMetaList := getMetaList(schemaId)
+	prevMetaList := getMetaList(schemaId)
 	var err error
 
 	err = nil
@@ -308,40 +327,106 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
 	query.setTable(metaTableName)
 
 	// create new schema - separated case to reduce allocation
-	if len(existingMetaList) == 0 {
+	if len(prevMetaList) == 0 {
 		for i := 0; i < len(metaList) && err == nil; i++ {
 			err = query.insertMeta(metaList[i], schemaId)
 		}
 	} else {
-		// create dictionary : object_type_id, [reference_id], [id]
-		dico := metaData.getMetaDictionary(existingMetaList)
+		// create dictionary : object_type_id, [reference_id], [upper(name)]
+		dico := metaData.getMetaDictionary(prevMetaList)
 
 		//disallow slice
-		existingMetaList = []meta{}
+		prevMetaList = []meta{}
 
+		// metaList should have valid objectTypeId >=0 && objectTypeId <= entitytype.MaxEntityTypeId
 		metaData.updateMetaList(schemaId, metaList, dico)
 	}
 
 	return err
 }
 
-func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []map[int32]map[int32]*meta) error {
-	return nil
+func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []map[int32]map[string]*meta) error {
+	var err error
+
+	err = nil
+	queryInsert := new(metaQuery)
+	queryInsert.setSchema(metaSchemaName)
+	queryInsert.setTable(metaTableName)
+
+	queryUpdate := new(metaQuery)
+	queryUpdate.setSchema(metaSchemaName)
+	queryUpdate.setTable(metaTableName)
+
+	for i := 0; i < len(metaList); i++ {
+		var currMeta = metaList[i]
+		var prevMeta = dico[currMeta.objectType][currMeta.refId][strings.ToUpper(currMeta.name)]
+
+		if prevMeta == nil {
+			// insert
+			/*
+				fmt.Println("== INSERT META ==")
+				fmt.Println(currMeta.String())
+			*/
+			metaData.setMetaDataId(currMeta, dico)
+			err = queryInsert.insertMeta(currMeta, schemaId)
+		} else {
+			//update
+
+			if prevMeta.equal(currMeta) == false {
+				fmt.Println("== UPDATE META ==")
+				fmt.Println(currMeta.String())
+				queryUpdate.updateMeta(currMeta, schemaId)
+			}
+		}
+		if err != nil {
+			break
+		}
+	}
+
+	return err
 }
 
-func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[int32]*meta {
-	result := make([]map[int32]map[int32]*meta, entitytype.MaxEntityTypeId+1, entitytype.MaxEntityTypeId+1)
+func (metaData *meta) setMetaDataId(newMeta *meta, dico []map[int32]map[string]*meta) {
+	// dictionary : object_type_id, [reference_id], [upper(name)]
+
+	// cannot change id of tables
+	if newMeta.GetEntityType() == entitytype.Table {
+		return
+	}
+
+	// object type exists always
+	if dico[newMeta.objectType][newMeta.refId] == nil {
+		dico[newMeta.objectType][newMeta.refId] = make(map[string]*meta)
+	}
+	var subMap = dico[newMeta.objectType][newMeta.refId]
+	var maxId int32 = 0
+
+	for _, item := range subMap {
+		if item.id > maxId {
+			maxId = item.id
+		}
+	}
+
+	maxId++
+	newMeta.id = maxId
+
+	dico[newMeta.objectType][newMeta.refId][strings.ToUpper(newMeta.name)] = newMeta
+}
+
+func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[string]*meta {
+	result := make([]map[int32]map[string]*meta, entitytype.MaxEntityTypeId+1, entitytype.MaxEntityTypeId+1)
+
+	for i := 0; i <= entitytype.MaxEntityTypeId; i++ {
+		result[i] = make(map[int32]map[string]*meta)
+	}
 
 	for i := 0; i < len(currentMetaList); i++ {
 		var currMeta = &currentMetaList[i]
 		if currMeta.objectType >= 0 && currMeta.objectType <= entitytype.MaxEntityTypeId {
-			if result[currMeta.objectType] == nil {
-				result[currMeta.objectType] = make(map[int32]map[int32]*meta)
-			}
 			if result[currMeta.objectType][currMeta.refId] == nil {
-				result[currMeta.objectType][currMeta.refId] = make(map[int32]*meta)
+				result[currMeta.objectType][currMeta.refId] = make(map[string]*meta)
 			}
-			result[currMeta.objectType][currMeta.refId][currMeta.id] = currMeta
+			result[currMeta.objectType][currMeta.refId][strings.ToUpper(currMeta.name)] = currMeta
 		}
 	}
 

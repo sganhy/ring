@@ -571,7 +571,7 @@ func (schema *Schema) getEmptySchema() *Schema {
 	return result
 }
 
-func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []metaId) *Schema {
+func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []metaId, disablePool bool) *Schema {
 	schemaName, schemaDescription, physicalName, provider := schema.getSchemaInfo(metaList)
 
 	var tables = schema.getTables(provider, physicalName, schemaId, metaList, metaIdList)
@@ -582,8 +582,9 @@ func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []me
 	var parameters = schema.getParameters(metaList)
 	var result = new(Schema)
 	var language = schema.getDefaultLanguage(metaList)
-	var connectionstring string = ""
-	var disablePool = true
+
+	// manage pool information
+	var connectionstring = schema.getConnectionString(metaList, disablePool)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
 	result.Init(schemaId, schemaName, physicalName, schemaDescription, connectionstring, language, tables,
@@ -797,6 +798,21 @@ func (schema *Schema) getMtmDictionary() map[string]*Table {
 				}
 			}
 		}
+	}
+
+	return result
+}
+
+func (schema *Schema) getConnectionString(metaList []meta, disablePool bool) string {
+	var result string
+
+	if disablePool == true {
+		result = ""
+	} else {
+		//TODO find into metaList connection string
+		// get connection string from metaSchema
+		var metaSchema = GetSchemaByName(metaSchemaName)
+		result = metaSchema.GetConnectionString()
 	}
 
 	return result

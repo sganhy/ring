@@ -95,7 +95,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 		var schemas = getSchemaIdList()
 		for i := 0; i < len(schemas); i++ {
-			addSchema(getSchemaById(schemas[i]))
+			addSchema(getSchemaById(schemas[i], disableConnectionPool))
 		}
 	}
 	// call garbage collector
@@ -356,11 +356,11 @@ func getSchemaIdList() []int32 {
 }
 
 // load schema from @meta table sort by reference_
-func getSchemaById(schemaId int32) *Schema {
+func getSchemaById(schemaId int32, disablePool bool) *Schema {
 	var metaList = getMetaList(schemaId)
 	var metaIdList = getMetaIdList(schemaId)
 	var schema = new(Schema)
-	return schema.getSchema(schemaId, metaList, metaIdList)
+	return schema.getSchema(schemaId, metaList, metaIdList, disablePool)
 }
 
 // load meta from db @meta table sorted by ref_id
