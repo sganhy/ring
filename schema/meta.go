@@ -339,7 +339,12 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
 		prevMetaList = []meta{}
 
 		// metaList should have valid objectTypeId >=0 && objectTypeId <= entitytype.MaxEntityTypeId
-		metaData.updateMetaList(schemaId, metaList, dico)
+		err = metaData.updateMetaList(schemaId, metaList, dico)
+
+		// detect deleted meta item
+		if err == nil {
+			err = metaData.deleteMetaList(schemaId, dico, true)
+		}
 	}
 
 	return err
@@ -371,10 +376,12 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 			err = queryInsert.insertMeta(currMeta, schemaId)
 		} else {
 			//update
-
+			prevMeta.enabled = true // flag this meta is in the prev schema
 			if prevMeta.equal(currMeta) == false {
-				fmt.Println("== UPDATE META ==")
-				fmt.Println(currMeta.String())
+				/*
+					fmt.Println("== UPDATE META ==")
+					fmt.Println(currMeta.String())
+				*/
 				queryUpdate.updateMeta(currMeta, schemaId)
 			}
 		}
@@ -384,6 +391,35 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 	}
 
 	return err
+}
+
+func (metaData *meta) deleteMetaList(schemaId int32, dico []map[int32]map[string]*meta, forceDelete bool) error {
+	//current schema:  dico
+	//warning: one type of dml by metaQuery object !!!!
+	query := new(metaQuery)
+	query.setSchema(metaSchemaName)
+	query.setTable(metaTableName)
+
+	for i := 0; i < len(dico); i++ {
+		currMap := dico[i]
+		for _, mapId := range currMap {
+			for _, mapMeta := range mapId {
+				if mapMeta.enabled == false {
+					/*
+						fmt.Println("== DELETE META ==")
+						fmt.Println(mapMeta.String())
+					*/
+					if forceDelete == false {
+						query.updateMeta(mapMeta, schemaId)
+					} else {
+						query.deleteMeta(mapMeta, schemaId)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (metaData *meta) setMetaDataId(newMeta *meta, dico []map[int32]map[string]*meta) {
@@ -426,6 +462,7 @@ func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[
 			if result[currMeta.objectType][currMeta.refId] == nil {
 				result[currMeta.objectType][currMeta.refId] = make(map[string]*meta)
 			}
+			currMeta.enabled = false // set false to detect later if item deleted
 			result[currMeta.objectType][currMeta.refId][strings.ToUpper(currMeta.name)] = currMeta
 		}
 	}

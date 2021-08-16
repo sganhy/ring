@@ -45,6 +45,7 @@ func main() {
 	var metaSchema = schema.GetSchemaByName("RpgSheet")
 	fmt.Println(metaSchema.GetId())
 	var tableBook = metaSchema.GetTableByName("book")
+
 	fmt.Println(metaSchema.GetId())
 	fmt.Println(tableBook.GetId())
 

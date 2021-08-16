@@ -420,6 +420,15 @@ func (query *metaQuery) update(params []interface{}) error {
 	return query.schema.execute(query)
 }
 
+func (query *metaQuery) delete(params []interface{}) error {
+	query.returnResultList = false
+	query.query = query.table.GetDml(dmlstatement.Delete, nil)
+	query.params = &params
+	query.dml = true
+	query.ddl = false
+	return query.schema.execute(query)
+}
+
 func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, error) {
 	if query.params == nil {
 		return dbConn.Query(sql)
@@ -512,6 +521,16 @@ func (query *metaQuery) updateMeta(metaData *meta, schemaId int32) error {
 	params[9] = metaData.refId
 
 	return query.update(params)
+}
+
+func (query *metaQuery) deleteMeta(metaData *meta, schemaId int32) error {
+	var params []interface{}
+	params = make([]interface{}, 4, 4)
+	params[0] = metaData.id
+	params[1] = schemaId
+	params[2] = metaData.objectType
+	params[3] = metaData.refId
+	return query.delete(params)
 }
 
 func (query *metaQuery) insertMetaId(metaid *metaId) error {
