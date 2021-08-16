@@ -217,16 +217,17 @@ func (metaData *meta) toLanguage() *Language {
 
 func (metaA *meta) equal(metaB *meta) bool {
 	if metaA != nil && metaB != nil {
-		/* ==> don't compare key
+		/* ==> don't compare key (used by upgrade to compare two meta)
 		dataType    int32
 		name        string
 		description string
 		flags       uint64
 		value       string
+		active      bool
 		*/
 		if metaA.dataType == metaB.dataType && metaA.name == metaB.name &&
 			metaA.description == metaB.description && metaA.flags == metaB.flags &&
-			metaA.value == metaB.value {
+			metaA.value == metaB.value && metaA.enabled == metaB.enabled {
 			return true
 		}
 		return false
@@ -409,11 +410,7 @@ func (metaData *meta) deleteMetaList(schemaId int32, dico []map[int32]map[string
 						fmt.Println("== DELETE META ==")
 						fmt.Println(mapMeta.String())
 					*/
-					if forceDelete == false {
-						query.updateMeta(mapMeta, schemaId)
-					} else {
-						query.deleteMeta(mapMeta, schemaId)
-					}
+					query.deleteMeta(mapMeta, schemaId, forceDelete)
 				}
 			}
 		}

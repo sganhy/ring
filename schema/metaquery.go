@@ -523,7 +523,11 @@ func (query *metaQuery) updateMeta(metaData *meta, schemaId int32) error {
 	return query.update(params)
 }
 
-func (query *metaQuery) deleteMeta(metaData *meta, schemaId int32) error {
+func (query *metaQuery) deleteMeta(metaData *meta, schemaId int32, forceDelete bool) error {
+	if forceDelete == false {
+		metaData.enabled = false
+		return query.updateMeta(metaData, schemaId)
+	}
 	var params []interface{}
 	params = make([]interface{}, 4, 4)
 	params[0] = metaData.id

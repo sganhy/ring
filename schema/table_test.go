@@ -520,6 +520,22 @@ func Test__Table__GetDql(t *testing.T) {
 	if table.GetDql("level_id>=? AND thread_id=?", "entry_time DESC") != expectedSQl {
 		t.Errorf("Table.GetDql() ==> query must be equal to " + expectedSQl)
 	}
+	if table.GetDql("level_id>=? AND thread_id=?", "entry_time DESC") != expectedSQl {
+		t.Errorf("Table.GetDql() ==> query must be equal to " + expectedSQl)
+	}
+}
+
+func Test__Table__GetDdl(t *testing.T) {
+	tbl := new(Table)
+	//======================
+	//==== testing PostgreSql
+	//======================
+	// table @log
+	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
+	expectedSQl := "TRUNCATE TABLE information_schema.\"@log\""
+	if table.GetDdl(ddlstatement.Truncate, nil) != expectedSQl {
+		t.Errorf("Table.GetDdl() ==> query must be equal to " + expectedSQl)
+	}
 }
 
 func Test__Table__GetQueryResult(t *testing.T) {
