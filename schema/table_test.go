@@ -527,14 +527,51 @@ func Test__Table__GetDql(t *testing.T) {
 
 func Test__Table__GetDdl(t *testing.T) {
 	tbl := new(Table)
+	tblspc := new(tablespace)
+	tblspc.Init(1, "Test", "", "", true, true)
+
 	//======================
 	//==== testing PostgreSql
 	//======================
-	// table @log
+	// table @log: Truncate
 	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl := "TRUNCATE TABLE information_schema.\"@log\""
 	if table.GetDdl(ddlstatement.Truncate, nil) != expectedSQl {
-		t.Errorf("Table.GetDdl() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDdl(Truncate) ==> query must be equal to " + expectedSQl)
+	}
+	// table @test: Create
+	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
+	createScript := table.GetDdl(ddlstatement.Create, tblspc)
+	createScript = strings.ReplaceAll(createScript, "\n", " ")
+	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, thread_id int2, call_site varchar(255), s_call_site varchar(255), test2test int8 ) "
+	expectedSQl += "WITH (autovacuum_enabled=false)  TABLESPACE Test"
+	if createScript != expectedSQl {
+		t.Errorf("Table.GetDdl(Create) ==> query must be equal to " + expectedSQl)
+	}
+}
+
+func Test__Table__getUniqueFieldList(t *testing.T) {
+	tbl := new(Table)
+	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
+	// business table
+	table.setTableType(tabletype.Business)
+	if table.getUniqueFieldList() != "id" {
+		t.Errorf("Table.getUniqueFieldList() ==> Must be equal to 'id'")
+	}
+	// @meta table
+	table = tbl.getMetaTable(databaseprovider.PostgreSql, "information_schema")
+	if table.getUniqueFieldList() != "id,schema_id,object_type,reference_id" {
+		t.Errorf("Table.getUniqueFieldList() ==> Must be equal to 'id,schema_id,object_type,reference_id'")
+	}
+	// @meta_id table
+	table = tbl.getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
+	if table.getUniqueFieldList() != "id,schema_id,object_type" {
+		t.Errorf("Table.getUniqueFieldList() ==> Must be equal to 'id,schema_id,object_type'")
+	}
+	// @mtm table
+	table = getMtmTable()
+	if table.getUniqueFieldList() != "relationA,relationB" {
+		t.Errorf("Table.getUniqueFieldList() ==> Must be equal to 'relationA,relationB'")
 	}
 }
 
@@ -637,4 +674,69 @@ func abs(value int) int {
 	} else {
 		return -value
 	}
+}
+
+func getTestTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+	var result = new(Table)
+
+	// physical_name is built later
+	var id = Field{}
+	var entryTime = Field{}
+	var levelId = Field{}
+	var schemaId = Field{}
+	var threadId = Field{}
+	var callSite = Field{}
+
+	// "id","entry_time","level_id","thread_id","call_site","message","description","machine_name"
+	id.Init(1, metaLogId, "", fieldtype.Long, 0, "", true, true, true, false, true)
+	entryTime.Init(2, metaLogEntryTime, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
+	levelId.Init(3, metaLogLevelId, "", fieldtype.Short, 0, "", true, true, true, false, true)
+	schemaId.Init(4, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	threadId.Init(5, metaLogThreadId, "", fieldtype.Byte, 0, "", true, false, true, false, true)
+	callSite.Init(6, metaLogCallSite, "", fieldtype.String, 255, "", true, false, false, false, true)
+
+	fields = append(fields, id)        //1
+	fields = append(fields, entryTime) //2
+	fields = append(fields, levelId)   //3
+	fields = append(fields, threadId)  //4
+	fields = append(fields, callSite)  //5
+
+	result.Init(-2, "@test", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
+		tabletype.Business, provider, "", false, false, true, true)
+
+	elemr0 := Relation{}
+	elemr0.Init(1, "test2test", "", result, relationtype.Mto, false, false, true, false)
+	relations = append(relations, elemr0)
+	result = new(Table)
+	result.Init(-3, "@test", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
+		tabletype.Business, provider, "", false, false, true, true)
+
+	return result
+}
+
+func getMtmTable() *Table {
+
+	var fields = make([]Field, 0, 0)
+	var relations = make([]Relation, 0, 2)
+	var indexes = make([]Index, 1, 1)
+	var result = new(Table)
+
+	// relations
+	var relationA = Relation{}
+	var relationB = Relation{}
+
+	relationA.Init(1, "relationA", "", nil, relationtype.Mto, false, true, true, true)
+	relationB.Init(2, "relationB", "", nil, relationtype.Mto, false, true, true, true)
+
+	relations = append(relations, relationA)
+	relations = append(relations, relationB)
+
+	result.Init(77, "@test", "", fields, relations, indexes, physicaltype.Table,
+		0, "test", tabletype.Mtm, databaseprovider.PostgreSql, "",
+		true, false, true, true)
+
+	return result
 }

@@ -33,7 +33,7 @@ func Test__Tablespace__Init(t *testing.T) {
 
 func Test__Tablespace__getDdlCreate(t *testing.T) {
 	tbl01 := new(tablespace)
-	expectedDll := "CREATE TABLESPACE indexspace LOCATION '/data/indexes'"
+	expectedDll := "CREATE TABLESPACE indexspace LOCATION 'c:\\data\\indexes'"
 	tbl01.Init(111, "indexspace", "", "/data/indexes", false, false)
 
 	if tbl01.getDdlCreate(databaseprovider.PostgreSql) != expectedDll {

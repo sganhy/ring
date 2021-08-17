@@ -3,6 +3,7 @@ package schema
 import (
 	"errors"
 	"fmt"
+	"os"
 	"ring/schema/entitytype"
 	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
@@ -16,6 +17,7 @@ const (
 	validatorAtLine           string = "\n at line %d"
 	invalidEntityName         string = "Invalid %s name"
 	invalidIndexValue         string = "Invalid index definition"
+	invalidTablespaceValue    string = "Invalid tablespace definition"
 	invalidRelationValue      string = "Invalid relation definition"
 	joinOperationByName       int    = 1
 	joinOperationByLineNumber int    = 2
@@ -56,6 +58,7 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 	valid.languageCodeValid(importFile)
 	valid.entityTypeValid(importFile)
 	valid.indexValueValid(importFile)
+	valid.tableSpaceValueValid(importFile)
 
 	//{2} - step2
 	if importFile.errorCount == 0 {
@@ -447,6 +450,34 @@ func (valid *validator) indexValid(importFile *Import) {
 
 	}
 
+}
+
+// check if path valid
+func (valid *validator) tableSpaceValueValid(importFile *Import) {
+	var metaList = importFile.metaList
+
+	for i := 0; i < len(metaList); i++ {
+		metaData := metaList[i]
+		metaType := metaData.GetEntityType()
+		if metaType == entitytype.Tablespace {
+			valueUpp := strings.ToUpper(metaData.value)
+
+			if strings.HasSuffix(valueUpp, "/NUL") || strings.HasSuffix(valueUpp, "/NUL/") {
+				var description = fmt.Sprintf("invalid tablespace '%s' contains value 'NUL'"+validatorAtLine,
+					metaData.name, metaData.lineNumber)
+				importFile.logErrorStr(884, invalidTablespaceValue, description)
+				continue
+			}
+
+			err := os.MkdirAll(metaData.value, os.ModePerm)
+			if err != nil {
+				var description = fmt.Sprintf("invalid tablespace '%s' value '%s' error: %s"+validatorAtLine,
+					metaData.name, metaData.value, err.Error(), metaData.lineNumber)
+				importFile.logErrorStr(885, invalidTablespaceValue, description)
+
+			}
+		}
+	}
 }
 
 /*TODO Detect duplicate index definition ()

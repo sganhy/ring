@@ -207,6 +207,10 @@ func (table *Table) getSqlCapacity() uint16 {
 	return table.sqlCapacity
 }
 
+func (table *Table) setTableType(tableType tabletype.TableType) {
+	table.tableType = tableType
+}
+
 func (table *Table) GetFieldIdByIndex(index int) *Field {
 	return table.fields[table.mapper[index]]
 }
@@ -1283,6 +1287,8 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 
 	return result
 }
+
+// test table for unitesting
 
 func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields []Field
