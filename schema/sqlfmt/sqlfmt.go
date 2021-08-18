@@ -685,6 +685,20 @@ func FormatEntityName(provider databaseprovider.DatabaseProvider, entityName str
 	return entityName
 }
 
+func UnFormatEntityName(provider databaseprovider.DatabaseProvider, entityName string) string {
+
+	// fast version
+	switch provider {
+	case databaseprovider.PostgreSql:
+		return strings.ReplaceAll(entityName, doubleQuotes, "")
+
+	case databaseprovider.MySql:
+		return strings.ReplaceAll(entityName, mysqlQuotes, "")
+	}
+
+	return entityName
+}
+
 func ToSnakeCase(name string) string {
 	var result strings.Builder
 	var letterBefore = false

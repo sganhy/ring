@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"ring/data"
 	"ring/data/operationtype"
 	"ring/data/sortordertype"
@@ -30,12 +29,6 @@ const minint32 string = "-2147483648"
 // configuration methods
 //**************************
 func main() {
-	newDir := "c:/nul "
-
-	err := os.MkdirAll(newDir, os.ModePerm)
-	if err != nil {
-		fmt.Println(err.Error())
-	}
 
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/rpg_sheet_test", 10, 20)
@@ -51,7 +44,7 @@ func main() {
 
 	var metaSchema = schema.GetSchemaByName("RpgSheet")
 	fmt.Println(metaSchema.GetId())
-	var tableBook = metaSchema.GetTableByName("book")
+	var tableBook = metaSchema.GetTableByName("alignment")
 
 	fmt.Println(metaSchema.GetId())
 	fmt.Println(tableBook.GetId())

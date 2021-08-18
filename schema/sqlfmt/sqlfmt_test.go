@@ -110,13 +110,8 @@ func Test__Sqlfmt__FormatEntityName(t *testing.T) {
 	//==== testing postgreSQL
 	//======================
 	provider := databaseprovider.PostgreSql
-	expectedResult := "table_testa"
-	if FormatEntityName(provider, "TableTesta") != expectedResult {
-		t.Errorf("Sqlfmt.FormatEntityName() ==> result must be equal to %s", expectedResult)
-	}
 
-	expectedResult = "\"@meta\""
-	t.Errorf(FormatEntityName(provider, "@meta"))
+	expectedResult := "\"@meta\""
 	if FormatEntityName(provider, "@meta") != expectedResult {
 		t.Errorf("Sqlfmt.FormatEntityName() ==> result must be equal to %s", expectedResult)
 	}

@@ -178,7 +178,7 @@ func (importFile *Import) Upgrade() {
 		// no error
 		importFile.loaded = false
 		importFile.metaList = nil
-		importFile.newSchema = getSchemaById(importFile.schemaId, true)
+		importFile.newSchema = getSchemaById(importFile.schemaId, true, true)
 
 		// database.go
 		upgradeSchema(importFile.jobId, importFile.newSchema)

@@ -389,6 +389,10 @@ func (query *metaQuery) create() error {
 	return query.schema.execute(query)
 }
 
+func (query *metaQuery) drop() error {
+	return query.create()
+}
+
 func (query *metaQuery) truncate() error {
 	return query.create()
 }

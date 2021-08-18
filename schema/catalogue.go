@@ -3,6 +3,7 @@ package schema
 import (
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
+	"ring/schema/sqlfmt"
 	"strings"
 )
 
@@ -95,7 +96,7 @@ func (cata *catalogue) exists(schema *Schema, ent entity) bool {
 		metaQuery.query = query
 		metaQuery.Init(schema, catalogTable)
 		if ent.GetEntityType() != entitytype.Schema {
-			metaQuery.addParam(strings.ToUpper(ent.GetName()))
+			metaQuery.addParam(strings.ToUpper(cata.getEntityName(schema, ent)))
 		}
 		if ent.GetEntityType() != entitytype.Tablespace {
 			metaQuery.addParam(strings.ToUpper(schema.GetPhysicalName()))
@@ -107,4 +108,20 @@ func (cata *catalogue) exists(schema *Schema, ent entity) bool {
 		return result
 	}
 	panic("Unable to query from catalog")
+}
+
+func (cata *catalogue) getEntityName(schema *Schema, ent entity) string {
+
+	// table physical name contains schema information ==> <schema_name>.t_<table_name>
+	if ent.GetEntityType() == entitytype.Table {
+		physicalName := ent.GetPhysicalName()
+		if strings.Index(physicalName, ".") > 0 {
+			arr := strings.Split(physicalName, ".")
+			return sqlfmt.UnFormatEntityName(schema.GetDatabaseProvider(), arr[1])
+		} else {
+			return physicalName
+		}
+	} else {
+		return ent.GetName()
+	}
 }

@@ -83,6 +83,7 @@ const (
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	postGreVacuum        string = "VACUUM %s"
+	postGreCascade       string = "CASCADE"
 	postGreAnalyze       string = "ANALYZE %s"
 	mysqlParameterName   string = "?"
 	tableChangeMessage   string = "name: %s (done) | time=%dms"
@@ -353,6 +354,14 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
 		break
+	case ddlstatement.Drop:
+		query = ddlstatement.Drop.String()
+		query += ddlSpace
+		query += entitytype.Table.String()
+		query += ddlSpace
+		query += table.physicalName
+		query += ddlSpace
+		query += postGreCascade
 	case ddlstatement.Truncate:
 		query = ddlstatement.Truncate.String()
 		query += ddlSpace
@@ -1065,6 +1074,31 @@ func (table *Table) create(jobId int64) error {
 	}
 
 	logger.info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
+		sqlfmt.ToCamelCase(entitytype.Table.String()),
+		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+
+	return err
+}
+
+func (table *Table) drop(jobId int64) error {
+	var metaQuery = metaQuery{}
+	//	var firstUniqueIndex = true
+	var schema = table.getSchema()
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	metaQuery.Init(schema, table)
+	metaQuery.query = table.GetDdl(ddlstatement.Drop, nil)
+
+	//TODO drop contraints ??
+
+	// create table
+	err = metaQuery.drop()
+
+	duration := time.Now().Sub(creationTime)
+
+	logger.info(39, jobId, sqlfmt.ToPascalCase(ddlstatement.Drop.String())+" "+
 		sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 

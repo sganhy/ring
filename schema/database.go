@@ -95,7 +95,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 		var schemas = getSchemaIdList()
 		for i := 0; i < len(schemas); i++ {
-			addSchema(getSchemaById(schemas[i], disableConnectionPool))
+			addSchema(getSchemaById(schemas[i], disableConnectionPool, false))
 		}
 	}
 	// call garbage collector
@@ -169,7 +169,6 @@ func GetSchemaById(id int32) *Schema {
 //******************************
 // private methods
 //******************************
-
 func getDefaultDbProvider() databaseprovider.DatabaseProvider {
 	metaSchema := GetSchemaByName(metaSchemaName)
 	if metaSchema != nil {
@@ -356,21 +355,26 @@ func getSchemaIdList() []int32 {
 }
 
 // load schema from @meta table sort by reference_
-func getSchemaById(schemaId int32, disablePool bool) *Schema {
-	var metaList = getMetaList(schemaId)
+func getSchemaById(schemaId int32, disablePool bool, includeInactive bool) *Schema {
+	var metaList = getMetaList(schemaId, includeInactive)
 	var metaIdList = getMetaIdList(schemaId)
 	var schema = new(Schema)
 	return schema.getSchema(schemaId, metaList, metaIdList, disablePool)
 }
 
 // load meta from db @meta table sorted by ref_id
-func getMetaList(schemaId int32) []meta {
+func getMetaList(schemaId int32, includeInactive bool) []meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)
 	query.addFilter(metaSchemaId, operatorEqual, schemaId)
+
+	if includeInactive == false {
+		query.addFilter(metaActive, operatorEqual, true)
+	}
+
 	// improve perf to load schema later
-	query.addSort(metaName, true)
+	//no need: query.addSort(metaName, true)
 
 	err := query.run(0)
 	if err != nil {

@@ -548,6 +548,12 @@ func Test__Table__GetDdl(t *testing.T) {
 	if createScript != expectedSQl {
 		t.Errorf("Table.GetDdl(Create) ==> query must be equal to " + expectedSQl)
 	}
+	// table @test: Drop
+	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
+	expectedSQl = "DROP TABLE information_schema.\"t_@test\" CASCADE"
+	if table.GetDdl(ddlstatement.Drop, nil) != expectedSQl {
+		t.Errorf("Table.GetDdl(Drop) ==> query must be equal to " + expectedSQl)
+	}
 }
 
 func Test__Table__getUniqueFieldList(t *testing.T) {

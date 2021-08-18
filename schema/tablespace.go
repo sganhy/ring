@@ -111,14 +111,6 @@ func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 	metaQuery.Init(schema, nil)
 	metaQuery.query = tableSpace.GetDdl(ddlstatement.Create, schema.GetDatabaseProvider())
 
-	// create directory
-	err = tableSpace.ensureDirectory()
-	if err != nil {
-		logger.error(-1, 0, err)
-		logger.error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
-		return err
-	}
-
 	// create tablespace
 	err = metaQuery.create()
 	if err != nil {
@@ -134,10 +126,6 @@ func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 		fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000)))
 
 	return err
-}
-
-func (tableSpace *tablespace) ensureDirectory() error {
-	return nil
 }
 
 func (tableSpace *tablespace) getDdlCreate(provider databaseprovider.DatabaseProvider) string {

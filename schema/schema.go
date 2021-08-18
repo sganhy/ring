@@ -352,7 +352,7 @@ func (schema *Schema) exists() bool {
 	return cata.exists(schema, schema)
 }
 
-func (prevSchema *Schema) alter(jobId int64, newSchema *Schema) {
+func (currentSchema *Schema) alter(jobId int64, newSchema *Schema) {
 	// borrow connection pool to meta schema
 	metaSchema := GetSchemaByName(metaSchemaName)
 	newSchema.connections = metaSchema.connections
@@ -367,10 +367,11 @@ func (prevSchema *Schema) alter(jobId int64, newSchema *Schema) {
 	newSchema.createTablespaces(jobId)
 
 	newDico := newSchema.getTableDictionary()
-	prevDico := prevSchema.getTableDictionary()
+	currDico := currentSchema.getTableDictionary()
 
-	newSchema.dropTables(prevDico, newDico)
-	newSchema.createTables(jobId, prevDico, newDico)
+	currentSchema.dropTables(jobId, currDico, newDico)
+	newSchema.createTables(jobId, currDico, newDico)
+
 	newSchema.connections = nil
 }
 
@@ -396,8 +397,16 @@ func (schema *Schema) findTablespace(table *Table, index *Index, constr *constra
 	return nil
 }
 
-func (schema *Schema) dropTables(prevDico map[string]string, newDico map[string]string) {
-
+func (schema *Schema) dropTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
+	// 1> drop tables
+	for tablePhysName, tableName := range prevDico {
+		if _, ok := newDico[strings.ToUpper(tablePhysName)]; !ok {
+			table := schema.GetTableByName(tableName)
+			if table.exists() == true {
+				table.drop(jobId)
+			}
+		}
+	}
 }
 
 func (schema *Schema) createTablespaces(jobId int64) error {
@@ -416,7 +425,7 @@ func (schema *Schema) createTablespaces(jobId int64) error {
 func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
 	// 1> create missing tables
 	for tablePhysName, tableName := range newDico {
-		if _, ok := prevDico[tablePhysName]; !ok {
+		if _, ok := prevDico[strings.ToUpper(tablePhysName)]; !ok {
 			table := schema.GetTableByName(tableName)
 			if table.exists() == false {
 				table.create(jobId)
@@ -449,11 +458,11 @@ func (schema *Schema) createMtmTables(jobId int64, prevDico map[string]string, n
 	}
 }
 
-// get dictionary of table <physicalName, name>
+// get dictionary of table <Upper(physicalName), name>
 func (schema *Schema) getTableDictionary() map[string]string {
 	result := make(map[string]string, len(schema.tables))
 	for _, tbl := range schema.tables {
-		result[tbl.GetPhysicalName()] = tbl.GetName()
+		result[strings.ToUpper(tbl.GetPhysicalName())] = tbl.GetName()
 	}
 	return result
 }

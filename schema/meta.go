@@ -319,7 +319,7 @@ func (metaData *meta) readFlag(bitPosition uint8) bool {
 }
 
 func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
-	prevMetaList := getMetaList(schemaId)
+	prevMetaList := getMetaList(schemaId, true)
 	var err error
 
 	err = nil
