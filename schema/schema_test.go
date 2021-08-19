@@ -19,6 +19,8 @@ func Test__Schema__Init(t *testing.T) {
 	var parameters = []parameter{}
 	var schema = Schema{}
 
+	language.Init(890, "en-US")
+
 	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", language, tables, tablespaces, sequences,
 		parameters, databaseprovider.Influx, 0, 0, true, true, true)
 
@@ -49,7 +51,12 @@ func Test__Schema__Init(t *testing.T) {
 	if schema.GetEntityType() != entitytype.Schema {
 		t.Errorf("Schema.Init() ==> GetEntityType() <> entitytype.Schema")
 	}
-
+	if schema.IsEmpty() == true {
+		t.Errorf("Schema.Init() ==> IsEmpty() <> false")
+	}
+	if schema.GetLanguage().GetNativeName() != "English" {
+		t.Errorf("Schema.Init() ==> Native language <> 'English'")
+	}
 	if schema.GetTableCount() != 0 {
 		t.Errorf("Schema.GetTableCount() ==> GetTableCount() <> 0")
 	}
@@ -153,7 +160,25 @@ func Test__Schema__GetSequenceByName(t *testing.T) {
 
 	sequence := schema.GetSequenceByName("????????????")
 	if sequence != nil {
-		t.Errorf("Schema.GetSequenceByName() ==> sequence name ????????????' must be null")
+		t.Errorf("Schema.GetSequenceByName() ==> sequence name '????????????' must be null")
+	}
+
+}
+
+func Test__Schema__getParameterByName(t *testing.T) {
+	var schema = new(Schema)
+	schema = schema.getMetaSchema(databaseprovider.MySql, "", 0, 0, true)
+
+	for i := 0; i < len(schema.parameters); i++ {
+		param := schema.getParameterByName(schema.parameters[i].GetName())
+		if param == nil {
+			t.Errorf("Schema.getParameterByName() ==> parameter name '%s' cannot be found", schema.sequences[i].GetName())
+		}
+	}
+
+	param := schema.getParameterByName("????????????")
+	if param != nil {
+		t.Errorf("Schema.getParameterByName() ==> parameter name '????????????' must be null")
 	}
 
 }
@@ -173,7 +198,6 @@ func Test__Schema__getPhysicalName(t *testing.T) {
 	if schema.getPhysicalName(databaseprovider.PostgreSql, metaSchemaName) != postgreSqlSchema {
 		t.Errorf("Schema.getPhysicalName() ==> is not equal to '%s'", postgreSqlSchema)
 	}
-
 	validPhysicalName := "rpg_sheet"
 	if schema.getPhysicalName(databaseprovider.PostgreSql, " Rpg Sheet ") != validPhysicalName {
 		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
@@ -186,6 +210,62 @@ func Test__Schema__getPhysicalName(t *testing.T) {
 	}
 	if schema.getPhysicalName(databaseprovider.PostgreSql, "Rpg sheet") != validPhysicalName {
 		t.Errorf("Schema.getPhysicalName(' Rpg Sheet ') ==> is not equal to '%s'", validPhysicalName)
+	}
+	validPhysicalName = "" // take default schema
+	if schema.getPhysicalName(databaseprovider.PostgreSql, "") != validPhysicalName {
+		t.Errorf("Schema.getPhysicalName('') ==> should be equal to null")
+	}
+
+}
+
+func Test__Schema__findTablespace(t *testing.T) {
+	var relations = []Relation{}
+	var indexes = []Index{}
+	var fields = []Field{}
+	var tables = []*Table{}
+	var tablespaces = []tablespace{}
+	var sequences = []Sequence{}
+	var parameters = []parameter{}
+	var schema = Schema{}
+	var language = Language{}
+	var uk Index = Index{}
+
+	// creating tablepaces
+	tbl01 := new(tablespace)
+	tbl01.Init(3333, "indexspace 3", "ATable Test", "/data/data", false, false)
+	tbl02 := new(tablespace)
+	tbl02.Init(3334, "indexspace 4", "ATable Test", "/data/indexes", true, false)
+	tbl03 := new(tablespace)
+	tbl03.Init(3335, "indexspace 5", "ATable Test", "/data/indexes", false, true)
+	tablespaces = append(tablespaces, *tbl01)
+	tablespaces = append(tablespaces, *tbl02)
+	tablespaces = append(tablespaces, *tbl03)
+
+	// creating fields
+	field0 := Field{}
+	field0.Init(1, "Gga", "", fieldtype.Int, 0, "", true, true, true, false, true)
+	fields = append(fields, field0)
+
+	var indexedFields = []string{"Zorba"}
+	uk.Init(1, "uk_test", "ATable Test", indexedFields, false, false, true, true)
+	indexes = append(indexes, uk)
+
+	elemt := Table{}
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
+		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined,
+		"subject test", true, false, true, false)
+	tables = append(tables, &elemt)
+
+	schema.Init(212, "test", "test", "phys test", "", language, tables, tablespaces, sequences, parameters,
+		databaseprovider.Influx, 0, 0, true, true, true)
+
+	tblspcResult := schema.findTablespace(&elemt, nil, nil)
+	if tblspcResult.name != "indexspace 4" {
+		t.Errorf("Schema.findTablespace() ==> should be equal to 'indexspace 4'")
+	}
+	tblspcResult = schema.findTablespace(nil, &uk, nil)
+	if tblspcResult.name != "indexspace 5" {
+		t.Errorf("Schema.findTablespace() ==> should be equal to 'indexspace 5'")
 	}
 
 }
