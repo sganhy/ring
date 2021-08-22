@@ -135,7 +135,6 @@ func (logger *log) setCallSite(callSite string) {
 
 // is meta table present in the database
 func (logger *log) isMetaTable(exist bool) {
-	fmt.Println("isMetaTables(exist bool)")
 	metaTableExist = exist
 }
 
@@ -204,12 +203,12 @@ func (logger *log) writeToDb(newLog *log) {
 }
 
 func (logger *log) writeDeferToDb(newLog *log) {
-	// max try 10 times
+	// max try 1 minute
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 30; i++ {
 		//fmt.Println("writeDeferToDb")
 		time.Sleep(2 * time.Second)
-		if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true {
+		if logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
 			newLog.jobId = metaSchema.getJobIdNextValue()

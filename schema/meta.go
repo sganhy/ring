@@ -319,7 +319,7 @@ func (metaData *meta) readFlag(bitPosition uint8) bool {
 }
 
 func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
-	prevMetaList := getMetaList(schemaId, true)
+	prevMetaList := getMetaList(schemaId, entitytype.NotDefined, true)
 	var err error
 
 	err = nil
@@ -344,6 +344,7 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
 
 		// detect deleted meta item
 		if err == nil {
+			// delete first
 			err = metaData.deleteMetaList(schemaId, dico, true)
 		}
 	}

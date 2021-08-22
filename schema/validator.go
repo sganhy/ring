@@ -19,6 +19,7 @@ const (
 	invalidIndexValue         string = "Invalid index definition"
 	invalidTablespaceValue    string = "Invalid tablespace definition"
 	invalidRelationValue      string = "Invalid relation definition"
+	invalidTableValue         string = "Invalid table definition"
 	joinOperationByName       int    = 1
 	joinOperationByLineNumber int    = 2
 	prefixedEntityMaxLength   int    = 28
@@ -74,7 +75,13 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 		//valid.duplicateIndex(importFile)
 	}
 
-	//{3} final checks
+	//{4} - step4 - compare with previous schema (if exist)
+	if GetSchemaById(importFile.schemaId) != nil {
+		valid.isTableIdReserved(importFile)
+
+	}
+
+	//{5} final checks
 	if importFile.errorCount == 0 {
 		valid.duplicateMetaKey(importFile)
 	}
@@ -475,6 +482,37 @@ func (valid *validator) tableSpaceValueValid(importFile *Import) {
 					metaData.name, metaData.value, err.Error(), metaData.lineNumber)
 				importFile.logErrorStr(885, invalidTablespaceValue, description)
 
+			}
+		}
+	}
+}
+
+// we cannot re-use a reserved {table_id}
+func (valid *validator) isTableIdReserved(importFile *Import) {
+	metaList := getMetaList(importFile.schemaId, entitytype.Table, true)
+
+	if len(metaList) <= 0 {
+		return
+	}
+	dicoTable := make(map[int32]string, len(metaList))
+
+	// create dico
+	for i := 0; i < len(metaList); i++ {
+		dicoTable[metaList[i].id] = metaList[i].name
+	}
+
+	// compare tables
+	for i := 0; i < len(importFile.metaList); i++ {
+		metaData := importFile.metaList[i]
+		metaType := metaData.GetEntityType()
+
+		if metaType == entitytype.Table {
+			if name, ok := dicoTable[metaData.id]; ok {
+				if strings.EqualFold(name, metaData.name) == false {
+					var description = fmt.Sprintf("table id %d already reserved for '%s' entity",
+						metaData.id, metaData.name)
+					importFile.logErrorStr(909, invalidTableValue, description)
+				}
 			}
 		}
 	}

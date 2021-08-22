@@ -352,7 +352,7 @@ func (schema *Schema) exists() bool {
 	return cata.exists(schema, schema)
 }
 
-func (currentSchema *Schema) alter(jobId int64, newSchema *Schema) {
+func (currentSchema *Schema) upgrade(jobId int64, newSchema *Schema) {
 	// borrow connection pool to meta schema
 	metaSchema := GetSchemaByName(metaSchemaName)
 	newSchema.connections = metaSchema.connections
@@ -371,6 +371,7 @@ func (currentSchema *Schema) alter(jobId int64, newSchema *Schema) {
 
 	currentSchema.dropTables(jobId, currDico, newDico)
 	newSchema.createTables(jobId, currDico, newDico)
+	currentSchema.alterTables(jobId, newSchema, newDico)
 
 	newSchema.connections = nil
 }
@@ -397,13 +398,45 @@ func (schema *Schema) findTablespace(table *Table, index *Index, constr *constra
 	return nil
 }
 
-func (schema *Schema) dropTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
+func (newSchema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
+	// 1> create missing tables
+	for tablePhysName, tableName := range newDico {
+		if _, ok := prevDico[strings.ToUpper(tablePhysName)]; !ok {
+			table := newSchema.GetTableByName(tableName)
+			if table.exists() == false {
+				table.create(jobId)
+			}
+		}
+	}
+	// 2> create constraints
+	for tablePhysName, tableName := range newDico {
+		if _, ok := prevDico[tablePhysName]; !ok {
+			table := newSchema.GetTableByName(tableName)
+			table.createConstraints(newSchema)
+		}
+	}
+	newSchema.createMtmTables(jobId, prevDico, newDico)
+}
+
+func (currentSchema *Schema) dropTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
 	// 1> drop tables
 	for tablePhysName, tableName := range prevDico {
 		if _, ok := newDico[strings.ToUpper(tablePhysName)]; !ok {
-			table := schema.GetTableByName(tableName)
+			table := currentSchema.GetTableByName(tableName)
 			if table.exists() == true {
 				table.drop(jobId)
+			}
+		}
+	}
+}
+
+func (currentSchema *Schema) alterTables(jobId int64, newSchema *Schema, newDico map[string]string) {
+	for _, currTable := range currentSchema.tables {
+		tablePhysName := currTable.GetPhysicalName()
+		if name, ok := newDico[strings.ToUpper(tablePhysName)]; ok {
+			newTable := newSchema.GetTableByName(name)
+			if newTable.equal(currTable) == false {
+				fmt.Println("======" + newTable.GetPhysicalName())
 			}
 		}
 	}
@@ -420,26 +453,6 @@ func (schema *Schema) createTablespaces(jobId int64) error {
 		}
 	}
 	return nil
-}
-
-func (schema *Schema) createTables(jobId int64, prevDico map[string]string, newDico map[string]string) {
-	// 1> create missing tables
-	for tablePhysName, tableName := range newDico {
-		if _, ok := prevDico[strings.ToUpper(tablePhysName)]; !ok {
-			table := schema.GetTableByName(tableName)
-			if table.exists() == false {
-				table.create(jobId)
-			}
-		}
-	}
-	// 2> create constraints
-	for tablePhysName, tableName := range newDico {
-		if _, ok := prevDico[tablePhysName]; !ok {
-			table := schema.GetTableByName(tableName)
-			table.createConstraints(schema)
-		}
-	}
-	schema.createMtmTables(jobId, prevDico, newDico)
 }
 
 func (schema *Schema) createMtmTables(jobId int64, prevDico map[string]string, newDico map[string]string) {

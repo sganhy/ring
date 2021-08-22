@@ -65,6 +65,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 	schema := new(Schema)
 	databaseInitialized = true
 	var disableConnectionPool = false
+
 	// disable connection pool for unit testing ??
 	if minConnection == 0 && maxConnection == 0 && connectionString == "" {
 		disableConnectionPool = true
@@ -79,7 +80,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 	// 3> initialize logger
 	initLogger(metaSchema, metaSchema.GetTableByName(metaLogTableName))
 
-	// 4> load other schemas if connection pool is not disable
+	// 5> load other schemas if connection pool is not disable
 	if disableConnectionPool == false {
 		// create physical schema if it doesn't exist
 		createPhysicalSchema(metaSchema)
@@ -356,14 +357,14 @@ func getSchemaIdList() []int32 {
 
 // load schema from @meta table sort by reference_
 func getSchemaById(schemaId int32, disablePool bool, includeInactive bool) *Schema {
-	var metaList = getMetaList(schemaId, includeInactive)
+	var metaList = getMetaList(schemaId, entitytype.NotDefined, includeInactive)
 	var metaIdList = getMetaIdList(schemaId)
 	var schema = new(Schema)
 	return schema.getSchema(schemaId, metaList, metaIdList, disablePool)
 }
 
 // load meta from db @meta table sorted by ref_id
-func getMetaList(schemaId int32, includeInactive bool) []meta {
+func getMetaList(schemaId int32, entityType entitytype.EntityType, includeInactive bool) []meta {
 	var query = metaQuery{}
 
 	query.setTable(metaTableName)
@@ -373,6 +374,9 @@ func getMetaList(schemaId int32, includeInactive bool) []meta {
 		query.addFilter(metaActive, operatorEqual, true)
 	}
 
+	if entityType != entitytype.NotDefined {
+		query.addFilter(metaObjectType, operatorEqual, int8(entityType))
+	}
 	// improve perf to load schema later
 	//no need: query.addSort(metaName, true)
 
@@ -405,7 +409,7 @@ func upgradeSchema(jobId int64, schema *Schema) error {
 		currentSchema = schema.getEmptySchema()
 	}
 	setUpgradingSchema(schema)
-	currentSchema.alter(jobId, schema)
+	currentSchema.upgrade(jobId, schema)
 	setUpgradingSchema(nil)
 
 	// update parameter == '@last_upgrade'

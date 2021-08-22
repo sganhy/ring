@@ -43,4 +43,11 @@ func Test__Parameter__toMeta(t *testing.T) {
 	if elemp0.GetDataType() != fieldtype.String {
 		t.Errorf("Parameter.toMeta() ==> p0.GetDataType() must be equal to fieldtype.String")
 	}
+
+	elemp0.setValue("5564654")
+	elemp1.setValue("5564654")
+	if elemp0.GetValue() != elemp1.GetValue() {
+		t.Errorf("Parameter.toMeta() ==> p0.GetValue() must be equal to p1.GetValue()")
+	}
+
 }

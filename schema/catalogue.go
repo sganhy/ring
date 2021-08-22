@@ -119,7 +119,7 @@ func (cata *catalogue) getEntityName(schema *Schema, ent entity) string {
 			arr := strings.Split(physicalName, ".")
 			return sqlfmt.UnFormatEntityName(schema.GetDatabaseProvider(), arr[1])
 		} else {
-			return physicalName
+			return sqlfmt.UnFormatEntityName(schema.GetDatabaseProvider(), physicalName)
 		}
 	} else {
 		return ent.GetName()

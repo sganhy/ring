@@ -7,14 +7,10 @@ import (
 	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
-	"ring/schema/ddlstatement"
 	"ring/schema/fieldtype"
-	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
 	"ring/schema/searchabletype"
-
 	"ring/schema/sourcetype"
-	"ring/schema/tabletype"
 	"runtime"
 	"strings"
 	"time"
@@ -48,17 +44,6 @@ func main() {
 
 	fmt.Println(metaSchema.GetId())
 	fmt.Println(tableBook.GetId())
-
-	//var metaSchema = schema.GetSchemaByName("@meta")
-	//var metaTable = metaSchema.GetTableByName("@meta")
-	schema2 := importFile.GetSchema()
-	table2 := schema2.GetTableByName("class")
-	fmt.Println(table2.GetName())
-
-	//importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\schema.xml")
-
-	//schema.Init(databaseprovider.MySql, "root:root@/mysql", 10, 20)
-	//ss.LogWarn(1, 544, "hello", "World")
 
 	rcd := new(data.Record)
 
@@ -147,39 +132,5 @@ func main() {
 	elemr.Init(21, "rel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
 	elemr0 := schema.Relation{}
 	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
-
-	var aarr = []string{"Gga", "Zorba"}
-	elemi := schema.Index{}
-	// id int32, name string, description string, fields []string, bitmap bool,	unique bool, baseline bool, active bool
-	elemi.Init(21, "rel test", "hellkzae", aarr, false, true, true, true)
-	fmt.Println(elemr.GetName())
-	var fields = []schema.Field{}
-	//var prim = schema.GetDefaultPrimaryKey()
-	fields = append(fields, elemf)
-	fields = append(fields, elemf2)
-	fields = append(fields, elemf3)
-	fields = append(fields, elemf4)
-	fields = append(fields, elemf5)
-	//aarr2 = append(aarr2, *prim)
-	var relations = []schema.Relation{}
-	relations = append(relations, elemr)
-	relations = append(relations, elemr0)
-
-	var indexes = []schema.Index{}
-	indexes = append(indexes, elemi)
-
-	// id int32, name string, description string, fields []string, tableId int32, bitmap bool, unique bool, baseline bool,  bool
-	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		physicaltype.Table, 64, "@meta", tabletype.Business, databaseprovider.PostgreSql, "subject test", true, false, true, false)
-	fmt.Println(elemt.GetFieldByName("Field Test").GetName())
-	fmt.Println(elemt.GetDdl(ddlstatement.Create, nil))
-
-	//fmt.Println(elemt.GetFieldById(4).GetName())
-	//fmt.Println(elemt.GetPrimaryKey().GetName())
-	/*
-		var elemt2 = *schema.GetMetaTable()
-		fmt.Println(elemt.GetPhysicalName())
-		fmt.Println(elemt2.GetPhysicalName())
-	*/
 
 }

@@ -1108,15 +1108,17 @@ func (table *Table) drop(jobId int64) error {
 func (table *Table) createIndexes(schema *Schema) {
 	var logger = schema.getLogger()
 
-	if table.tableType != tabletype.Meta && table.tableType != tabletype.MetaId {
-		for i := 0; i < len(table.indexes); i++ {
-			index := table.indexes[i]
-			err := index.create(schema, table)
-			if err != nil {
-				logger.error(-1, 0, err)
-			}
+	for i := 0; i < len(table.indexes); i++ {
+		index := table.indexes[i]
+		if (table.tableType == tabletype.Meta || table.tableType == tabletype.MetaId) && index.IsUnique() {
+			continue
+		}
+		err := index.create(schema, table)
+		if err != nil {
+			logger.error(-1, 0, err)
 		}
 	}
+
 }
 
 func (table *Table) createConstraints(schema *Schema) {
@@ -1182,6 +1184,14 @@ func (table *Table) exists() bool {
 	var schema = table.getSchema()
 	cata := new(catalogue)
 	return cata.exists(schema, table)
+}
+
+func (tableA *Table) equal(tableB *Table) bool {
+	// compare fields
+	if strings.EqualFold(tableA.fieldList, tableB.fieldList) == false {
+		return false
+	}
+	return true
 }
 
 func (table *Table) getSchema() *Schema {
@@ -1268,6 +1278,7 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	var indexes []Index
 	var result = new(Table)
 	var uk Index
+	var nuk Index
 
 	// physical_name is built later
 	//  == metaId table
@@ -1299,8 +1310,14 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	active.Init(1103, metaActive, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	// unique key (1)      id; schema_id; reference_id; object_type
-	var indexedFields = []string{id.GetName(), schemaId.name, objectType.name, referenceId.name}
-	uk.Init(1, metaTableName, "", indexedFields, false, true, true, true)
+	var indexedUkFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
+	var indexedNukFields = []string{schemaId.GetName(), objectType.GetName()}
+
+	uk.Init(1, metaTableName, "", indexedUkFields, false, true, true, true)
+	nuk.Init(2, metaTableName, "", indexedNukFields, false, false, true, true)
+
+	indexes = append(indexes, uk)
+	indexes = append(indexes, nuk)
 
 	fields = append(fields, id)           //1
 	fields = append(fields, schemaId)     //2
@@ -1313,8 +1330,6 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	fields = append(fields, description)  //9
 	fields = append(fields, value)        //10
 	fields = append(fields, active)       //11
-
-	indexes = append(indexes, uk)
 
 	result.Init(int32(tabletype.Meta), metaTableName, "", fields, relations, indexes,
 		physicaltype.Table, 0, schemaPhysicalName, tabletype.Meta, provider, "", true, false, true, true)
