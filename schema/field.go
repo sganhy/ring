@@ -186,6 +186,10 @@ func (field *Field) setType(fieldType fieldtype.FieldType) {
 	field.fieldType = fieldType
 }
 
+func (field *Field) setName(name string) {
+	field.name = name
+}
+
 //******************************
 // public methods
 //******************************

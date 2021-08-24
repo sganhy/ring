@@ -339,10 +339,15 @@ func (schema *Schema) create(jobId int64) error {
 	}
 
 	duration := time.Now().Sub(creationTime)
+	message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " + sqlfmt.ToCamelCase(entitytype.Schema.String())
+	description := fmt.Sprintf(tableChangeMessage, schema.physicalName, int(duration.Seconds()*1000))
 
-	logger.Info(16, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
-		sqlfmt.ToCamelCase(entitytype.Schema.String()), fmt.Sprintf(tableChangeMessage,
-		schema.physicalName, int(duration.Seconds()*1000)))
+	if err == nil {
+		logger.Info(16, jobId, message, description)
+	} else {
+		logger.Error(16, jobId, message, description)
+		logger.Error(16, jobId, err)
+	}
 
 	return nil
 }

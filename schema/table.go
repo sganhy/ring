@@ -1168,10 +1168,57 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 			currentTable.addField(jobId, newTable.fields[i])
 		}
 	}
+	// drop obsolete fields
+	for i := 0; i < len(currentTable.fields); i++ {
+		if _, ok := newDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentTable.GetDatabaseProvider()))]; !ok {
+			// be sure field is available into currentTable
+			currentTable.dropField(jobId, currentTable.fields[i])
+		}
+	}
 
-	// remove obsolete fields
 	//TODO modify fields
 	return nil
+}
+
+func (table *Table) dropField(jobId int64, field *Field) error {
+	var queryRmv = metaQuery{}
+	var schema = table.getSchema()
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	queryRmv.Init(schema, table)
+	queryRmv.query = table.GetDdl(ddlstatement.Alter, nil, field)
+
+	// alter table add field
+	err = queryRmv.alter()
+
+	// searchable field?
+	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
+		// generate ddl query 4 searchable field
+		tableCopy := table.Clone()
+		searchableField := tableCopy.GetFieldByName(field.GetName())
+		searchableField.setName(field.getSearchableFieldName())
+		tableCopy.sortFields() // sort fields
+
+		queryRmv.query = tableCopy.GetDdl(ddlstatement.Alter, nil, searchableField)
+		err = queryRmv.alter()
+	}
+
+	duration := time.Now().Sub(creationTime)
+	message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
+	subDescription := table.physicalName + ", dropped field name: " + field.name
+	description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
+	logId := int32(43)
+
+	if err == nil {
+		logger.Info(logId, jobId, message, description)
+	} else {
+		logger.Error(logId, jobId, message, description)
+		logger.Error(logId, jobId, err)
+	}
+
+	return err
 }
 
 func (table *Table) addField(jobId int64, field *Field) error {
@@ -1185,20 +1232,28 @@ func (table *Table) addField(jobId int64, field *Field) error {
 	metaquery.Init(schema, table)
 	metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
 
-	//TODO drop contraints ??
-
-	// create table
+	// alter table add field
 	err = metaquery.alter()
+
+	// searchable field?
+	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
+		searchableField := field.Clone()
+		searchableField.setName(field.getSearchableFieldName())
+		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, searchableField)
+		err = metaquery.alter()
+	}
 
 	duration := time.Now().Sub(creationTime)
 	message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
 	subDescription := table.physicalName + ", added field name: " + field.name
 	description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
+	logId := int32(41)
 
 	if err == nil {
-		logger.Info(41, jobId, message, description)
+		logger.Info(logId, jobId, message, description)
 	} else {
-		logger.Error(41, jobId, message, description)
+		logger.Error(logId, jobId, message, description)
+		logger.Error(logId, jobId, err)
 	}
 
 	return err

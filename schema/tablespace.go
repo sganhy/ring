@@ -120,13 +120,16 @@ func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 
 	//!!! cannot create constraints here due to foreign keys!!!
 	duration := time.Now().Sub(creationTime)
-	message := ddlstatement.Create.String() + " " + sqlfmt.ToCamelCase(tableSpace.GetEntityType().String())
+	message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " +
+		sqlfmt.ToCamelCase(tableSpace.GetEntityType().String())
 	description := fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000))
+	logId := int32(17)
 
 	if err == nil {
-		logger.Info(17, jobId, message, description)
+		logger.Info(logId, jobId, message, description)
 	} else {
-		logger.Error(17, jobId, message, description)
+		logger.Error(logId, jobId, message, description)
+		logger.Error(logId, jobId, err)
 	}
 
 	return err
