@@ -393,6 +393,10 @@ func (query *metaQuery) drop() error {
 	return query.create()
 }
 
+func (query *metaQuery) alter() error {
+	return query.create()
+}
+
 func (query *metaQuery) truncate() error {
 	return query.create()
 }

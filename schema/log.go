@@ -54,9 +54,9 @@ func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 	if schemaId != schemaNotDefined {
 		// get metas chema to fetch current JobId
 		if schemaId == 0 {
-			logger.info(0, 0, "Baseline logger initialized", "")
+			logger.Info(0, 0, "Baseline logger initialized", "")
 		} else if jobId == 0 {
-			logger.info(0, 0, "Logger initialized", "")
+			logger.Info(0, 0, "Logger initialized", "")
 		}
 	}
 }
@@ -145,36 +145,34 @@ func (logger *log) setSchemaId(id int32) {
 //******************************
 // public methods
 //******************************
-
-//******************************
-// private methods
-//******************************
-
 //go:noinline
-func (logger *log) warn(id int32, jobId int64, messages ...interface{}) {
+func (logger *log) Warn(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelWarning, jobId, messages...)
 }
 
 //go:noinline
-func (logger *log) error(id int32, jobId int64, messages ...interface{}) {
+func (logger *log) Error(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelError, jobId, messages...)
 }
 
 //go:noinline
-func (logger *log) fatal(id int32, jobId int64, messages ...interface{}) {
+func (logger *log) Fatal(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelFatal, jobId, messages...)
 }
 
 //go:noinline
-func (logger *log) debug(id int32, jobId int64, messages ...interface{}) {
+func (logger *log) Debug(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelDebug, jobId, messages...)
 }
 
 //go:noinline
-func (logger *log) info(id int32, jobId int64, messages ...interface{}) {
+func (logger *log) Info(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelInfo, jobId, messages...)
 }
 
+//******************************
+// private methods
+//******************************
 //go:noinline
 func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages ...interface{}) {
 	var message = logger.extractMessage(messages)

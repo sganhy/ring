@@ -334,13 +334,13 @@ func (schema *Schema) create(jobId int64) error {
 	err = metaQuery.create()
 
 	if err != nil {
-		logger.error(-1, 0, err)
+		logger.Error(-1, 0, err)
 		panic(err)
 	}
 
 	duration := time.Now().Sub(creationTime)
 
-	logger.info(16, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
+	logger.Info(16, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
 		sqlfmt.ToCamelCase(entitytype.Schema.String()), fmt.Sprintf(tableChangeMessage,
 		schema.physicalName, int(duration.Seconds()*1000)))
 
@@ -436,7 +436,7 @@ func (currentSchema *Schema) alterTables(jobId int64, newSchema *Schema, newDico
 		if name, ok := newDico[strings.ToUpper(tablePhysName)]; ok {
 			newTable := newSchema.GetTableByName(name)
 			if newTable.equal(currTable) == false {
-				fmt.Println("======" + newTable.GetPhysicalName())
+				newTable.alter(jobId, currTable)
 			}
 		}
 	}

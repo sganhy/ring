@@ -80,11 +80,15 @@ const (
 	metaLongTableName    string = "@long"
 	metaValue            string = "value"
 	metaActive           string = "active"
+	postGreAddColumn     string = "ADD"
+	postGreDropColumn    string = "DROP"
+	postGreColumn        string = "COLUMN "
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	postGreVacuum        string = "VACUUM %s"
 	postGreCascade       string = "CASCADE"
 	postGreAnalyze       string = "ANALYZE %s"
+	relationSeparator    string = "|"
 	mysqlParameterName   string = "?"
 	tableChangeMessage   string = "name: %s (done) | time=%dms"
 	relationNotFound     int    = -1
@@ -329,7 +333,7 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
-func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace) string {
+func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace, field *Field) string {
 	var query string
 	switch statement {
 	case ddlstatement.Create:
@@ -354,6 +358,8 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
 		}
 		break
+	case ddlstatement.Alter:
+		query = table.getDdlAlter(field)
 	case ddlstatement.Drop:
 		query = ddlstatement.Drop.String()
 		query += ddlSpace
@@ -585,12 +591,12 @@ func (table *Table) Vacuum(jobId int64) error {
 		// create table
 		err = metaQuery.vacuum()
 		if err != nil {
-			logger.error(-1, 0, err)
+			logger.Error(-1, 0, err)
 			return err
 		}
 		duration := time.Now().Sub(creationTime)
 
-		logger.info(20, jobId, "Vacuum "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+		logger.Info(20, jobId, "Vacuum "+sqlfmt.ToCamelCase(entitytype.Table.String()),
 			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 	}
 	return nil
@@ -620,12 +626,12 @@ func (table *Table) Analyze(jobId int64) error {
 		// create table
 		err = metaQuery.analyze()
 		if err != nil {
-			logger.error(-1, 0, err)
+			logger.Error(-1, 0, err)
 			return err
 		}
 		duration := time.Now().Sub(creationTime)
 
-		logger.info(21, jobId, "Analyze "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+		logger.Info(21, jobId, "Analyze "+sqlfmt.ToCamelCase(entitytype.Table.String()),
 			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 	}
 	return nil
@@ -646,17 +652,17 @@ func (table *Table) Truncate(jobId int64) error {
 	var err error
 
 	metaQuery.Init(schema, table)
-	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil)
+	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil, nil)
 
 	// create table
 	err = metaQuery.truncate()
 	if err != nil {
-		logger.error(-1, 0, err)
+		logger.Error(-1, 0, err)
 		return err
 	}
 	duration := time.Now().Sub(creationTime)
 
-	logger.info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
+	logger.Info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 
 	return err
@@ -687,6 +693,34 @@ func (table *Table) toMeta() *meta {
 	metaTable.enabled = table.active
 
 	return metaTable
+}
+
+func (table *Table) getDdlAlter(field *Field) string {
+	if field != nil {
+		var query strings.Builder
+		query.WriteString(ddlstatement.Alter.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(entitytype.Table.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(table.physicalName)
+		query.WriteString(ddlSpace)
+
+		if table.GetFieldByName(field.GetName()) == nil {
+			query.WriteString(postGreAddColumn)
+			query.WriteString(ddlSpace)
+			query.WriteString(postGreColumn)
+			query.WriteString(field.GetDdl(table.provider, table.tableType))
+		} else {
+			query.WriteString(postGreDropColumn)
+			query.WriteString(ddlSpace)
+			query.WriteString(postGreColumn)
+			query.WriteString(field.GetPhysicalName(table.provider))
+			query.WriteString(ddlSpace)
+			query.WriteString(postGreCascade)
+		}
+		return query.String()
+	}
+	return ""
 }
 
 func (table *Table) addVariables(query *strings.Builder) {
@@ -1044,13 +1078,13 @@ func (table *Table) create(jobId int64) error {
 	var err error
 
 	metaQuery.Init(schema, table)
-	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil, nil))
+	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil, nil), nil)
 
 	// create table
 	err = metaQuery.create()
 	if err != nil {
-		logger.error(-1, 0, err)
-		logger.error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
+		logger.Error(-1, 0, err)
+		logger.Error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
 		return err
 	}
 
@@ -1069,11 +1103,11 @@ func (table *Table) create(jobId int64) error {
 		primaryKey.Init(constrainttype.PrimaryKey, table)
 		err := primaryKey.create(schema)
 		if err != nil {
-			logger.error(-1, 0, err)
+			logger.Error(-1, 0, err)
 		}
 	}
 
-	logger.info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
+	logger.Info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
 		sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 
@@ -1081,26 +1115,91 @@ func (table *Table) create(jobId int64) error {
 }
 
 func (table *Table) drop(jobId int64) error {
-	var metaQuery = metaQuery{}
+	var metaquery = metaQuery{}
 	//	var firstUniqueIndex = true
 	var schema = table.getSchema()
 	var logger = schema.getLogger()
 	var creationTime = time.Now()
 	var err error
 
-	metaQuery.Init(schema, table)
-	metaQuery.query = table.GetDdl(ddlstatement.Drop, nil)
+	metaquery.Init(schema, table)
+	metaquery.query = table.GetDdl(ddlstatement.Drop, nil, nil)
 
 	//TODO drop contraints ??
 
 	// create table
-	err = metaQuery.drop()
+	err = metaquery.drop()
 
 	duration := time.Now().Sub(creationTime)
 
-	logger.info(39, jobId, sqlfmt.ToPascalCase(ddlstatement.Drop.String())+" "+
+	logger.Info(39, jobId, sqlfmt.ToPascalCase(ddlstatement.Drop.String())+" "+
 		sqlfmt.ToCamelCase(entitytype.Table.String()),
 		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+
+	return err
+}
+
+func (newTable *Table) alter(jobId int64, currentTable *Table) error {
+	if newTable.fieldsEqual(currentTable) == false {
+		newTable.alterFields(jobId, currentTable)
+	}
+	return nil
+}
+
+func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
+	//TODO rollback @meta if table alteration not working
+	//TODO manage & test logical alteration only
+
+	// generate dico map [physical_name] *field
+	newDico := make(map[string]*Field, len(newTable.fields))
+	curDico := make(map[string]*Field, len(currentTable.fields))
+
+	for i := 0; i < len(newTable.fields); i++ {
+		newDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newTable.GetDatabaseProvider()))] =
+			newTable.fields[i]
+	}
+	for i := 0; i < len(currentTable.fields); i++ {
+		curDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentTable.GetDatabaseProvider()))] =
+			currentTable.fields[i]
+	}
+	// add new fields
+	for i := 0; i < len(newTable.fields); i++ {
+		if _, ok := curDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newTable.GetDatabaseProvider()))]; !ok {
+			currentTable.addField(jobId, newTable.fields[i])
+		}
+	}
+
+	// remove obsolete fields
+	//TODO modify fields
+	return nil
+}
+
+func (table *Table) addField(jobId int64, field *Field) error {
+
+	var metaquery = metaQuery{}
+	var schema = table.getSchema()
+	var logger = schema.getLogger()
+	var creationTime = time.Now()
+	var err error
+
+	metaquery.Init(schema, table)
+	metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
+
+	//TODO drop contraints ??
+
+	// create table
+	err = metaquery.alter()
+
+	duration := time.Now().Sub(creationTime)
+	message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
+	subDescription := table.physicalName + ", added field name: " + field.name
+	description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
+
+	if err == nil {
+		logger.Info(41, jobId, message, description)
+	} else {
+		logger.Error(41, jobId, message, description)
+	}
 
 	return err
 }
@@ -1115,7 +1214,7 @@ func (table *Table) createIndexes(schema *Schema) {
 		}
 		err := index.create(schema, table)
 		if err != nil {
-			logger.error(-1, 0, err)
+			logger.Error(-1, 0, err)
 		}
 	}
 
@@ -1139,13 +1238,13 @@ func (table *Table) createFieldConstraints(schema *Schema) {
 		checkConstraint.setField(field)
 		err := checkConstraint.create(schema)
 		if err != nil {
-			logger.error(-1, 0, err)
+			logger.Error(-1, 0, err)
 		}
 		if field.IsNotNull() {
 			notNullConstraint.setField(field)
 			err = notNullConstraint.create(schema)
 			if err != nil {
-				logger.error(-1, 0, err)
+				logger.Error(-1, 0, err)
 			}
 		}
 	}
@@ -1167,13 +1266,13 @@ func (table *Table) createRelationConstraints(schema *Schema) {
 		if relation.HasConstraint() == true {
 			err := foreignKeyConstraint.create(schema)
 			if err != nil {
-				logger.error(-1, 0, err)
+				logger.Error(-1, 0, err)
 			}
 		}
 		if relation.IsNotNull() == true {
 			err := notNullConstraint.create(schema)
 			if err != nil {
-				logger.error(-1, 0, err)
+				logger.Error(-1, 0, err)
 			}
 		}
 	}
@@ -1186,12 +1285,65 @@ func (table *Table) exists() bool {
 	return cata.exists(schema, table)
 }
 
+// used during upgrade to detect table changes
 func (tableA *Table) equal(tableB *Table) bool {
 	// compare fields
+	if tableA.fieldsEqual(tableB) == false {
+		return false
+	}
+
+	// compare relations
+	relationListA := tableA.getRelationList()
+	//fmt.Println(relationListA)
+	relationListB := tableB.getRelationList()
+	if strings.EqualFold(relationListA, relationListB) == false {
+		return false
+	}
+	// compare indexes
+	indexListA := tableA.getIndexList()
+	//fmt.Println(indexListA)
+	indexListB := tableB.getIndexList()
+	if strings.EqualFold(indexListA, indexListB) == false {
+		return false
+	}
+	return true
+}
+
+func (tableA *Table) fieldsEqual(tableB *Table) bool {
 	if strings.EqualFold(tableA.fieldList, tableB.fieldList) == false {
 		return false
 	}
 	return true
+}
+
+func (table *Table) getRelationList() string {
+	var sb strings.Builder
+
+	for i := 0; i < len(table.relations); i++ {
+		var relation = table.relations[i]
+		// name
+		sb.WriteString(relation.GetName())
+		sb.WriteString(relationSeparator)
+		// type
+		sb.WriteString(relation.GetType().String())
+		sb.WriteString(relationSeparator)
+		// has constraint
+		sb.WriteString(strconv.FormatBool(relation.HasConstraint()))
+	}
+
+	return sb.String()
+}
+
+func (table *Table) getIndexList() string {
+	var sb strings.Builder
+
+	for i := 0; i < len(table.indexes); i++ {
+		var index = table.indexes[i]
+		// field list
+		sb.WriteString(strings.Join(index.fields, metaIndexSeparator))
+		sb.WriteString(relationSeparator)
+	}
+	return sb.String()
 }
 
 func (table *Table) getSchema() *Schema {

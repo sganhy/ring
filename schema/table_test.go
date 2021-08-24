@@ -385,7 +385,7 @@ func Test__Table__Clone(t *testing.T) {
 	if t1.GetDatabaseProvider() != t2.GetDatabaseProvider() {
 		t.Errorf("Table.Clone() ==> t1.GetDatabaseProvider() <> t2.GetDatabaseProvider()")
 	}
-	if t1.GetDdl(ddlstatement.Create, nil) != t2.GetDdl(ddlstatement.Create, nil) {
+	if t1.GetDdl(ddlstatement.Create, nil, nil) != t2.GetDdl(ddlstatement.Create, nil, nil) {
 		t.Errorf("Table.Clone() ==> t1.GetDdlSql()<> t2.GetDdlSql()")
 	}
 }
@@ -536,14 +536,14 @@ func Test__Table__GetDdl(t *testing.T) {
 	// table @log: Truncate
 	table := tbl.getLogTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl := "TRUNCATE TABLE information_schema.\"@log\""
-	if table.GetDdl(ddlstatement.Truncate, nil) != expectedSQl {
+	if table.GetDdl(ddlstatement.Truncate, nil, nil) != expectedSQl {
 		t.Errorf("Table.GetDdl(Truncate) ==> query must be equal to " + expectedSQl)
 	}
 	// table @test: Create
 	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
-	createScript := table.GetDdl(ddlstatement.Create, tblspc)
+	createScript := table.GetDdl(ddlstatement.Create, tblspc, nil)
 	createScript = strings.ReplaceAll(createScript, "\n", " ")
-	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, thread_id int2, call_site varchar(255), s_call_site varchar(255), test2test int8 ) "
+	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, schema_id int4, thread_id int2, call_site varchar(255), s_call_site varchar(255), test2test int8 ) "
 	expectedSQl += "WITH (autovacuum_enabled=false)  TABLESPACE Test"
 	if createScript != expectedSQl {
 		t.Errorf("Table.GetDdl(Create) ==> query must be equal to " + expectedSQl)
@@ -551,8 +551,23 @@ func Test__Table__GetDdl(t *testing.T) {
 	// table @test: Drop
 	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DROP TABLE information_schema.\"t_@test\" CASCADE"
-	if table.GetDdl(ddlstatement.Drop, nil) != expectedSQl {
+	if table.GetDdl(ddlstatement.Drop, nil, nil) != expectedSQl {
 		t.Errorf("Table.GetDdl(Drop) ==> query must be equal to " + expectedSQl)
+	}
+	// table @test: Alter add
+	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
+	field := new(Field)
+	field.Init(2, "test11", "", fieldtype.DateTime, 0, "", true, true, true, false, true)
+	expectedSQl = "ALTER TABLE information_schema.\"t_@test\" ADD COLUMN test11 timestamp without time zone"
+	if table.GetDdl(ddlstatement.Alter, nil, field) != expectedSQl {
+		t.Errorf("Table.GetDdl(Alter add) ==> query must be equal to " + expectedSQl)
+	}
+	// table @test: Alter drop
+	field = new(Field)
+	field.Init(2, metaSchemaId, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
+	expectedSQl = "ALTER TABLE information_schema.\"t_@test\" DROP COLUMN schema_id CASCADE"
+	if table.GetDdl(ddlstatement.Alter, nil, field) != expectedSQl {
+		t.Errorf("Table.GetDdl(Alter drop) ==> query must be equal to " + expectedSQl)
 	}
 }
 
@@ -707,8 +722,9 @@ func getTestTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName
 	fields = append(fields, id)        //1
 	fields = append(fields, entryTime) //2
 	fields = append(fields, levelId)   //3
-	fields = append(fields, threadId)  //4
-	fields = append(fields, callSite)  //5
+	fields = append(fields, schemaId)  //4
+	fields = append(fields, threadId)  //5
+	fields = append(fields, callSite)  //6
 
 	result.Init(-2, "@test", "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.Business, provider, "", false, false, true, true)

@@ -103,7 +103,6 @@ func (tableSpace *tablespace) exists(schema *Schema) bool {
 
 func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 	var metaQuery = metaQuery{}
-	//	var firstUniqueIndex = true
 	var logger = schema.getLogger()
 	var creationTime = time.Now()
 	var err error
@@ -114,16 +113,21 @@ func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 	// create tablespace
 	err = metaQuery.create()
 	if err != nil {
-		logger.error(-1, 0, err)
-		logger.error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
+		logger.Error(-1, 0, err)
+		logger.Error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
 		return err
 	}
 
 	//!!! cannot create constraints here due to foreign keys!!!
 	duration := time.Now().Sub(creationTime)
+	message := ddlstatement.Create.String() + " " + sqlfmt.ToCamelCase(tableSpace.GetEntityType().String())
+	description := fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000))
 
-	logger.info(17, jobId, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(tableSpace.GetEntityType().String()),
-		fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000)))
+	if err == nil {
+		logger.Info(17, jobId, message, description)
+	} else {
+		logger.Error(17, jobId, message, description)
+	}
 
 	return err
 }
