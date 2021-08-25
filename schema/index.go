@@ -5,6 +5,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
+	"ring/schema/fieldtype"
 	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"strconv"
@@ -169,7 +170,7 @@ func (index *Index) loadFields(fields []string) {
 		index.fields = make([]string, len(fields))
 		copy(index.fields, fields)
 	} else {
-		index.fields = make([]string, 0, 1)
+		index.fields = make([]string, 0, 0)
 	}
 }
 
@@ -205,7 +206,7 @@ func (index *Index) getSchema(schemaId int32) *Schema {
 func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	var sqlUnique = ""
 	var sqlTablespace = ""
-	var fields strings.Builder
+	var fields string
 	var provider = table.GetDatabaseProvider()
 
 	if index.unique == true {
@@ -214,20 +215,39 @@ func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	if tableSpace != nil {
 		sqlTablespace = tableSpace.GetDdl(ddlstatement.NotDefined, provider)
 	}
-	if len(index.fields) > 0 {
-		for i := 0; i < len(index.fields); i++ {
-			fields.WriteString(sqlfmt.FormatEntityName(provider, index.fields[i]))
-			if i < len(index.fields)-1 {
-				fields.WriteString(",")
-			}
-		}
-	}
+
+	fields = index.getFieldList(table)
+
 	switch table.GetDatabaseProvider() {
 	case databaseprovider.PostgreSql:
 		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
-			index.GetPhysicalName(table), table.GetPhysicalName(), fields.String(), sqlTablespace), ddlSpace)
+			index.GetPhysicalName(table), table.GetPhysicalName(), fields, sqlTablespace), ddlSpace)
 	}
 	return ""
+}
+
+func (index *Index) getFieldList(table *Table) string {
+	var result strings.Builder
+	var provider = table.GetDatabaseProvider()
+
+	if len(index.fields) > 0 {
+		for i := 0; i < len(index.fields); i++ {
+			field := table.GetFieldByName(index.fields[i])
+
+			// manage searchable fields
+			if field != nil && field.IsCaseSensitive() == false && field.GetType() == fieldtype.String {
+				result.WriteString(sqlfmt.FormatEntityName(provider, field.getSearchableFieldName()))
+			} else {
+				result.WriteString(sqlfmt.FormatEntityName(provider, index.fields[i]))
+			}
+
+			if i < len(index.fields)-1 {
+				result.WriteString(",")
+			}
+		}
+	}
+
+	return result.String()
 }
 
 func (index *Index) create(schema *Schema, table *Table) error {
@@ -235,14 +255,25 @@ func (index *Index) create(schema *Schema, table *Table) error {
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
 	metaQuery.Init(schema, table)
+	err := metaQuery.create()
 
-	return metaQuery.create()
+	if err != nil {
+		//TODO add logs
+	}
+
+	return err
 }
 
-func (indexA *Index) equal(indexB *Index) bool {
-	fieldListA := strings.Join(indexA.fields, metaIndexSeparator)
-	fieldListB := strings.Join(indexB.fields, metaIndexSeparator)
+func (index *Index) drop(schema *Schema, table *Table) error {
+	var metaQuery = metaQuery{}
 
-	return fieldListA == fieldListB && indexA.unique == indexB.unique &&
-		indexA.bitmap == indexB.bitmap
+	metaQuery.query = index.GetDdl(ddlstatement.Drop, table, nil)
+	metaQuery.Init(schema, table)
+	err := metaQuery.drop()
+
+	if err != nil {
+		//TODO add logs
+	}
+
+	return err
 }

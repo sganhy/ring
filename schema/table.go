@@ -334,7 +334,8 @@ func (table *Table) GetPrimaryKey() *Field {
 }
 
 func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace, field *Field) string {
-	var query string
+	var query strings.Builder
+
 	switch statement {
 	case ddlstatement.Create:
 		var fields []string
@@ -351,32 +352,34 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			relationSql := table.relations[i].GetDdl(table.provider)
 			fields = append(fields, relationSql)
 		}
-		query = fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
-			strings.Join(fields, ",\n"))
-		query += table.getOptions()
+		query.WriteString(fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
+			strings.Join(fields, ",\n")))
+		query.WriteString(table.getOptions())
 		if tableSpace != nil {
-			query += ddlSpace + tableSpace.GetDdl(ddlstatement.NotDefined, table.provider)
+			query.WriteString(ddlSpace)
+			query.WriteString(tableSpace.GetDdl(ddlstatement.NotDefined, table.provider))
 		}
 		break
 	case ddlstatement.Alter:
-		query = table.getDdlAlter(field)
+		return table.getDdlAlter(field)
 	case ddlstatement.Drop:
-		query = ddlstatement.Drop.String()
-		query += ddlSpace
-		query += entitytype.Table.String()
-		query += ddlSpace
-		query += table.physicalName
-		query += ddlSpace
-		query += postGreCascade
+		query.WriteString(ddlstatement.Drop.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(entitytype.Table.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(table.physicalName)
+		query.WriteString(ddlSpace)
+		query.WriteString(postGreCascade)
+		break
 	case ddlstatement.Truncate:
-		query = ddlstatement.Truncate.String()
-		query += ddlSpace
-		query += entitytype.Table.String()
-		query += ddlSpace
-		query += table.physicalName
+		query.WriteString(ddlstatement.Truncate.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(entitytype.Table.String())
+		query.WriteString(ddlSpace)
+		query.WriteString(table.physicalName)
 		break
 	}
-	return query
+	return query.String()
 }
 
 func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) string {
@@ -461,6 +464,9 @@ func (table *Table) GetDql(whereClause string, orderClause string) string {
 	return result.String()
 }
 
+/*
+	Deep copy of table object
+*/
 func (table *Table) Clone() *Table {
 	newTable := new(Table)
 	var fields []Field
@@ -866,9 +872,11 @@ func (table *Table) copyIndexes(indexes []Index) {
 		} else {
 			validIndex = true
 			for _, field := range indexes[i].fields {
+
 				if table.GetFieldByName(field) == nil && table.GetRelationByName(field) == nil {
 					//TODO add logger here for i := 0; i < len(indexes); i++ {
 					validIndex = false
+					break
 				}
 			}
 		}
@@ -957,6 +965,8 @@ func (table *Table) loadRelations(relations []Relation) {
 func (table *Table) loadIndexes(indexes []Index) {
 	table.indexes = make([]*Index, 0, len(indexes))
 	table.copyIndexes(indexes)
+	// replace searchable field by eg. s_name
+
 	table.sortIndexes()
 }
 
@@ -1143,6 +1153,9 @@ func (newTable *Table) alter(jobId int64, currentTable *Table) error {
 	if newTable.fieldsEqual(currentTable) == false {
 		newTable.alterFields(jobId, currentTable)
 	}
+	if newTable.indexesEqual(currentTable) == false {
+		newTable.alterIndexes(jobId, currentTable)
+	}
 	return nil
 }
 
@@ -1178,6 +1191,40 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 
 	//TODO modify fields
 	return nil
+}
+
+func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
+	fmt.Println("************** ==> alterIndexes")
+	// detect missing indexes definition based on fields
+
+	// generate dico map [index key] bool
+	newDico := make(map[string]bool, len(newTable.fields))
+	curDico := make(map[string]bool, len(currentTable.fields))
+	schema := newTable.getSchema()
+
+	var err error
+
+	// generate dico of keys
+	for i := 0; i < len(newTable.indexes); i++ {
+		newDico[strings.ToUpper(newTable.indexes[i].getFieldList(newTable))] = true
+	}
+	for i := 0; i < len(currentTable.indexes); i++ {
+		curDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))] = true
+	}
+	// add new indexes
+	for i := 0; i < len(newTable.indexes); i++ {
+		if _, ok := curDico[strings.ToUpper(newTable.indexes[i].getFieldList(newTable))]; !ok {
+			err = newTable.indexes[i].create(schema, newTable)
+		}
+	}
+	// drop indexes
+	for i := 0; i < len(currentTable.indexes); i++ {
+		if _, ok := newDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))]; !ok {
+			err = currentTable.indexes[i].drop(schema, currentTable)
+		}
+	}
+
+	return err
 }
 
 func (table *Table) dropField(jobId int64, field *Field) error {
@@ -1342,33 +1389,27 @@ func (table *Table) exists() bool {
 
 // used during upgrade to detect table changes
 func (tableA *Table) equal(tableB *Table) bool {
-	// compare fields
-	if tableA.fieldsEqual(tableB) == false {
-		return false
-	}
+	return tableA.fieldsEqual(tableB) && tableA.indexesEqual(tableB) && tableA.relationsEqual(tableB)
+}
 
-	// compare relations
-	relationListA := tableA.getRelationList()
-	//fmt.Println(relationListA)
-	relationListB := tableB.getRelationList()
-	if strings.EqualFold(relationListA, relationListB) == false {
-		return false
-	}
+func (tableA *Table) fieldsEqual(tableB *Table) bool {
+	return strings.EqualFold(tableA.fieldList, tableB.fieldList)
+}
+
+func (tableA *Table) indexesEqual(tableB *Table) bool {
 	// compare indexes
 	indexListA := tableA.getIndexList()
 	//fmt.Println(indexListA)
 	indexListB := tableB.getIndexList()
-	if strings.EqualFold(indexListA, indexListB) == false {
-		return false
-	}
-	return true
+	return strings.EqualFold(indexListA, indexListB)
 }
 
-func (tableA *Table) fieldsEqual(tableB *Table) bool {
-	if strings.EqualFold(tableA.fieldList, tableB.fieldList) == false {
-		return false
-	}
-	return true
+func (tableA *Table) relationsEqual(tableB *Table) bool {
+	// compare relations
+	relationListA := tableA.getRelationList()
+	//fmt.Println(relationListA)
+	relationListB := tableB.getRelationList()
+	return strings.EqualFold(relationListA, relationListB)
 }
 
 func (table *Table) getRelationList() string {

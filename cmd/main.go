@@ -39,14 +39,14 @@ func main() {
 	importFile.Upgrade()
 
 	var metaSchema = schema.GetSchemaByName("RpgSheet")
-	fmt.Println(metaSchema.GetId())
-	var tableBook = metaSchema.GetTableByName("alignment")
-
-	fmt.Println(metaSchema.GetId())
-	fmt.Println(tableBook.GetId())
+	if metaSchema != nil {
+		fmt.Println(metaSchema.GetId())
+		var tableBook = metaSchema.GetTableByName("alignment")
+		fmt.Println(metaSchema.GetId())
+		fmt.Println(tableBook.GetId())
+	}
 
 	rcd := new(data.Record)
-
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)
 	zone, offset := ttt.Zone()

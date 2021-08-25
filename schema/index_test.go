@@ -174,14 +174,14 @@ func Test__Index__GetDdl(t *testing.T) {
 	dataType.Init(1031, "data_type", "", fieldtype.Int, 0, "", true, false, true, false, true)
 
 	flags.Init(1039, "flags", "", fieldtype.Long, 0, "", true, false, true, false, true)
-	name.Init(1061, "name", "", fieldtype.String, 30, "", true, false, true, false, true)
+	name.Init(1061, "name", "", fieldtype.String, 30, "", true, false, false, false, true)
 	description.Init(1069, "description", "", fieldtype.String, 0, "", true, false, true, false, true)
 	value.Init(1087, metaValue, "", fieldtype.String, 0, "", true, false, true, false, true)
 	active.Init(1093, "active", "", fieldtype.Boolean, 0, "", true, false, true, false, true)
 
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
-	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
+	var indexedFields = []string{id.GetName(), name.GetName(), objectType.GetName(), referenceId.GetName()}
 	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, false, true, true)
 
 	fields = append(fields, id)          //1
@@ -204,13 +204,13 @@ func Test__Index__GetDdl(t *testing.T) {
 		physicaltype.Table, -111, "information_schema", tabletype.MetaId, databaseprovider.PostgreSql,
 		"[subject]", true, false, true, false)
 
-	var query = "CREATE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id)"
+	var query = "CREATE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,s_name,object_type,reference_id)"
 	// without tablespace
 	if uk.GetDdl(ddlstatement.Create, table, nil) != query {
 		t.Errorf("Index.GetDdl(Create) ==> should be equal to %s", query)
 	}
 
-	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id)"
+	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,s_name,object_type,reference_id)"
 	//if CREATE UNIQUE INDEX "pk_@meta" ON information_schema."@meta" (id,schema_id,,reference_id)
 	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
 	if uk.GetDdl(ddlstatement.Create, table, nil) != query {
@@ -218,7 +218,7 @@ func Test__Index__GetDdl(t *testing.T) {
 	}
 
 	// test with tablespace
-	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,schema_id,object_type,reference_id) TABLESPACE rpg_index"
+	query = "CREATE UNIQUE INDEX idx_meta_001 ON information_schema.\"@meta\" USING btree (id,s_name,object_type,reference_id) TABLESPACE rpg_index"
 	if uk.GetDdl(ddlstatement.Create, table, &tableSpace) != query {
 		t.Errorf("Index.GetDdl(Create) ==> should be equal to %s", query)
 	}
@@ -268,22 +268,4 @@ func Test__Index__GetDdl(t *testing.T) {
 		t.Errorf("Index.GetDdl(Drop) ==> should be equal to null")
 	}
 
-}
-
-func Test__Index__equal(t *testing.T) {
-	elemi0 := Index{}
-	aarr := []string{"Gga", "Zorba", "testllk", "testllk22", "xxxxxx", "x44"}
-
-	//provider databaseprovider.DatabaseProvider, tableType tabletype.TableType
-	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
-	elemi1 := elemi0.Clone()
-
-	if elemi0.equal(elemi1) == false {
-		t.Errorf("Index.equal() ==> i0 should be equal to i1")
-	}
-
-	elemi1.Init(22, "rel test 22 ", "22354 54 hellkzae", aarr, false, true, true, false)
-	if elemi0.equal(elemi1) == false {
-		t.Errorf("Index.equal() ==> i0 should be equal to i1")
-	}
 }
