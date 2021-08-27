@@ -227,7 +227,7 @@ func Test__Index__GetDdl(t *testing.T) {
 		physicaltype.Table, -111, "information_schema", tabletype.Business, databaseprovider.PostgreSql,
 		"[subject]", true, false, true, false)
 
-	if uk.GetPhysicalName(table) != "idx_1077_0001" {
+	if uk.getPhysicalName(table) != "idx_1077_0001" {
 		t.Errorf("Index.GetPhysicalName() ==> should be equal to 'idx_01077_0001'")
 	}
 
@@ -235,7 +235,7 @@ func Test__Index__GetDdl(t *testing.T) {
 		physicaltype.Table, -111, "information_schema", tabletype.Mtm, databaseprovider.PostgreSql,
 		"[subject]", true, false, true, false)
 
-	if uk.GetPhysicalName(table) != "idx_01021_01031_009" {
+	if uk.getPhysicalName(table) != "idx_01021_01031_009" {
 		t.Errorf("Index.GetPhysicalName() ==> should be equal to 'idx_01021_01031_009'")
 	}
 

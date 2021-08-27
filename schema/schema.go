@@ -325,28 +325,15 @@ func (schema *Schema) execute(query Query) error {
 // create physical schema
 func (schema *Schema) create(jobId int64) error {
 	var metaQuery = metaQuery{}
-	var creationTime = time.Now()
-	var logger = schema.logger
+	var eventId int32 = 16
 	var err error
 
 	metaQuery.Init(schema, nil)
 	metaQuery.query = schema.GetDdl(ddlstatement.Create)
-	err = metaQuery.create()
+	err = metaQuery.create(eventId, jobId, schema)
 
 	if err != nil {
-		logger.Error(-1, 0, err)
 		panic(err)
-	}
-
-	duration := time.Now().Sub(creationTime)
-	message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " + sqlfmt.ToCamelCase(entitytype.Schema.String())
-	description := fmt.Sprintf(tableChangeMessage, schema.physicalName, int(duration.Seconds()*1000))
-
-	if err == nil {
-		logger.Info(16, jobId, message, description)
-	} else {
-		logger.Error(16, jobId, message, description)
-		logger.Error(16, jobId, err)
 	}
 
 	return nil

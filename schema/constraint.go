@@ -41,6 +41,15 @@ func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *T
 //******************************
 // getters and setters
 //******************************
+func (constr *constraint) GetId() int32 {
+	return int32(0)
+}
+func (constr *constraint) GetName() string {
+	return ""
+}
+func (constr *constraint) GetPhysicalName() string {
+	return constr.getPhysicalName()
+}
 func (constr *constraint) GetEntityType() entitytype.EntityType {
 	return entitytype.Constraint
 }
@@ -89,7 +98,7 @@ func (constr *constraint) create(schema *Schema) error {
 		metaQuery.query = query
 		metaQuery.Init(schema, constr.table)
 		// create table
-		return metaQuery.create()
+		return metaQuery.create(0, 0, constr)
 	}
 	return nil
 }

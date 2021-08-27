@@ -349,8 +349,10 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 			}
 		}
 		for i := 0; i < len(table.relations); i++ {
-			relationSql := table.relations[i].GetDdl(table.provider)
-			fields = append(fields, relationSql)
+			if table.relations[i].GetType() == relationtype.Mto || table.relations[i].GetType() == relationtype.Otop {
+				relationSql := table.relations[i].GetDdl(table.provider)
+				fields = append(fields, relationSql)
+			}
 		}
 		query.WriteString(fmt.Sprintf(createTableSql, ddlstatement.Create.String(), entitytype.Table.String(), table.physicalName,
 			strings.Join(fields, ",\n")))
@@ -1084,14 +1086,14 @@ func (table *Table) create(jobId int64) error {
 	//	var firstUniqueIndex = true
 	var schema = table.getSchema()
 	var logger = schema.getLogger()
-	var creationTime = time.Now()
+	var eventId int32 = 17
 	var err error
 
 	metaQuery.Init(schema, table)
 	metaQuery.query = table.GetDdl(ddlstatement.Create, schema.findTablespace(table, nil, nil), nil)
 
 	// create table
-	err = metaQuery.create()
+	err = metaQuery.create(eventId, jobId, table)
 	if err != nil {
 		logger.Error(-1, 0, err)
 		logger.Error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
@@ -1102,8 +1104,6 @@ func (table *Table) create(jobId int64) error {
 	table.createIndexes(schema)
 
 	//!!! cannot create constraints here due to foreign keys!!!
-
-	duration := time.Now().Sub(creationTime)
 
 	// add primary key
 	if table.tableType != tabletype.Mtm {
@@ -1116,10 +1116,6 @@ func (table *Table) create(jobId int64) error {
 			logger.Error(-1, 0, err)
 		}
 	}
-
-	logger.Info(17, jobId, sqlfmt.ToPascalCase(ddlstatement.Create.String())+" "+
-		sqlfmt.ToCamelCase(entitytype.Table.String()),
-		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
 
 	return err
 }
@@ -1156,6 +1152,9 @@ func (newTable *Table) alter(jobId int64, currentTable *Table) error {
 	if newTable.indexesEqual(currentTable) == false {
 		newTable.alterIndexes(jobId, currentTable)
 	}
+	if newTable.relationsEqual(currentTable) == false {
+		newTable.alterRelations(jobId, currentTable)
+	}
 	return nil
 }
 
@@ -1166,29 +1165,30 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 	// generate dico map [physical_name] *field
 	newDico := make(map[string]*Field, len(newTable.fields))
 	curDico := make(map[string]*Field, len(currentTable.fields))
+	newProvider := newTable.GetDatabaseProvider()
+	currentProvider := currentTable.GetDatabaseProvider()
 
 	for i := 0; i < len(newTable.fields); i++ {
-		newDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newTable.GetDatabaseProvider()))] =
+		newDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newProvider))] =
 			newTable.fields[i]
 	}
 	for i := 0; i < len(currentTable.fields); i++ {
-		curDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentTable.GetDatabaseProvider()))] =
+		curDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentProvider))] =
 			currentTable.fields[i]
 	}
 	// add new fields
 	for i := 0; i < len(newTable.fields); i++ {
-		if _, ok := curDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newTable.GetDatabaseProvider()))]; !ok {
+		if _, ok := curDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newProvider))]; !ok {
 			currentTable.addField(jobId, newTable.fields[i])
 		}
 	}
 	// drop obsolete fields
 	for i := 0; i < len(currentTable.fields); i++ {
-		if _, ok := newDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentTable.GetDatabaseProvider()))]; !ok {
+		if _, ok := newDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentProvider))]; !ok {
 			// be sure field is available into currentTable
 			currentTable.dropField(jobId, currentTable.fields[i])
 		}
 	}
-
 	//TODO modify fields
 	return nil
 }
@@ -1214,7 +1214,7 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 	// add new indexes
 	for i := 0; i < len(newTable.indexes); i++ {
 		if _, ok := curDico[strings.ToUpper(newTable.indexes[i].getFieldList(newTable))]; !ok {
-			err = newTable.indexes[i].create(schema, newTable)
+			err = newTable.indexes[i].create(0, schema, newTable)
 		}
 	}
 	// drop indexes
@@ -1223,7 +1223,51 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 			err = currentTable.indexes[i].drop(schema, currentTable)
 		}
 	}
+	//TODO modify index
+	return err
+}
 
+func (newTable *Table) alterRelations(jobId int64, currentTable *Table) error {
+	fmt.Println("************** ==> alterRelations")
+	// detect missing indexes definition based on fields
+
+	// generate dico map [index key] bool
+	//newDico := make(map[string]bool, len(newTable.fields))
+	//curDico := make(map[string]bool, len(currentTable.fields))
+	//schema := newTable.getSchema()
+
+	newDico := make(map[string]*Relation, len(newTable.relations))
+	curDico := make(map[string]*Relation, len(currentTable.relations))
+	newProvider := newTable.GetDatabaseProvider()
+	currentProvider := currentTable.GetDatabaseProvider()
+
+	//	schema := newTable.getSchema()
+
+	var err error
+
+	// generate dico of keys
+	for i := 0; i < len(newTable.relations); i++ {
+		newDico[strings.ToUpper(newTable.relations[i].GetPhysicalName(newProvider))] =
+			newTable.relations[i]
+	}
+	for i := 0; i < len(currentTable.relations); i++ {
+		curDico[strings.ToUpper(currentTable.relations[i].GetPhysicalName(currentProvider))] =
+			currentTable.relations[i]
+	}
+	// add new relations
+	for i := 0; i < len(newTable.relations); i++ {
+		if _, ok := curDico[strings.ToUpper(newTable.relations[i].GetPhysicalName(newProvider))]; !ok {
+			currentTable.addRelation(jobId, newTable.relations[i])
+		}
+	}
+	// drop obsolete relations
+	for i := 0; i < len(currentTable.relations); i++ {
+		if _, ok := newDico[strings.ToUpper(currentTable.relations[i].GetPhysicalName(currentProvider))]; !ok {
+			// be sure field is available into currentTable
+			currentTable.dropRelation(jobId, currentTable.relations[i])
+		}
+	}
+	//TODO modify relations
 	return err
 }
 
@@ -1306,6 +1350,74 @@ func (table *Table) addField(jobId int64, field *Field) error {
 	return err
 }
 
+func (table *Table) dropRelation(jobId int64, relation *Relation) error {
+	var relationType = relation.GetType()
+	if relationType == relationtype.Otm || relationType == relationtype.Otof {
+		return table.dropField(jobId, relation.toField())
+	}
+	if relationType == relationtype.Mtm {
+		return relation.GetMtmTable().drop(jobId)
+	}
+	return nil
+}
+
+func (table *Table) addRelation(jobId int64, relation *Relation) error {
+	var metaquery = metaQuery{}
+	var schema = table.getSchema()
+	var logger = schema.getLogger()
+	var foreignKeyConstraint = new(constraint)
+	var notNullConstraint = new(constraint)
+	var creationTime = time.Now()
+	var relationType = relation.GetType()
+	var err error
+
+	metaquery.Init(schema, table)
+
+	if relationType == relationtype.Mto || relationType == relationtype.Otop {
+		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, relation.toField())
+		// alter table add relation
+		err = metaquery.alter()
+		duration := time.Now().Sub(creationTime)
+		message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
+		subDescription := table.physicalName + ", added relation name: " + relation.name
+		description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
+		logId := int32(45)
+
+		if err == nil {
+			logger.Info(logId, jobId, message, description)
+		} else {
+			logger.Error(logId, jobId, message, description)
+			logger.Error(logId, jobId, err)
+		}
+	} else if relationType == relationtype.Mtm && relation.GetMtmTable().exists() == false {
+		relation.GetMtmTable().create(jobId)
+		relation.GetMtmTable().createConstraints(schema)
+		return nil
+	} else {
+		// do nothing
+		return nil
+	}
+
+	foreignKeyConstraint.Init(constrainttype.ForeignKey, table)
+	notNullConstraint.Init(constrainttype.NotNull, table)
+	foreignKeyConstraint.setRelation(relation)
+	notNullConstraint.setRelation(relation)
+
+	if relation.HasConstraint() == true {
+		err := foreignKeyConstraint.create(schema)
+		if err != nil {
+			logger.Error(-1, jobId, err)
+		}
+	}
+	if relation.IsNotNull() == true {
+		err := notNullConstraint.create(schema)
+		if err != nil {
+			logger.Error(-1, jobId, err)
+		}
+	}
+	return err
+}
+
 func (table *Table) createIndexes(schema *Schema) {
 	var logger = schema.getLogger()
 
@@ -1314,7 +1426,7 @@ func (table *Table) createIndexes(schema *Schema) {
 		if (table.tableType == tabletype.Meta || table.tableType == tabletype.MetaId) && index.IsUnique() {
 			continue
 		}
-		err := index.create(schema, table)
+		err := index.create(0, schema, table)
 		if err != nil {
 			logger.Error(-1, 0, err)
 		}
@@ -1363,8 +1475,14 @@ func (table *Table) createRelationConstraints(schema *Schema) {
 	// foreign Key constraints
 	for i := 0; i < len(table.relations); i++ {
 		relation := table.relations[i]
+
+		if relation.GetType() != relationtype.Mto && relation.GetType() != relationtype.Otof {
+			continue
+		}
+
 		foreignKeyConstraint.setRelation(relation)
 		notNullConstraint.setRelation(relation)
+
 		if relation.HasConstraint() == true {
 			err := foreignKeyConstraint.create(schema)
 			if err != nil {
@@ -1407,7 +1525,6 @@ func (tableA *Table) indexesEqual(tableB *Table) bool {
 func (tableA *Table) relationsEqual(tableB *Table) bool {
 	// compare relations
 	relationListA := tableA.getRelationList()
-	//fmt.Println(relationListA)
 	relationListB := tableB.getRelationList()
 	return strings.EqualFold(relationListA, relationListB)
 }

@@ -5,10 +5,8 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
-	"ring/schema/sqlfmt"
 	"runtime"
 	"strings"
-	"time"
 )
 
 type tablespace struct {
@@ -103,36 +101,13 @@ func (tableSpace *tablespace) exists(schema *Schema) bool {
 
 func (tableSpace *tablespace) create(jobId int64, schema *Schema) error {
 	var metaQuery = metaQuery{}
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
-	var err error
+	var eventId int32 = 15
 
 	metaQuery.Init(schema, nil)
 	metaQuery.query = tableSpace.GetDdl(ddlstatement.Create, schema.GetDatabaseProvider())
 
 	// create tablespace
-	err = metaQuery.create()
-	if err != nil {
-		logger.Error(-1, 0, err)
-		logger.Error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
-		return err
-	}
-
-	//!!! cannot create constraints here due to foreign keys!!!
-	duration := time.Now().Sub(creationTime)
-	message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " +
-		sqlfmt.ToCamelCase(tableSpace.GetEntityType().String())
-	description := fmt.Sprintf(tableChangeMessage, tableSpace.GetPhysicalName(), int(duration.Seconds()*1000))
-	logId := int32(17)
-
-	if err == nil {
-		logger.Info(logId, jobId, message, description)
-	} else {
-		logger.Error(logId, jobId, message, description)
-		logger.Error(logId, jobId, err)
-	}
-
-	return err
+	return metaQuery.create(eventId, jobId, tableSpace)
 }
 
 func (tableSpace *tablespace) getDdlCreate(provider databaseprovider.DatabaseProvider) string {

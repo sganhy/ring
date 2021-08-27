@@ -157,6 +157,18 @@ func (relation *Relation) GetTableId() int32 {
 //******************************
 // private methods
 //******************************
+func (relation *Relation) toField() *Field {
+	if relation.toTable != nil {
+		targetPrimaryKey := relation.toTable.GetPrimaryKey()
+		if targetPrimaryKey != nil {
+			var result = targetPrimaryKey.Clone()
+			result.setName(relation.name)
+			return result
+		}
+	}
+	return nil
+}
+
 func (relation *Relation) getToTableName() string {
 	if relation.toTable == nil {
 		return ""

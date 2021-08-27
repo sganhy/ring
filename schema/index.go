@@ -52,6 +52,10 @@ func (index *Index) GetName() string {
 	return index.name
 }
 
+func (index *Index) GetPhysicalName() string {
+	return index.GetName()
+}
+
 func (index *Index) GetDescription() string {
 	return index.description
 }
@@ -105,7 +109,16 @@ func (index *Index) GetDdl(statment ddlstatement.DdlStatement, table *Table, tab
 	return ""
 }
 
-func (index *Index) GetPhysicalName(table *Table) string {
+func (index *Index) String() string {
+	//	indexToStringFormat   string = "name=%s; description=%s; bitmap=%s; unique=%s; baseline=%s; fields=%s"
+	return fmt.Sprintf(indexToStringFormat, index.name, index.description, index.bitmap, index.unique, index.baseline,
+		strings.Join(index.fields, metaIndexSeparator))
+}
+
+//******************************
+// private methods
+//******************************
+func (index *Index) getPhysicalName(table *Table) string {
 	var result strings.Builder
 	result.Grow(30)
 	result.WriteString(physicalIndexPrefix)
@@ -131,15 +144,6 @@ func (index *Index) GetPhysicalName(table *Table) string {
 	return result.String()
 }
 
-func (index *Index) String() string {
-	//	indexToStringFormat   string = "name=%s; description=%s; bitmap=%s; unique=%s; baseline=%s; fields=%s"
-	return fmt.Sprintf(indexToStringFormat, index.name, index.description, index.bitmap, index.unique, index.baseline,
-		strings.Join(index.fields, metaIndexSeparator))
-}
-
-//******************************
-// private methods
-//******************************
 func (index *Index) toMeta(tableId int32) *meta {
 	// we cannot have error here
 	var result = new(meta)
@@ -189,7 +193,7 @@ func (index *Index) getDdlDrop(table *Table) string {
 		query.WriteString(ddlSpace)
 		query.WriteString(schema.GetPhysicalName())
 		query.WriteString(".")
-		query.WriteString(index.GetPhysicalName(table))
+		query.WriteString(index.getPhysicalName(table))
 	}
 
 	return query.String()
@@ -221,7 +225,7 @@ func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	switch table.GetDatabaseProvider() {
 	case databaseprovider.PostgreSql:
 		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
-			index.GetPhysicalName(table), table.GetPhysicalName(), fields, sqlTablespace), ddlSpace)
+			index.getPhysicalName(table), table.GetPhysicalName(), fields, sqlTablespace), ddlSpace)
 	}
 	return ""
 }
@@ -250,12 +254,13 @@ func (index *Index) getFieldList(table *Table) string {
 	return result.String()
 }
 
-func (index *Index) create(schema *Schema, table *Table) error {
+func (index *Index) create(jobId int64, schema *Schema, table *Table) error {
 	var metaQuery = metaQuery{}
+	var eventId int32 = 88
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
 	metaQuery.Init(schema, table)
-	err := metaQuery.create()
+	err := metaQuery.create(eventId, jobId, index)
 
 	if err != nil {
 		//TODO add logs

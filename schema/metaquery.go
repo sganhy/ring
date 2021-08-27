@@ -5,7 +5,9 @@ import (
 	"database/sql"
 	"fmt"
 	"ring/schema/databaseprovider"
+	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
+	"ring/schema/sqlfmt"
 	"strconv"
 	"strings"
 	"time"
@@ -383,30 +385,58 @@ func (query *metaQuery) exists() (bool, error) {
 }
 
 // create ddl
-func (query *metaQuery) create() error {
+func (query *metaQuery) create(id int32, jobId int64, ent entity) error {
+	var creationTime = time.Now()
+	var logger = query.schema.logger
+
+	query.ddl = true
+	query.dml = false
+	err := query.schema.execute(query)
+
+	if jobId != 0 {
+		duration := time.Now().Sub(creationTime)
+		message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
+		description := fmt.Sprintf(tableChangeMessage, ent.GetPhysicalName(), int(duration.Seconds()*1000))
+
+		if err == nil {
+			logger.writePartialLog(id, levelInfo, jobId, message, description)
+		} else {
+			logger.writePartialLog(id, levelError, jobId, message, description)
+			logger.writePartialLog(id, levelError, jobId, err)
+		}
+	}
+
+	return err
+}
+
+func (query *metaQuery) drop() error {
 	query.ddl = true
 	query.dml = false
 	return query.schema.execute(query)
 }
 
-func (query *metaQuery) drop() error {
-	return query.create()
-}
-
 func (query *metaQuery) alter() error {
-	return query.create()
+	query.ddl = true
+	query.dml = false
+	return query.schema.execute(query)
 }
 
 func (query *metaQuery) truncate() error {
-	return query.create()
+	query.ddl = true
+	query.dml = false
+	return query.schema.execute(query)
 }
 
 func (query *metaQuery) vacuum() error {
-	return query.create()
+	query.ddl = true
+	query.dml = false
+	return query.schema.execute(query)
 }
 
 func (query *metaQuery) analyze() error {
-	return query.create()
+	query.ddl = true
+	query.dml = false
+	return query.schema.execute(query)
 }
 
 // insert log
