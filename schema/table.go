@@ -713,7 +713,7 @@ func (table *Table) getDdlAlter(field *Field) string {
 		query.WriteString(table.physicalName)
 		query.WriteString(ddlSpace)
 
-		if table.GetFieldByName(field.GetName()) == nil {
+		if table.GetFieldByName(field.GetName()) == nil && table.GetRelationByName(field.GetName()) == nil {
 			query.WriteString(postGreAddColumn)
 			query.WriteString(ddlSpace)
 			query.WriteString(postGreColumn)
@@ -1228,20 +1228,12 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 }
 
 func (newTable *Table) alterRelations(jobId int64, currentTable *Table) error {
-	fmt.Println("************** ==> alterRelations")
-	// detect missing indexes definition based on fields
-
-	// generate dico map [index key] bool
-	//newDico := make(map[string]bool, len(newTable.fields))
-	//curDico := make(map[string]bool, len(currentTable.fields))
-	//schema := newTable.getSchema()
+	//fmt.Println("************** ==> alterRelations")
 
 	newDico := make(map[string]*Relation, len(newTable.relations))
 	curDico := make(map[string]*Relation, len(currentTable.relations))
 	newProvider := newTable.GetDatabaseProvider()
 	currentProvider := currentTable.GetDatabaseProvider()
-
-	//	schema := newTable.getSchema()
 
 	var err error
 
@@ -1352,7 +1344,7 @@ func (table *Table) addField(jobId int64, field *Field) error {
 
 func (table *Table) dropRelation(jobId int64, relation *Relation) error {
 	var relationType = relation.GetType()
-	if relationType == relationtype.Otm || relationType == relationtype.Otof {
+	if relationType == relationtype.Mto || relationType == relationtype.Otop {
 		return table.dropField(jobId, relation.toField())
 	}
 	if relationType == relationtype.Mtm {
