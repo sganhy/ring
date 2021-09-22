@@ -65,6 +65,10 @@ func (tableSpace *tablespace) setName(name string) {
 	tableSpace.name = name
 }
 
+func (tableSpace *tablespace) logStatment(statment ddlstatement.DdlStatement) bool {
+	return true
+}
+
 //******************************
 // public methods
 //******************************

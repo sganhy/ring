@@ -84,6 +84,10 @@ func (index *Index) GetEntityType() entitytype.EntityType {
 	return entitytype.Index
 }
 
+func (index *Index) logStatment(statment ddlstatement.DdlStatement) bool {
+	return true
+}
+
 //******************************
 // public methods
 //******************************
@@ -260,11 +264,8 @@ func (index *Index) create(jobId int64, schema *Schema, table *Table) error {
 
 	metaQuery.query = index.GetDdl(ddlstatement.Create, table, schema.findTablespace(nil, index, nil))
 	metaQuery.Init(schema, table)
-	err := metaQuery.create(eventId, jobId, index)
 
-	if err != nil {
-		//TODO add logs
-	}
+	err := metaQuery.create(eventId, jobId, index)
 
 	return err
 }

@@ -263,7 +263,7 @@ func createMetaTables(schema *Schema) {
 			if err != nil {
 				panic(err)
 			}
-			table.createConstraints(schema)
+			table.createConstraints(0, schema)
 			if err != nil {
 				panic(err)
 			}
@@ -281,7 +281,7 @@ func createMetaTable(schema *Schema) {
 		if err != nil {
 			panic(err)
 		}
-		metaTable.createConstraints(schema)
+		metaTable.createConstraints(0, schema)
 		if err != nil {
 			panic(err)
 		}
@@ -300,12 +300,11 @@ func createMetaLogTable(schema *Schema) {
 		if err != nil {
 			panic(err)
 		}
-		logTable.createConstraints(schema)
+		logTable.createConstraints(0, schema)
 		if err != nil {
 			panic(err)
 		}
 	}
-
 }
 
 func createMetaSequences(schema *Schema) {

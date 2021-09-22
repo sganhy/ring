@@ -7,6 +7,7 @@ import (
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
 	"ring/schema/dmlstatement"
+	"ring/schema/entitytype"
 	"ring/schema/sqlfmt"
 	"strconv"
 	"strings"
@@ -384,35 +385,55 @@ func (query *metaQuery) exists() (bool, error) {
 	return *query.resultCount > 0, nil
 }
 
+// get
+func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime time.Time,
+	statment ddlstatement.DdlStatement, err error) {
+	var entityName = ent.GetPhysicalName()
+	var logger = query.schema.logger
+
+	if ent.GetEntityType() == entitytype.Index {
+		// get physical name
+		var index = query.table.GetIndexByName(ent.GetName())
+		entityName = index.getPhysicalName(query.table)
+	}
+
+	//logs
+	duration := time.Now().Sub(creationTime)
+	message := sqlfmt.ToPascalCase(statment.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
+	description := fmt.Sprintf(tableChangeMessage, entityName, int(duration.Seconds()*1000))
+
+	if err == nil {
+		if ent.GetPhysicalName() != "" {
+			var log = logger.getNewLog(id, levelInfo, logger.schemaId, jobId, message, description)
+			logger.writeToDb(log)
+		}
+	} else {
+		logger.writePartialLog(id, levelError, jobId, message, description)
+		logger.writePartialLog(id, levelError, jobId, err)
+	}
+}
+
 // create ddl
 func (query *metaQuery) create(id int32, jobId int64, ent entity) error {
 	var creationTime = time.Now()
-	var logger = query.schema.logger
 
 	query.ddl = true
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if jobId != 0 {
-		duration := time.Now().Sub(creationTime)
-		message := sqlfmt.ToPascalCase(ddlstatement.Create.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
-		description := fmt.Sprintf(tableChangeMessage, ent.GetPhysicalName(), int(duration.Seconds()*1000))
-
-		if err == nil {
-			logger.writePartialLog(id, levelInfo, jobId, message, description)
-		} else {
-			logger.writePartialLog(id, levelError, jobId, message, description)
-			logger.writePartialLog(id, levelError, jobId, err)
-		}
+	if ent.logStatment(ddlstatement.Create) {
+		query.logDdl(id, jobId, ent, creationTime, ddlstatement.Create, err)
 	}
 
 	return err
 }
 
 func (query *metaQuery) drop() error {
+
 	query.ddl = true
 	query.dml = false
-	return query.schema.execute(query)
+	err := query.schema.execute(query)
+	return err
 }
 
 func (query *metaQuery) alter() error {

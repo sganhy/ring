@@ -145,6 +145,10 @@ func (schema *Schema) getLogger() *log {
 	return schema.logger
 }
 
+func (schema *Schema) logStatment(statment ddlstatement.DdlStatement) bool {
+	return schema.id != 0
+}
+
 //******************************
 // public methods
 //******************************
@@ -404,7 +408,7 @@ func (newSchema *Schema) createTables(jobId int64, prevDico map[string]string, n
 	for tablePhysName, tableName := range newDico {
 		if _, ok := prevDico[tablePhysName]; !ok {
 			table := newSchema.GetTableByName(tableName)
-			table.createConstraints(newSchema)
+			table.createConstraints(jobId, newSchema)
 		}
 	}
 	newSchema.createMtmTables(jobId, prevDico, newDico)
@@ -456,7 +460,7 @@ func (schema *Schema) createMtmTables(jobId int64, prevDico map[string]string, n
 				relation := table.relations[i]
 				if relation.GetType() == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 					relation.GetMtmTable().create(jobId)
-					relation.GetMtmTable().createConstraints(schema)
+					relation.GetMtmTable().createConstraints(jobId, schema)
 				}
 			}
 		}

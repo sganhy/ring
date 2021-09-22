@@ -220,6 +220,10 @@ func (table *Table) GetFieldIdByIndex(index int) *Field {
 	return table.fields[table.mapper[index]]
 }
 
+func (table *Table) logStatment(statment ddlstatement.DdlStatement) bool {
+	return true
+}
+
 //******************************
 // public methods
 //******************************
@@ -1083,9 +1087,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 // create physical table
 func (table *Table) create(jobId int64) error {
 	var metaQuery = metaQuery{}
-	//	var firstUniqueIndex = true
 	var schema = table.getSchema()
-	var logger = schema.getLogger()
 	var eventId int32 = 17
 	var err error
 
@@ -1095,28 +1097,23 @@ func (table *Table) create(jobId int64) error {
 	// create table
 	err = metaQuery.create(eventId, jobId, table)
 	if err != nil {
-		logger.Error(-1, 0, err)
-		logger.Error(-1, 0, ddlstatement.Create.String()+" "+sqlfmt.ToCamelCase(entitytype.Table.String()), metaQuery.query)
 		return err
 	}
 
 	// create indexes except for @meta & meta_id tables
-	table.createIndexes(schema)
+	table.createIndexes(jobId, schema)
 
-	//!!! cannot create constraints here due to foreign keys!!!
-
-	// add primary key
+	// we cannot create foreign key constraints: target table is may be not yet created
+	// add primary key:
 	if table.tableType != tabletype.Mtm {
-		// add primary key
 		var primaryKey = new(constraint)
 		var logger = schema.getLogger()
 		primaryKey.Init(constrainttype.PrimaryKey, table)
-		err := primaryKey.create(schema)
+		err := primaryKey.create(jobId, schema)
 		if err != nil {
 			logger.Error(-1, 0, err)
 		}
 	}
-
 	return err
 }
 
@@ -1383,7 +1380,7 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 		}
 	} else if relationType == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 		relation.GetMtmTable().create(jobId)
-		relation.GetMtmTable().createConstraints(schema)
+		relation.GetMtmTable().createConstraints(jobId, schema)
 		return nil
 	} else {
 		// do nothing
@@ -1396,13 +1393,13 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	notNullConstraint.setRelation(relation)
 
 	if relation.HasConstraint() == true {
-		err := foreignKeyConstraint.create(schema)
+		err := foreignKeyConstraint.create(jobId, schema)
 		if err != nil {
 			logger.Error(-1, jobId, err)
 		}
 	}
 	if relation.IsNotNull() == true {
-		err := notNullConstraint.create(schema)
+		err := notNullConstraint.create(jobId, schema)
 		if err != nil {
 			logger.Error(-1, jobId, err)
 		}
@@ -1410,7 +1407,7 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	return err
 }
 
-func (table *Table) createIndexes(schema *Schema) {
+func (table *Table) createIndexes(jobId int64, schema *Schema) {
 	var logger = schema.getLogger()
 
 	for i := 0; i < len(table.indexes); i++ {
@@ -1418,7 +1415,7 @@ func (table *Table) createIndexes(schema *Schema) {
 		if (table.tableType == tabletype.Meta || table.tableType == tabletype.MetaId) && index.IsUnique() {
 			continue
 		}
-		err := index.create(0, schema, table)
+		err := index.create(jobId, schema, table)
 		if err != nil {
 			logger.Error(-1, 0, err)
 		}
@@ -1426,12 +1423,12 @@ func (table *Table) createIndexes(schema *Schema) {
 
 }
 
-func (table *Table) createConstraints(schema *Schema) {
-	table.createFieldConstraints(schema)
-	table.createRelationConstraints(schema)
+func (table *Table) createConstraints(jobId int64, schema *Schema) {
+	table.createFieldConstraints(jobId, schema)
+	table.createRelationConstraints(jobId, schema)
 }
 
-func (table *Table) createFieldConstraints(schema *Schema) {
+func (table *Table) createFieldConstraints(jobId int64, schema *Schema) {
 	var checkConstraint = new(constraint)
 	checkConstraint.Init(constrainttype.Check, table)
 	var notNullConstraint = new(constraint)
@@ -1442,13 +1439,13 @@ func (table *Table) createFieldConstraints(schema *Schema) {
 	for i := 0; i < len(table.fields); i++ {
 		field := table.fields[i]
 		checkConstraint.setField(field)
-		err := checkConstraint.create(schema)
+		err := checkConstraint.create(jobId, schema)
 		if err != nil {
 			logger.Error(-1, 0, err)
 		}
 		if field.IsNotNull() {
 			notNullConstraint.setField(field)
-			err = notNullConstraint.create(schema)
+			err = notNullConstraint.create(jobId, schema)
 			if err != nil {
 				logger.Error(-1, 0, err)
 			}
@@ -1456,7 +1453,7 @@ func (table *Table) createFieldConstraints(schema *Schema) {
 	}
 }
 
-func (table *Table) createRelationConstraints(schema *Schema) {
+func (table *Table) createRelationConstraints(jobId int64, schema *Schema) {
 	var foreignKeyConstraint = new(constraint)
 	var notNullConstraint = new(constraint)
 	var logger = schema.getLogger()
@@ -1476,13 +1473,13 @@ func (table *Table) createRelationConstraints(schema *Schema) {
 		notNullConstraint.setRelation(relation)
 
 		if relation.HasConstraint() == true {
-			err := foreignKeyConstraint.create(schema)
+			err := foreignKeyConstraint.create(jobId, schema)
 			if err != nil {
 				logger.Error(-1, 0, err)
 			}
 		}
 		if relation.IsNotNull() == true {
-			err := notNullConstraint.create(schema)
+			err := notNullConstraint.create(jobId, schema)
 			if err != nil {
 				logger.Error(-1, 0, err)
 			}

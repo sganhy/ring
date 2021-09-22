@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
 )
 
@@ -9,4 +10,5 @@ type entity interface {
 	GetName() string
 	GetPhysicalName() string
 	GetEntityType() entitytype.EntityType
+	logStatment(statment ddlstatement.DdlStatement) bool
 }

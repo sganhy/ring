@@ -60,6 +60,10 @@ func (constr *constraint) setRelation(relation *Relation) {
 	constr.relation = relation
 }
 
+func (constr *constraint) logStatment(statment ddlstatement.DdlStatement) bool {
+	return constr.constType == constrainttype.ForeignKey || constr.constType == constrainttype.UniqueKey
+}
+
 //******************************
 // public methods
 //******************************
@@ -82,7 +86,7 @@ func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tableSpace 
 //******************************
 // private methods
 //******************************
-func (constr *constraint) create(schema *Schema) error {
+func (constr *constraint) create(jobId int64, schema *Schema) error {
 	if constr.constType == constrainttype.NotNull && constr.table.GetType() == tabletype.Business {
 		// do nothing for busines tables
 		return nil
@@ -95,10 +99,11 @@ func (constr *constraint) create(schema *Schema) error {
 	//	var firstUniqueIndex = true
 	if query != "" {
 		var metaQuery = metaQuery{}
+		var eventId int32 = 23
 		metaQuery.query = query
 		metaQuery.Init(schema, constr.table)
 		// create table
-		return metaQuery.create(0, 0, constr)
+		return metaQuery.create(eventId, jobId, constr)
 	}
 	return nil
 }
