@@ -21,6 +21,7 @@ const (
 	maxLexIdValue     int64  = 2147483647
 	maxLangIdValue    int64  = 32767
 	maxUserIdValue    int64  = 2147483647
+	initialJobId      int64  = 101007
 	sequenceJobIdName string = "@job_id"
 	sequenceLexId     string = "@lexicon_id"
 	sequenceLangId    string = "@language_id"
@@ -118,7 +119,7 @@ func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
 	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue,
 		true, true)
 	result.value.Init(0, schemaId, entitytype.Sequence)
-	result.value.SetCurrentId(101007) // assign min value
+	result.value.SetCurrentId(initialJobId) // assign min value
 	return result
 }
 

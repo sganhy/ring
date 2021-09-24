@@ -243,7 +243,7 @@ func addSchema(schema *Schema) {
 
 func createPhysicalSchema(schema *Schema) {
 	if schema.exists() == false {
-		err := schema.create(0)
+		err := schema.create(initialJobId)
 		if err != nil {
 			panic(err)
 		}
@@ -259,11 +259,11 @@ func createMetaTables(schema *Schema) {
 	for _, table := range schema.tables {
 		if table.tableType != tabletype.Log && table.GetType() != tabletype.Logical &&
 			table.tableType != tabletype.Meta && table.exists() == false {
-			err := table.create(0)
+			err := table.create(initialJobId)
 			if err != nil {
 				panic(err)
 			}
-			table.createConstraints(0, schema)
+			table.createConstraints(initialJobId, schema)
 			if err != nil {
 				panic(err)
 			}
@@ -277,11 +277,11 @@ func createMetaTables(schema *Schema) {
 func createMetaTable(schema *Schema) {
 	metaTable := schema.GetTableByName(metaTableName)
 	if metaTable.exists() == false {
-		err := metaTable.create(0)
+		err := metaTable.create(initialJobId)
 		if err != nil {
 			panic(err)
 		}
-		metaTable.createConstraints(0, schema)
+		metaTable.createConstraints(initialJobId, schema)
 		if err != nil {
 			panic(err)
 		}
@@ -296,11 +296,11 @@ func createMetaTable(schema *Schema) {
 func createMetaLogTable(schema *Schema) {
 	logTable := schema.GetTableByName(metaLogTableName)
 	if logTable.exists() == false {
-		err := logTable.create(0)
+		err := logTable.create(initialJobId)
 		if err != nil {
 			panic(err)
 		}
-		logTable.createConstraints(0, schema)
+		logTable.createConstraints(initialJobId, schema)
 		if err != nil {
 			panic(err)
 		}

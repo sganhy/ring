@@ -196,6 +196,10 @@ func (table *Table) GetEntityType() entitytype.EntityType {
 	return entitytype.Table
 }
 
+func (table *Table) GetFieldIdByIndex(index int) *Field {
+	return table.fields[table.mapper[index]]
+}
+
 func (table *Table) setId(id int32) {
 	table.id = id
 }
@@ -214,10 +218,6 @@ func (table *Table) getSqlCapacity() uint16 {
 
 func (table *Table) setTableType(tableType tabletype.TableType) {
 	table.tableType = tableType
-}
-
-func (table *Table) GetFieldIdByIndex(index int) *Field {
-	return table.fields[table.mapper[index]]
 }
 
 func (table *Table) logStatment(statment ddlstatement.DdlStatement) bool {
