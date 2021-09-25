@@ -209,8 +209,7 @@ func (logger *log) writeDeferToDb(newLog *log) {
 		if logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
-
-			//newLog.jobId = metaSchema.getJobIdNextValue()
+			newLog.jobId = metaSchema.getJobIdNextValue()
 			newLog.jobId = initialJobId
 			logger.writeToDb(newLog)
 			break

@@ -387,7 +387,7 @@ func (query *metaQuery) exists() (bool, error) {
 
 // get
 func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime time.Time,
-	statment ddlstatement.DdlStatement, err error) {
+	statement ddlstatement.DdlStatement, err error) {
 	var entityName = ent.GetPhysicalName()
 	var logger = query.schema.logger
 
@@ -398,9 +398,8 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 	}
 
 	//logs
-	duration := time.Now().Sub(creationTime)
-	message := sqlfmt.ToPascalCase(statment.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
-	description := fmt.Sprintf(tableChangeMessage, entityName, int(duration.Seconds()*1000))
+	message := sqlfmt.ToPascalCase(statement.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
+	description := query.getLogDescription(entityName, ent, creationTime, statement)
 
 	if err == nil {
 		if ent.GetPhysicalName() != "" {
@@ -411,6 +410,11 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 		logger.writePartialLog(id, levelError, jobId, message, description)
 		logger.writePartialLog(id, levelError, jobId, err)
 	}
+}
+
+func (query *metaQuery) getLogDescription(entityName string, ent entity, creationTime time.Time, statement ddlstatement.DdlStatement) string {
+	//duration := time.Now().Sub(creationTime)
+	return ""
 }
 
 // create ddl

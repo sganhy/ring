@@ -36,7 +36,7 @@ func main() {
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
-	//importFile.Upgrade()
+	importFile.Upgrade()
 
 	var metaSchema = schema.GetSchemaByName("RpgSheet")
 	if metaSchema != nil {
