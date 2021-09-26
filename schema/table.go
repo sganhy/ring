@@ -90,7 +90,6 @@ const (
 	postGreAnalyze       string = "ANALYZE %s"
 	relationSeparator    string = "|"
 	mysqlParameterName   string = "?"
-	tableChangeMessage   string = "name: %s (done) | time=%dms"
 	relationNotFound     int    = -1
 )
 
@@ -587,97 +586,51 @@ func (table *Table) Vacuum(jobId int64) error {
 		sql = fmt.Sprintf(postGreVacuum, table.physicalName)
 		break
 	}
-
 	if sql != "" {
 		var metaQuery = metaQuery{}
-
-		//	var firstUniqueIndex = true
+		var eventId int32 = 20
 		var schema = GetSchemaById(table.schemaId)
-		var logger = schema.getLogger()
-		var creationTime = time.Now()
-		var err error
 
-		metaQuery.Init(schema, table)
 		metaQuery.query = sql
-
-		// create table
-		err = metaQuery.vacuum()
-		if err != nil {
-			logger.Error(-1, 0, err)
-			return err
-		}
-		duration := time.Now().Sub(creationTime)
-
-		logger.Info(20, jobId, "Vacuum "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+		metaQuery.Init(schema, table)
+		return metaQuery.vacuum(eventId, jobId, table)
 	}
 	return nil
 }
 
 func (table *Table) Analyze(jobId int64) error {
 	var sql string
-
 	switch table.provider {
 	case databaseprovider.PostgreSql:
 		sql = fmt.Sprintf(postGreAnalyze, table.physicalName)
 		break
 	}
-
 	if sql != "" {
 		var metaQuery = metaQuery{}
-
-		//	var firstUniqueIndex = true
+		var eventId int32 = 21
 		var schema = GetSchemaById(table.schemaId)
-		var logger = schema.getLogger()
-		var creationTime = time.Now()
-		var err error
 
-		metaQuery.Init(schema, table)
 		metaQuery.query = sql
-
-		// create table
-		err = metaQuery.analyze()
-		if err != nil {
-			logger.Error(-1, 0, err)
-			return err
-		}
-		duration := time.Now().Sub(creationTime)
-
-		logger.Info(21, jobId, "Analyze "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-			fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
+		metaQuery.Init(schema, table)
+		return metaQuery.analyze(eventId, jobId, table)
 	}
 	return nil
 }
 
 func (table *Table) Truncate(jobId int64) error {
+	var eventId int32 = 63
+
 	// truncate not allowed on meta tables
 	if table.schemaId == 0 {
 		// ? create an error ?
 		return nil
 	}
 	var metaQuery = metaQuery{}
-
-	//	var firstUniqueIndex = true
 	var schema = GetSchemaById(table.schemaId)
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
-	var err error
 
 	metaQuery.Init(schema, table)
 	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil, nil)
-
-	// create table
-	err = metaQuery.truncate()
-	if err != nil {
-		logger.Error(-1, 0, err)
-		return err
-	}
-	duration := time.Now().Sub(creationTime)
-
-	logger.Info(19, jobId, "Truncate "+sqlfmt.ToCamelCase(entitytype.Table.String()),
-		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
-
-	return err
+	return metaQuery.truncate(eventId, jobId, table)
 }
 
 //******************************
@@ -1119,27 +1072,13 @@ func (table *Table) create(jobId int64) error {
 
 func (table *Table) drop(jobId int64) error {
 	var metaquery = metaQuery{}
-	//	var firstUniqueIndex = true
+	var eventId int32 = 39
 	var schema = table.getSchema()
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
-	var err error
 
 	metaquery.Init(schema, table)
 	metaquery.query = table.GetDdl(ddlstatement.Drop, nil, nil)
-
 	//TODO drop contraints ??
-
-	// create table
-	err = metaquery.drop()
-
-	duration := time.Now().Sub(creationTime)
-
-	logger.Info(39, jobId, sqlfmt.ToPascalCase(ddlstatement.Drop.String())+" "+
-		sqlfmt.ToCamelCase(entitytype.Table.String()),
-		fmt.Sprintf(tableChangeMessage, table.physicalName, int(duration.Seconds()*1000)))
-
-	return err
+	return metaquery.drop(eventId, jobId, table)
 }
 
 func (newTable *Table) alter(jobId int64, currentTable *Table) error {
@@ -1191,9 +1130,6 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 }
 
 func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
-	fmt.Println("************** ==> alterIndexes")
-	// detect missing indexes definition based on fields
-
 	// generate dico map [index key] bool
 	newDico := make(map[string]bool, len(newTable.fields))
 	curDico := make(map[string]bool, len(currentTable.fields))
@@ -1211,13 +1147,13 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 	// add new indexes
 	for i := 0; i < len(newTable.indexes); i++ {
 		if _, ok := curDico[strings.ToUpper(newTable.indexes[i].getFieldList(newTable))]; !ok {
-			err = newTable.indexes[i].create(0, schema, newTable)
+			err = newTable.indexes[i].create(jobId, schema, newTable)
 		}
 	}
 	// drop indexes
 	for i := 0; i < len(currentTable.indexes); i++ {
 		if _, ok := newDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))]; !ok {
-			err = currentTable.indexes[i].drop(schema, currentTable)
+			err = currentTable.indexes[i].drop(jobId, schema, currentTable)
 		}
 	}
 	//TODO modify index
@@ -1225,7 +1161,6 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 }
 
 func (newTable *Table) alterRelations(jobId int64, currentTable *Table) error {
-	//fmt.Println("************** ==> alterRelations")
 
 	newDico := make(map[string]*Relation, len(newTable.relations))
 	curDico := make(map[string]*Relation, len(currentTable.relations))
@@ -1263,15 +1198,14 @@ func (newTable *Table) alterRelations(jobId int64, currentTable *Table) error {
 func (table *Table) dropField(jobId int64, field *Field) error {
 	var queryRmv = metaQuery{}
 	var schema = table.getSchema()
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
 	var err error
+	var eventId int32 = 43
 
 	queryRmv.Init(schema, table)
 	queryRmv.query = table.GetDdl(ddlstatement.Alter, nil, field)
 
 	// alter table add field
-	err = queryRmv.alter()
+	err = queryRmv.alter(eventId, jobId, table, field)
 
 	// searchable field?
 	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
@@ -1282,22 +1216,8 @@ func (table *Table) dropField(jobId int64, field *Field) error {
 		tableCopy.sortFields() // sort fields
 
 		queryRmv.query = tableCopy.GetDdl(ddlstatement.Alter, nil, searchableField)
-		err = queryRmv.alter()
+		err = queryRmv.alter(eventId, jobId, table, field)
 	}
-
-	duration := time.Now().Sub(creationTime)
-	message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
-	subDescription := table.physicalName + ", dropped field name: " + field.name
-	description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
-	logId := int32(43)
-
-	if err == nil {
-		logger.Info(logId, jobId, message, description)
-	} else {
-		logger.Error(logId, jobId, message, description)
-		logger.Error(logId, jobId, err)
-	}
-
 	return err
 }
 
@@ -1305,35 +1225,21 @@ func (table *Table) addField(jobId int64, field *Field) error {
 
 	var metaquery = metaQuery{}
 	var schema = table.getSchema()
-	var logger = schema.getLogger()
-	var creationTime = time.Now()
 	var err error
+	var eventId int32 = 41
 
 	metaquery.Init(schema, table)
 	metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
 
 	// alter table add field
-	err = metaquery.alter()
+	err = metaquery.alter(eventId, jobId, table, field)
 
 	// searchable field?
 	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
 		searchableField := field.Clone()
 		searchableField.setName(field.getSearchableFieldName())
 		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, searchableField)
-		err = metaquery.alter()
-	}
-
-	duration := time.Now().Sub(creationTime)
-	message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
-	subDescription := table.physicalName + ", added field name: " + field.name
-	description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
-	logId := int32(41)
-
-	if err == nil {
-		logger.Info(logId, jobId, message, description)
-	} else {
-		logger.Error(logId, jobId, message, description)
-		logger.Error(logId, jobId, err)
+		err = metaquery.alter(eventId, jobId, table, field)
 	}
 
 	return err
@@ -1356,8 +1262,8 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	var logger = schema.getLogger()
 	var foreignKeyConstraint = new(constraint)
 	var notNullConstraint = new(constraint)
-	var creationTime = time.Now()
 	var relationType = relation.GetType()
+	var eventId int32 = 45
 	var err error
 
 	metaquery.Init(schema, table)
@@ -1365,19 +1271,7 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	if relationType == relationtype.Mto || relationType == relationtype.Otop {
 		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, relation.toField())
 		// alter table add relation
-		err = metaquery.alter()
-		duration := time.Now().Sub(creationTime)
-		message := sqlfmt.ToPascalCase(ddlstatement.Alter.String()) + " " + sqlfmt.ToCamelCase(entitytype.Table.String())
-		subDescription := table.physicalName + ", added relation name: " + relation.name
-		description := fmt.Sprintf(tableChangeMessage, subDescription, int(duration.Seconds()*1000))
-		logId := int32(45)
-
-		if err == nil {
-			logger.Info(logId, jobId, message, description)
-		} else {
-			logger.Error(logId, jobId, message, description)
-			logger.Error(logId, jobId, err)
-		}
+		err = metaquery.alter(eventId, jobId, table, nil)
 	} else if relationType == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 		relation.GetMtmTable().create(jobId)
 		relation.GetMtmTable().createConstraints(jobId, schema)

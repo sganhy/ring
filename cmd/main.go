@@ -41,7 +41,7 @@ func main() {
 	var metaSchema = schema.GetSchemaByName("RpgSheet")
 	if metaSchema != nil {
 		fmt.Println(metaSchema.GetId())
-		var tableBook = metaSchema.GetTableByName("alignment")
+		var tableBook = metaSchema.GetTableByName("feat14")
 		fmt.Println(metaSchema.GetId())
 		fmt.Println(tableBook.GetId())
 	}

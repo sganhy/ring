@@ -29,9 +29,11 @@ type metaQuery struct {
 }
 
 const (
-	filterSeparator string = " AND "
-	operatorEqual   string = "="
-	operatorPlus    string = "+"
+	filterSeparator       string = " AND "
+	operatorEqual         string = "="
+	operatorPlus          string = "+"
+	logTimeDescription    string = "time=%dms"
+	logDefaultDescription string = "%s (done) | %s"
 )
 
 var (
@@ -387,9 +389,10 @@ func (query *metaQuery) exists() (bool, error) {
 
 // get
 func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime time.Time,
-	statement ddlstatement.DdlStatement, err error) {
+	statement ddlstatement.DdlStatement, err error, operation string) {
 	var entityName = ent.GetPhysicalName()
 	var logger = query.schema.logger
+	var message string
 
 	if ent.GetEntityType() == entitytype.Index {
 		// get physical name
@@ -398,8 +401,12 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 	}
 
 	//logs
-	message := sqlfmt.ToPascalCase(statement.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
-	description := query.getLogDescription(entityName, ent, creationTime, statement)
+	if statement == ddlstatement.NotDefined {
+		message = sqlfmt.ToPascalCase(operation) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
+	} else {
+		message = sqlfmt.ToPascalCase(statement.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
+	}
+	description := query.getLogDescription(entityName, ent, creationTime, statement, operation)
 
 	if err == nil {
 		if ent.GetPhysicalName() != "" {
@@ -412,9 +419,56 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 	}
 }
 
-func (query *metaQuery) getLogDescription(entityName string, ent entity, creationTime time.Time, statement ddlstatement.DdlStatement) string {
+func (query *metaQuery) getLogDescription(entityName string, ent entity, creationTime time.Time, statement ddlstatement.DdlStatement,
+	operation string) string {
 	//duration := time.Now().Sub(creationTime)
-	return ""
+	var description string
+	switch statement {
+	case ddlstatement.Create, ddlstatement.Drop, ddlstatement.Truncate, ddlstatement.NotDefined:
+		description = query.getLogCreateDescription(entityName, ent, creationTime)
+		break
+	case ddlstatement.Alter:
+		description = query.getLogAlterDescription(ent, creationTime, operation)
+		break
+	}
+	return description
+}
+
+func (query *metaQuery) getLogCreateDescription(entityName string, ent entity, creationTime time.Time) string {
+	description := entityName
+	if query.table != nil &&
+		(ent.GetEntityType() == entitytype.Index ||
+			ent.GetEntityType() == entitytype.Constraint) {
+		description += " on table " + query.table.GetPhysicalName()
+	}
+	return fmt.Sprintf(logDefaultDescription, description, query.getLogTime(creationTime))
+}
+
+func (query *metaQuery) getLogAlterDescription(ent entity, creationTime time.Time, operation string) string {
+	var description = ent.GetPhysicalName()
+	description += dqlSpace
+	if strings.Contains(query.query, dqlSpace+postGreDropColumn+dqlSpace) {
+		description += strings.ToLower(postGreDropColumn)
+	} else {
+		description += strings.ToLower(postGreAddColumn)
+	}
+	if query.table != nil {
+		if query.table.GetFieldByName(operation) != nil {
+			description += dqlSpace
+			description += strings.ToLower(entitytype.Field.String())
+		}
+		if query.table.GetRelationByName(operation) != nil {
+			description += dqlSpace
+			description += strings.ToLower(entitytype.Relation.String())
+		}
+	}
+	description += dqlSpace + operation
+	return fmt.Sprintf(logDefaultDescription, description, query.getLogTime(creationTime))
+}
+
+func (query *metaQuery) getLogTime(creationTime time.Time) string {
+	duration := time.Now().Sub(creationTime)
+	return fmt.Sprintf(logTimeDescription, int(duration.Seconds()*1000))
 }
 
 // create ddl
@@ -424,44 +478,72 @@ func (query *metaQuery) create(id int32, jobId int64, ent entity) error {
 	query.ddl = true
 	query.dml = false
 	err := query.schema.execute(query)
-
 	if ent.logStatment(ddlstatement.Create) {
-		query.logDdl(id, jobId, ent, creationTime, ddlstatement.Create, err)
+		query.logDdl(id, jobId, ent, creationTime, ddlstatement.Create, err, operatorEqual)
+	}
+	return err
+}
+
+func (query *metaQuery) drop(id int32, jobId int64, ent entity) error {
+	var eventTime = time.Now()
+
+	query.ddl = true
+	query.dml = false
+	err := query.schema.execute(query)
+	if ent.logStatment(ddlstatement.Drop) {
+		query.logDdl(id, jobId, ent, eventTime, ddlstatement.Drop, err, operatorEqual)
+	}
+	return err
+}
+
+func (query *metaQuery) alter(id int32, jobId int64, ent entity, field *Field) error {
+	var createTime = time.Now()
+	query.ddl = true
+	query.dml = false
+	err := query.schema.execute(query)
+
+	if ent.logStatment(ddlstatement.Alter) {
+		query.logDdl(id, jobId, ent, createTime, ddlstatement.Alter, err, field.GetName())
+	}
+	return err
+}
+
+func (query *metaQuery) truncate(id int32, jobId int64, ent entity) error {
+	var createTime = time.Now()
+	query.ddl = true
+	query.dml = false
+	err := query.schema.execute(query)
+
+	if ent.logStatment(ddlstatement.Truncate) {
+		query.logDdl(id, jobId, ent, createTime, ddlstatement.Truncate, err, operatorEqual)
+	}
+	return err
+}
+
+func (query *metaQuery) vacuum(id int32, jobId int64, ent entity) error {
+	var createTime = time.Now()
+	query.ddl = true
+	query.dml = false
+	err := query.schema.execute(query)
+
+	if ent.logStatment(ddlstatement.NotDefined) {
+		query.logDdl(id, jobId, ent, createTime, ddlstatement.NotDefined, err, "Vacuum")
 	}
 
 	return err
 }
 
-func (query *metaQuery) drop() error {
-
+func (query *metaQuery) analyze(id int32, jobId int64, ent entity) error {
+	var eventTime = time.Now()
 	query.ddl = true
 	query.dml = false
 	err := query.schema.execute(query)
+
+	if ent.logStatment(ddlstatement.NotDefined) {
+		query.logDdl(id, jobId, ent, eventTime, ddlstatement.NotDefined, err, "Analyze")
+	}
+
 	return err
-}
-
-func (query *metaQuery) alter() error {
-	query.ddl = true
-	query.dml = false
-	return query.schema.execute(query)
-}
-
-func (query *metaQuery) truncate() error {
-	query.ddl = true
-	query.dml = false
-	return query.schema.execute(query)
-}
-
-func (query *metaQuery) vacuum() error {
-	query.ddl = true
-	query.dml = false
-	return query.schema.execute(query)
-}
-
-func (query *metaQuery) analyze() error {
-	query.ddl = true
-	query.dml = false
-	return query.schema.execute(query)
 }
 
 // insert log

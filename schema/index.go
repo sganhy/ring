@@ -270,16 +270,11 @@ func (index *Index) create(jobId int64, schema *Schema, table *Table) error {
 	return err
 }
 
-func (index *Index) drop(schema *Schema, table *Table) error {
+func (index *Index) drop(jobId int64, schema *Schema, table *Table) error {
 	var metaQuery = metaQuery{}
+	var eventId int32 = 73
 
 	metaQuery.query = index.GetDdl(ddlstatement.Drop, table, nil)
 	metaQuery.Init(schema, table)
-	err := metaQuery.drop()
-
-	if err != nil {
-		//TODO add logs
-	}
-
-	return err
+	return metaQuery.drop(eventId, jobId, index)
 }
