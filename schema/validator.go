@@ -64,7 +64,7 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 	//{2} - step2
 	if importFile.errorCount == 0 {
 		valid.tableValueValid(importFile)
-		valid.entityNameUnique(importFile)
+		valid.fieldNameUnique(importFile)
 		// duplicate fields & relations into tables
 	}
 
@@ -226,7 +226,7 @@ func (valid *validator) duplicateMetaKey(importFile *Import) {
 }
 
 // Check for relation and field if there unique for the same table
-func (valid *validator) entityNameUnique(importFile *Import) {
+func (valid *validator) fieldNameUnique(importFile *Import) {
 	var metaList = importFile.metaList
 	var dicoTable map[int32]map[string]bool
 	var dicoTableName map[int32]string

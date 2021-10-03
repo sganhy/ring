@@ -421,7 +421,7 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 
 func (query *metaQuery) getLogDescription(entityName string, ent entity, creationTime time.Time, statement ddlstatement.DdlStatement,
 	operation string) string {
-	//duration := time.Now().Sub(creationTime)
+
 	var description string
 	switch statement {
 	case ddlstatement.Create, ddlstatement.Drop, ddlstatement.Truncate, ddlstatement.NotDefined:
@@ -439,35 +439,44 @@ func (query *metaQuery) getLogCreateDescription(entityName string, ent entity, c
 	if query.table != nil &&
 		(ent.GetEntityType() == entitytype.Index ||
 			ent.GetEntityType() == entitytype.Constraint) {
-		description += " on table " + query.table.GetPhysicalName()
+		description += " on " + query.table.GetPhysicalName()
 	}
 	return fmt.Sprintf(logDefaultDescription, description, query.getLogTime(creationTime))
 }
 
 func (query *metaQuery) getLogAlterDescription(ent entity, creationTime time.Time, operation string) string {
-	var description = ent.GetPhysicalName()
-	description += dqlSpace
+	var description strings.Builder
+
+	description.WriteString(ent.GetPhysicalName())
+	description.WriteString(dqlSpace)
+
 	if strings.Contains(query.query, dqlSpace+postGreDropColumn+dqlSpace) {
-		description += strings.ToLower(postGreDropColumn)
+		description.WriteString(strings.ToLower(postGreDropColumn))
 	} else {
-		description += strings.ToLower(postGreAddColumn)
+		description.WriteString(strings.ToLower(postGreAddColumn))
 	}
 	if query.table != nil {
 		if query.table.GetFieldByName(operation) != nil {
-			description += dqlSpace
-			description += strings.ToLower(entitytype.Field.String())
+			description.WriteString(dqlSpace)
+			description.WriteString(strings.ToLower(entitytype.Field.String()))
 		}
 		if query.table.GetRelationByName(operation) != nil {
-			description += dqlSpace
-			description += strings.ToLower(entitytype.Relation.String())
+			description.WriteString(dqlSpace)
+			description.WriteString(strings.ToLower(entitytype.Relation.String()))
 		}
 	}
-	description += dqlSpace + operation
-	return fmt.Sprintf(logDefaultDescription, description, query.getLogTime(creationTime))
+	description.WriteString(dqlSpace)
+	description.WriteString(operation)
+
+	return fmt.Sprintf(logDefaultDescription, description.String(), query.getLogTime(creationTime))
 }
 
 func (query *metaQuery) getLogTime(creationTime time.Time) string {
 	duration := time.Now().Sub(creationTime)
+	// for unitesting ==> we make sure that the duration is equal to zero
+	if duration.Seconds() < 0 {
+		duration = 0
+	}
 	return fmt.Sprintf(logTimeDescription, int(duration.Seconds()*1000))
 }
 

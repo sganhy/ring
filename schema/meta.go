@@ -118,6 +118,21 @@ func (metaData *meta) GetParameterType() entitytype.EntityType {
 	return entitytype.GetEntityTypeById(int((metaData.flags >> bitPositionFirstPositionParamType) & 127))
 }
 
+func (metaData *meta) Clone() *meta {
+	result := new(meta)
+	result.id = metaData.id
+	result.dataType = metaData.dataType
+	result.name = metaData.name
+	result.description = metaData.description
+	result.flags = metaData.flags
+	result.lineNumber = metaData.lineNumber
+	result.objectType = metaData.objectType
+	result.refId = metaData.refId
+	result.value = metaData.value
+	result.enabled = metaData.enabled
+	return result
+}
+
 //******************************
 // private methods
 //******************************

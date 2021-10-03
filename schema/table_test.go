@@ -570,6 +570,10 @@ func Test__Table__GetDdl(t *testing.T) {
 	if table.GetDdl(ddlstatement.Alter, nil, field) != expectedSQl {
 		t.Errorf("Table.GetDdl(Alter drop) ==> query must be equal to " + expectedSQl)
 	}
+	expectedSQl = ""
+	if table.GetDdl(ddlstatement.Alter, nil, nil) != expectedSQl {
+		t.Errorf("Table.GetDdl(Alter drop with null field) ==> query must be empty")
+	}
 }
 
 func Test__Table__getUniqueFieldList(t *testing.T) {

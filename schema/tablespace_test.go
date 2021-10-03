@@ -33,6 +33,9 @@ func Test__Tablespace__Init(t *testing.T) {
 	if tbl01.GetName() != "tablespace" {
 		t.Errorf("Tablespace.Init() ==> name <> GetName()")
 	}
+	if tbl01.logStatment(ddlstatement.Create) != true {
+		t.Errorf("Tablespace.Init() ==> logStatment(Create) <> true")
+	}
 }
 
 func Test__Tablespace__GetDdl(t *testing.T) {

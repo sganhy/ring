@@ -5,7 +5,7 @@ import (
 )
 
 //test: GetTableBySchemaName, GetSchemaByName, GetSchemaById
-func Test__log__setters(t *testing.T) {
+func Test__Log__setters(t *testing.T) {
 	logger := new(log)
 	logger.setMethod("555")
 	if logger.getMethod() != "555" {
