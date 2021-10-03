@@ -136,6 +136,7 @@ func (valid *validator) tableNameUnique(importFile *Import) {
 				var message = "Duplicate table name '%s'"
 				var description = fmt.Sprintf("table name '%s' is already in use.\n at line %d and %d",
 					metaData.name, val.lineNumber, metaData.lineNumber)
+				message = fmt.Sprintf(message, metaData.name)
 				importFile.logErrorStr(704, message, description)
 			} else {
 				dico[name] = metaData

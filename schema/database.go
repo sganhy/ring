@@ -267,6 +267,7 @@ func createMetaTables(schema *Schema) {
 			if err != nil {
 				panic(err)
 			}
+			schema.logger.isInitialCreation(true)
 		}
 	}
 
@@ -290,6 +291,7 @@ func createMetaTable(schema *Schema) {
 		if err != nil {
 			panic(err)
 		}
+		schema.logger.isInitialCreation(true)
 	}
 }
 
@@ -304,6 +306,7 @@ func createMetaLogTable(schema *Schema) {
 		if err != nil {
 			panic(err)
 		}
+		schema.logger.isInitialCreation(true)
 	}
 }
 

@@ -33,13 +33,15 @@ const (
 )
 
 var (
-	logSchema      *Schema
-	logTable       *Table
-	metaTableExist bool
+	logSchema       *Schema
+	logTable        *Table
+	metaTableExist  bool
+	initialCreation bool
 )
 
 func init() {
 	metaTableExist = false
+	initialCreation = false
 }
 
 func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
@@ -138,6 +140,10 @@ func (logger *log) isMetaTable(exist bool) {
 	metaTableExist = exist
 }
 
+func (logger *log) isInitialCreation(initial bool) {
+	initialCreation = initial
+}
+
 func (logger *log) setSchemaId(id int32) {
 	logger.schemaId = id
 }
@@ -209,8 +215,11 @@ func (logger *log) writeDeferToDb(newLog *log) {
 		if logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
-			newLog.jobId = metaSchema.getJobIdNextValue()
-			newLog.jobId = initialJobId
+			if !initialCreation {
+				newLog.jobId = metaSchema.getJobIdNextValue()
+			} else {
+				newLog.jobId = initialJobId
+			}
 			logger.writeToDb(newLog)
 			break
 		}
