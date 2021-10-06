@@ -153,7 +153,7 @@ func (valid *validator) entityNameValid(importFile *Import) {
 		metaType := metaData.GetEntityType()
 
 		// is metaData.name empty?
-		if len(metaData.name) == 0 {
+		if len(strings.TrimSpace(metaData.name)) == 0 {
 			var message = fmt.Sprintf(invalidEntityName, strings.ToLower(metaType.String()))
 			var description = fmt.Sprintf("%s name cannot be empty."+validatorAtLine,
 				strings.ToLower(metaType.String()), metaData.lineNumber)
