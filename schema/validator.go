@@ -387,14 +387,14 @@ func (valid *validator) indexValueValid(importFile *Import) {
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
-
-		if metaData.GetEntityType() == entitytype.Index && len(strings.Trim(metaData.value, " ")) == 0 {
+		if metaData.GetEntityType() == entitytype.Index && len(strings.TrimSpace(metaData.value)) == 0 {
 			var description = fmt.Sprintf("empty index definition"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(860, invalidIndexValue, description)
 		}
 	}
 }
 
+// Check table without fields or relations
 func (valid *validator) tableValueValid(importFile *Import) {
 	var metaList = importFile.metaList
 	var fieldDico map[int32]bool
@@ -424,7 +424,6 @@ func (valid *validator) tableValueValid(importFile *Import) {
 
 // Check if indexes reference existing fields
 func (valid *validator) indexValid(importFile *Import) {
-
 	var metaList = importFile.metaList
 	// Upper(field)+Refid string
 	var dicoField map[string]bool
@@ -441,10 +440,8 @@ func (valid *validator) indexValid(importFile *Import) {
 			dicoField[key] = true
 		}
 	}
-
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
-
 		if metaData.GetEntityType() == entitytype.Index {
 			strArr := strings.Split(metaData.value, metaIndexSeparator)
 			for j := 0; j < len(strArr); j++ {
@@ -455,9 +452,7 @@ func (valid *validator) indexValid(importFile *Import) {
 				}
 			}
 		}
-
 	}
-
 }
 
 // check if path valid

@@ -135,9 +135,57 @@ func Test__Validator__checkEntityName(t *testing.T) {
 	importFile.metaList[0].name = " "
 	valid.entityNameValid(importFile)
 	if importFile.errorCount != 1 {
-		t.Errorf("validator.entityNameValid() ==> importFile.errorCount <> 0")
+		t.Errorf("validator.entityNameValid() ==> importFile.errorCount <> 1")
 	}
 
+}
+
+// test indexValid and indexValueValid
+func Test__Validator__indexValid(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+	valid.indexValid(importFile)
+	// positive test
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.indexValid() ==> importFile.errorCount <> 0")
+	}
+	valid.indexValueValid(importFile)
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.indexValueValid() ==> importFile.errorCount <> 0")
+	}
+	// negative test
+	var meta = getIndexMeta(importFile)
+	meta.value = "test012345678901234567890123456789"
+	valid.indexValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.indexValid() ==> importFile.errorCount <> 1")
+	}
+	meta.value = "  "
+	importFile.errorCount = 0
+	valid.indexValueValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.indexValid() ==> importFile.errorCount <> 1")
+	}
+}
+
+func Test__Validator__tableValueValid(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+	valid.tableValueValid(importFile)
+
+	// positive test
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.tableValueValid() ==> importFile.errorCount <> 0")
+	}
+
+	// negative test
+	var meta = getTableMeta(importFile)
+	meta.id = -789564224
+	importFile.metaList = append(importFile.metaList, meta)
+	valid.tableValueValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.tableValueValid() ==> importFile.errorCount <> 1")
+	}
 }
 
 func getMetaImportFile() *Import {
@@ -163,6 +211,16 @@ func getFieldMeta(importFile *Import) *meta {
 	for i := 0; i < len(importFile.metaList); i++ {
 		if importFile.metaList[i].GetEntityType() == entitytype.Field {
 			return importFile.metaList[i].Clone()
+		}
+	}
+	return nil
+}
+
+//important don't clone indexes
+func getIndexMeta(importFile *Import) *meta {
+	for i := 0; i < len(importFile.metaList); i++ {
+		if importFile.metaList[i].GetEntityType() == entitytype.Index {
+			return importFile.metaList[i]
 		}
 	}
 	return nil
