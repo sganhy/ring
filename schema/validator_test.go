@@ -45,14 +45,14 @@ func Test__Validator__fieldNameUnique(t *testing.T) {
 
 	// negative test
 	// 1> duplicate field
-	var meta = getFieldMeta(importFile)
+	var meta = getFieldMeta(importFile, true)
 	importFile.metaList = append(importFile.metaList, meta)
 	valid.fieldNameUnique(importFile)
 	if importFile.errorCount != 1 {
 		t.Errorf("validator.entityNameUnique() ==> importFile.errorCount <> 0 ")
 	}
 	// 2> duplicate relation
-	meta = getFieldMeta(importFile)
+	meta = getFieldMeta(importFile, true)
 	importFile.errorCount = 0 // reset counter
 	meta.objectType = int8(entitytype.Relation)
 	importFile.metaList = append(importFile.metaList, meta)
@@ -75,7 +75,7 @@ func Test__Validator__duplicateMetaKey(t *testing.T) {
 	}
 
 	// negative test -- create duplicate key
-	var meta = getTableMeta(importFile)
+	var meta = getTableMeta(importFile, true)
 	importFile.metaList = append(importFile.metaList, meta)
 	valid.duplicateMetaKey(importFile)
 	if importFile.errorCount != 1 {
@@ -87,7 +87,7 @@ func Test__Validator__duplicateMetaKey(t *testing.T) {
 func Test__Validator__checkEntityName(t *testing.T) {
 	importFile := getMetaImportFile()
 	valid := new(validator)
-	var meta = getTableMeta(importFile)
+	var meta = getTableMeta(importFile, true)
 	meta.name = "test1"
 	valid.checkEntityName(importFile, meta, entitytype.Table)
 
@@ -117,7 +117,7 @@ func Test__Validator__checkEntityName(t *testing.T) {
 		t.Errorf("validator.checkEntityName(Schema) ==> importFile.errorCount <> 1")
 	}
 	// negative test -- field: metaData.name len > 28
-	meta = getFieldMeta(importFile)
+	meta = getFieldMeta(importFile, true)
 	meta.name = "test0123456789012345678945899"
 	importFile.errorCount = 0
 	valid.checkEntityName(importFile, meta, entitytype.Field)
@@ -179,12 +179,75 @@ func Test__Validator__tableValueValid(t *testing.T) {
 	}
 
 	// negative test
-	var meta = getTableMeta(importFile)
+	var meta = getTableMeta(importFile, true)
 	meta.id = -789564224
 	importFile.metaList = append(importFile.metaList, meta)
 	valid.tableValueValid(importFile)
 	if importFile.errorCount != 1 {
 		t.Errorf("validator.tableValueValid() ==> importFile.errorCount <> 1")
+	}
+}
+
+func Test__Validator__languageCodeValid(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+	valid.languageCodeValid(importFile)
+
+	// positive test
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.languageCodeValid() ==> importFile.errorCount <> 0")
+	}
+
+}
+
+func Test__Validator__entityTypeValid(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+	valid.entityTypeValid(importFile)
+
+	// positive test
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.entityTypeValid() ==> importFile.errorCount <> 0")
+	}
+
+	// negative test: field
+	field := getFieldMeta(importFile, false)
+	field.setFieldType(4)
+	valid.entityTypeValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.entityTypeValid() ==> importFile.errorCount <> 1")
+	}
+
+	// negative test: relation
+	importFile.errorCount = 0
+	relation := getFieldMeta(importFile, false)
+	relation.objectType = int8(entitytype.Relation)
+	valid.entityTypeValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.entityTypeValid() ==> importFile.errorCount <> 1")
+	}
+
+}
+
+func Test__Validator__tableSpaceValueValid(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+
+	tablespace := getTableMeta(importFile, false)
+	tablespace.objectType = int8(entitytype.Tablespace)
+	valid.tableSpaceValueValid(importFile)
+
+	// negative test
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.tableSpaceValueValid() ==> importFile.errorCount <> 1")
+	}
+
+	// negative test nul
+	tablespace.value = "/NUL/"
+	importFile.errorCount = 0
+	valid.tableSpaceValueValid(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.tableSpaceValueValid() ==> importFile.errorCount <> 1")
 	}
 }
 
@@ -199,18 +262,26 @@ func getMetaImportFile() *Import {
 	result.metaList = schema.toMeta()
 	return result
 }
-func getTableMeta(importFile *Import) *meta {
+func getTableMeta(importFile *Import, clone bool) *meta {
 	for i := 0; i < len(importFile.metaList); i++ {
 		if importFile.metaList[i].GetEntityType() == entitytype.Table {
-			return importFile.metaList[i].Clone()
+			if clone {
+				return importFile.metaList[i].Clone()
+			} else {
+				return importFile.metaList[i]
+			}
 		}
 	}
 	return nil
 }
-func getFieldMeta(importFile *Import) *meta {
+func getFieldMeta(importFile *Import, clone bool) *meta {
 	for i := 0; i < len(importFile.metaList); i++ {
 		if importFile.metaList[i].GetEntityType() == entitytype.Field {
-			return importFile.metaList[i].Clone()
+			if clone {
+				return importFile.metaList[i].Clone()
+			} else {
+				return importFile.metaList[i]
+			}
 		}
 	}
 	return nil

@@ -364,9 +364,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 			importFile.logErrorStr(955, invalidRelationValue, description)
 			continue
 		}
-
 		relationName := metaData.value
-
 		if val, ok = dicoRelation[metaData.dataType][relationName]; !ok {
 			var description = fmt.Sprintf("invalid inverse relation definition '%s'"+validatorAtLine, metaData.value, metaData.lineNumber)
 			importFile.logErrorStr(956, invalidRelationValue, description)

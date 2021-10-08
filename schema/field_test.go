@@ -257,7 +257,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 		t.Errorf("Field.isValidInteger() ==> 758645454 is a valid integer (32 bits)")
 	}
 	// LONG
-	field.fieldType = fieldtype.Long
+	field.setType(fieldtype.Long)
 	if field.isValidInteger("9223372036854775807") == false {
 		t.Errorf("Field.isValidInteger() ==> 9223372036854775807 string is not a valid integer (64 bits)")
 	}
@@ -265,7 +265,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 		t.Errorf("Field.isValidInteger() ==> 0 string is not a valid integer (64 bits)")
 	}
 	//SHORT
-	field.fieldType = fieldtype.Short
+	field.setType(fieldtype.Short)
 	if field.isValidInteger("-32768") == false {
 		t.Errorf("Field.isValidInteger() ==> -32768 string is not a valid integer (16 bits)")
 	}
@@ -280,7 +280,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 	}
 
 	//BYTE
-	field.fieldType = fieldtype.Byte
+	field.setType(fieldtype.Byte)
 	if field.isValidInteger("127") == false {
 		t.Errorf("Field.isValidInteger() ==> 127 string is not a valid integer (8 bits)")
 	}
@@ -293,7 +293,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 
 	// ========== NEGATIVE tests
 	//INT
-	field.fieldType = fieldtype.Int
+	field.setType(fieldtype.Int)
 	if field.isValidInteger("21474836490") != false {
 		t.Errorf("Field.isValidInteger() ==> 21474836490 is not a valid integer (32 bits)")
 	}
@@ -309,12 +309,12 @@ func Test__Field__isValidInteger(t *testing.T) {
 	if field.isValidInteger("") != false {
 		t.Errorf("Field.isValidInteger() ==> empty string is not a valid integer (32 bits)")
 	}
-	field.fieldType = fieldtype.Long
+	field.setType(fieldtype.Long)
 	if field.isValidInteger("9223372036854775808") != false {
 		t.Errorf("Field.isValidInteger() ==> 9223372036854775808 string is not a valid integer (64 bits)")
 	}
 	//SHORT
-	field.fieldType = fieldtype.Short
+	field.setType(fieldtype.Short)
 	if field.isValidInteger("40000") != false {
 		t.Errorf("Field.isValidInteger() ==> 40000 string is not a valid integer (16 bits)")
 	}
@@ -322,7 +322,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 		t.Errorf("Field.isValidInteger() ==> -40000 string is not a valid integer (64 bits)")
 	}
 	//BYTE
-	field.fieldType = fieldtype.Byte
+	field.setType(fieldtype.Byte)
 	if field.isValidInteger("256") != false {
 		t.Errorf("Field.isValidInteger() ==> 256 string is not a valid integer (8 bits)")
 	}
@@ -333,7 +333,7 @@ func Test__Field__isValidInteger(t *testing.T) {
 		t.Errorf("Field.isValidInteger() ==> -129 string is not a valid integer (8 bits)")
 	}
 	// force false last return ... test
-	field.fieldType = fieldtype.Boolean
+	field.setType(fieldtype.Boolean)
 	if field.isValidInteger("11111") != false {
 		t.Errorf("Field.isValidInteger() ==> 11111 string is not a valid Boolean")
 	}

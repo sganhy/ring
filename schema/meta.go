@@ -260,6 +260,9 @@ func (metaData *meta) setFieldNotNull(value bool) {
 func (metaData *meta) setFieldCaseSensitive(value bool) {
 	metaData.writeFlag(bitPositionFieldCaseSensitive, value)
 }
+func (metaData *meta) setFieldType(value int32) {
+	metaData.dataType = value & 127
+}
 func (metaData *meta) setFieldSize(size uint32) {
 	var temp = uint64(size & uint32(metaMaxInt32))
 	// maxInt32 & size << ()
