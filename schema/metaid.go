@@ -39,9 +39,10 @@ func (metaid *metaId) String() string {
 //******************************
 // private methods
 //******************************
-func (metaid *metaId) saveMetaIdList(schemaId int32, metaList []*meta) error {
+func (metaid *metaId) saveMetaIdList(schemaId int32, metaList []*meta) (int64, error) {
 	queryExist := new(metaQuery)
 	queryInsert := new(metaQuery)
+	var count int64 = 0
 
 	metaid.schemaId = schemaId
 	metaid.objectType = int8(entitytype.Table)
@@ -62,14 +63,15 @@ func (metaid *metaId) saveMetaIdList(schemaId int32, metaList []*meta) error {
 			queryExist.setParamValue(metaData.id, 0)
 			exist, err := queryExist.exists()
 			if err != nil {
-				return err
+				return count, err
 			}
 			if exist == false {
 				metaid.id = metaData.id
 				queryInsert.insertMetaId(metaid)
+				count++
 			}
 		}
 	}
 
-	return nil
+	return count, nil
 }

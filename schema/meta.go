@@ -336,9 +336,10 @@ func (metaData *meta) readFlag(bitPosition uint8) bool {
 	return ((metaData.flags >> (bitPosition - 1)) & 1) > 0
 }
 
-func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
+func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) (int64, error) {
 	prevMetaList := getMetaList(schemaId, entitytype.NotDefined, true)
 	var err error
+	var count int64 = 0
 
 	err = nil
 	query := new(metaQuery)
@@ -349,6 +350,7 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
 	if len(prevMetaList) == 0 {
 		for i := 0; i < len(metaList) && err == nil; i++ {
 			err = query.insertMeta(metaList[i], schemaId)
+			count++
 		}
 	} else {
 		// create dictionary : object_type_id, [reference_id], [upper(name)]
@@ -358,20 +360,23 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) error {
 		prevMetaList = []meta{}
 
 		// metaList should have valid objectTypeId >=0 && objectTypeId <= entitytype.MaxEntityTypeId
-		err = metaData.updateMetaList(schemaId, metaList, dico)
+		count, err = metaData.updateMetaList(schemaId, metaList, dico)
 
 		// detect deleted meta item
 		if err == nil {
+			var subCount int64 = 0
 			// delete first
-			err = metaData.deleteMetaList(schemaId, dico, true)
+			subCount, err = metaData.deleteMetaList(schemaId, dico, true)
+			count += subCount
 		}
 	}
 
-	return err
+	return count, err
 }
 
-func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []map[int32]map[string]*meta) error {
+func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []map[int32]map[string]*meta) (int64, error) {
 	var err error
+	var count int64 = 0
 
 	err = nil
 	queryInsert := new(metaQuery)
@@ -394,6 +399,7 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 			*/
 			metaData.setMetaDataId(currMeta, dico)
 			err = queryInsert.insertMeta(currMeta, schemaId)
+			count++
 		} else {
 			//update
 			prevMeta.enabled = true // flag this meta is in the prev schema
@@ -403,6 +409,7 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 					fmt.Println(currMeta.String())
 				*/
 				queryUpdate.updateMeta(currMeta, schemaId)
+				count++
 			}
 		}
 		if err != nil {
@@ -410,12 +417,13 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 		}
 	}
 
-	return err
+	return count, err
 }
 
-func (metaData *meta) deleteMetaList(schemaId int32, dico []map[int32]map[string]*meta, forceDelete bool) error {
+func (metaData *meta) deleteMetaList(schemaId int32, dico []map[int32]map[string]*meta, forceDelete bool) (int64, error) {
 	//current schema:  dico
 	//warning: one type of dml by metaQuery object !!!!
+	var count int64 = 0
 	query := new(metaQuery)
 	query.setSchema(metaSchemaName)
 	query.setTable(metaTableName)
@@ -430,12 +438,13 @@ func (metaData *meta) deleteMetaList(schemaId int32, dico []map[int32]map[string
 						fmt.Println(mapMeta.String())
 					*/
 					query.deleteMeta(mapMeta, schemaId, forceDelete)
+					count++
 				}
 			}
 		}
 	}
 
-	return nil
+	return count, nil
 }
 
 func (metaData *meta) setMetaDataId(newMeta *meta, dico []map[int32]map[string]*meta) {

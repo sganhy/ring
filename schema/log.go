@@ -37,11 +37,13 @@ var (
 	logTable        *Table
 	metaTableExist  bool
 	initialCreation bool
+	initialLogJobId int64
 )
 
 func init() {
 	metaTableExist = false
 	initialCreation = false
+	initialLogJobId = 0
 }
 
 func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
@@ -56,9 +58,9 @@ func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 	if schemaId != schemaNotDefined {
 		// get metas chema to fetch current JobId
 		if schemaId == 0 {
-			logger.Info(0, 0, "Baseline logger initialized", "")
+			logger.initInfo(0, 0, "Baseline logger initialized", "")
 		} else if jobId == 0 {
-			logger.Info(0, 0, "Logger initialized", "")
+			logger.initInfo(0, 0, "Logger initialized", "")
 		}
 	}
 }
@@ -179,19 +181,32 @@ func (logger *log) Info(id int32, jobId int64, messages ...interface{}) {
 //******************************
 // private methods
 //******************************
+
+//go:noinline
+func (logger *log) initInfo(id int32, jobId int64, messages ...interface{}) {
+	logger.writeInitLog(id, levelInfo, jobId, messages...)
+}
+
+//go:noinline
+func (logger *log) writeInitLog(id int32, level int8, jobId int64, messages ...interface{}) {
+	var message = logger.extractMessage(messages)
+	var description = logger.extractDescription(messages)
+	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
+	go logger.writeDeferToDb(newLog)
+}
+
 //go:noinline
 func (logger *log) writePartialLog(id int32, level int8, jobId int64, messages ...interface{}) {
 	var message = logger.extractMessage(messages)
 	var description = logger.extractDescription(messages)
-
 	var newLog = logger.getNewLog(id, level, logger.schemaId, jobId, message, description)
 	// am I ready to log?
 	if logger.active == true && logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
-		//fmt.Println("logger.writeToDb(newLog) ==> " + description)
+		//fmt.Println("logger.writeToDb(newLog) ==> " + message)
 		logger.writeToDb(newLog)
 	} else if logger.active == true {
 		// connection pool not yet ready
-		//fmt.Println("go logger.writeDeferToDb(newLog) ==> " + description)
+		//fmt.Println("go logger.writeDeferToDb(newLog) ==> " + message)
 		go logger.writeDeferToDb(newLog)
 	} else {
 		//do nothing?
@@ -215,10 +230,15 @@ func (logger *log) writeDeferToDb(newLog *log) {
 		if logSchema != nil && logTable != nil && logSchema.poolInitialized == true && metaTableExist == true {
 			// retrieve current jobId
 			var metaSchema = GetSchemaByName(metaSchemaName)
-			if !initialCreation {
-				newLog.jobId = metaSchema.getJobIdNextValue()
+			if initialLogJobId == 0 {
+				if !initialCreation {
+					newLog.jobId = metaSchema.getJobIdNextValue()
+				} else {
+					newLog.jobId = initialJobId
+				}
+				initialLogJobId = newLog.jobId
 			} else {
-				newLog.jobId = initialJobId
+				newLog.jobId = initialLogJobId
 			}
 			logger.writeToDb(newLog)
 			break

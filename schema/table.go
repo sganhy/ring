@@ -1269,9 +1269,10 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	metaquery.Init(schema, table)
 
 	if relationType == relationtype.Mto || relationType == relationtype.Otop {
-		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, relation.toField())
+		var field = relation.toField()
+		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
 		// alter table add relation
-		err = metaquery.alter(eventId, jobId, table, nil)
+		err = metaquery.alter(eventId, jobId, table, field)
 	} else if relationType == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 		relation.GetMtmTable().create(jobId)
 		relation.GetMtmTable().createConstraints(jobId, schema)

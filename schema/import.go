@@ -17,21 +17,23 @@ import (
 )
 
 type Import struct {
-	id              int
-	fileName        string
-	schemaId        int32
-	schemaName      string
-	source          sourcetype.SourceType
-	initialized     bool
-	loaded          bool
-	jobId           int64
-	tables          map[string]int32
-	errorCount      int32
-	metaList        []*meta
-	newSchema       *Schema
-	logger          *log
-	tablespaceCount int32
-	provider        databaseprovider.DatabaseProvider
+	id                int
+	fileName          string
+	schemaId          int32
+	schemaName        string
+	source            sourcetype.SourceType
+	initialized       bool
+	loaded            bool
+	jobId             int64
+	tables            map[string]int32
+	errorCount        int32
+	metaList          []*meta
+	newSchema         *Schema
+	logger            *log
+	tablespaceCount   int32
+	provider          databaseprovider.DatabaseProvider
+	metaChangeCount   int64
+	metaIdChangeCount int64
 }
 
 const (
@@ -158,7 +160,8 @@ func (importFile *Import) Load() error {
 }
 
 func (importFile *Import) Upgrade() {
-	//const upgradeSchema string = "Upgrade schema"
+	importFile.metaChangeCount = 0
+	importFile.metaIdChangeCount = 0
 
 	if importFile.IsValid() == true {
 		var err error
@@ -734,23 +737,37 @@ func (importFile *Import) getSchemaLanguage(value string) *meta {
 
 func (importFile *Import) saveMetaList() error {
 	metaData := new(meta)
-	return metaData.saveMetaList(importFile.schemaId, importFile.metaList)
+	var count int64
+	var err error
+
+	count, err = metaData.saveMetaList(importFile.schemaId, importFile.metaList)
+	importFile.metaChangeCount = count
+
+	return err
 }
 
 func (importFile *Import) saveMetaIdList() error {
+	var count int64
+	var err error
+
 	metaId := new(metaId)
-	return metaId.saveMetaIdList(importFile.schemaId, importFile.metaList)
+	count, err = metaId.saveMetaIdList(importFile.schemaId, importFile.metaList)
+	importFile.metaIdChangeCount = count
+	return err
 }
 
 func (importFile *Import) analyzeMetaTables() {
 	var table *Table
 	var metaSchema = GetSchemaByName(metaSchemaName)
 
-	table = metaSchema.GetTableByName(metaIdTableName)
-	table.Vacuum(importFile.jobId)
-	table.Analyze(importFile.jobId)
-
-	table = metaSchema.GetTableByName(metaTableName)
-	table.Vacuum(importFile.jobId)
-	table.Analyze(importFile.jobId)
+	if importFile.metaIdChangeCount > 0 {
+		table = metaSchema.GetTableByName(metaIdTableName)
+		table.Vacuum(importFile.jobId)
+		table.Analyze(importFile.jobId)
+	}
+	if importFile.metaChangeCount > 0 {
+		table = metaSchema.GetTableByName(metaTableName)
+		table.Vacuum(importFile.jobId)
+		table.Analyze(importFile.jobId)
+	}
 }

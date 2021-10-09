@@ -287,7 +287,7 @@ func createMetaTable(schema *Schema) {
 			panic(err)
 		}
 		metaData := new(meta)
-		metaData.saveMetaList(0, schema.toMeta())
+		_, err = metaData.saveMetaList(0, schema.toMeta())
 		if err != nil {
 			panic(err)
 		}
