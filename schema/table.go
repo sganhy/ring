@@ -199,6 +199,10 @@ func (table *Table) GetFieldIdByIndex(index int) *Field {
 	return table.fields[table.mapper[index]]
 }
 
+func (table *Table) GetFieldByIndex(index int) *Field {
+	return table.fields[index]
+}
+
 func (table *Table) setId(id int32) {
 	table.id = id
 }
@@ -273,10 +277,6 @@ func (table *Table) GetFieldIndexByName(name string) int {
 }
 
 //
-func (table *Table) GetFieldByIndex(index int) *Field {
-	return table.fields[index]
-}
-
 func (table *Table) GetRelationByName(name string) *Relation {
 	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(table.relations) - 1, 0, 0
 	for indexerLeft <= indexerRight {
@@ -1088,6 +1088,7 @@ func (newTable *Table) alter(jobId int64, currentTable *Table) error {
 	if newTable.indexesEqual(currentTable) == false {
 		newTable.alterIndexes(jobId, currentTable)
 	}
+	//TODO alter relation type!!!
 	if newTable.relationsEqual(currentTable) == false {
 		newTable.alterRelations(jobId, currentTable)
 	}
@@ -1251,7 +1252,10 @@ func (table *Table) dropRelation(jobId int64, relation *Relation) error {
 		return table.dropField(jobId, relation.toField())
 	}
 	if relationType == relationtype.Mtm {
-		return relation.GetMtmTable().drop(jobId)
+		// avoid two drops on mtm table take min relation id
+		if relation.GetId() < relation.GetInverseRelation().GetId() {
+			return relation.GetMtmTable().drop(jobId)
+		}
 	}
 	return nil
 }

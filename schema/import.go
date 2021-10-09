@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"io"
@@ -77,6 +78,7 @@ const (
 	importMinId                     int64  = -2147483648
 	importMaxId                     int64  = 2147483647
 	baseErrorId                     int32  = 11
+	maxXmlFileSize                  int64  = 33554432 // 32 mega byte
 )
 
 var (
@@ -133,15 +135,16 @@ func (importFile *Import) GetDatabaseProvider() databaseprovider.DatabaseProvide
 // public methods
 //******************************
 func (importFile *Import) Load() error {
+	var err error
 	var metaSchema = GetSchemaByName(metaSchemaName)
+	var fileName = strings.ReplaceAll(importFile.fileName, "\\", "/")
 	importFile.provider = getDefaultDbProvider()
 	importFile.tablespaceCount = 0
 	importFile.metaList = make([]*meta, 0, 20)
 	importFile.errorCount = 0
 	importFile.jobId = metaSchema.getJobIdNextValue()
 	importFile.loadSchemaInfo()
-	importFile.logInfo("Load schema", "import_file: "+importFile.fileName)
-
+	importFile.logInfo("Load schema", "import_file: "+fileName)
 	if importFile.schemaName == "" {
 		// no schema information
 		return nil
@@ -150,13 +153,17 @@ func (importFile *Import) Load() error {
 		return errors.New(errorImportFileNotInitialized)
 	}
 	if importFile.source == sourcetype.XmlDocument {
-		importFile.loadXml()
-		valid := new(validator)
-		valid.Init()
-		valid.ValidateImport(importFile)
+		var isValid = false
+		isValid, err = importFile.isXmlValid()
+		if isValid {
+			importFile.loadXml()
+			valid := new(validator)
+			valid.Init()
+			valid.ValidateImport(importFile)
+		}
 	}
 	importFile.loaded = true
-	return nil
+	return err
 }
 
 func (importFile *Import) Upgrade() {
@@ -197,6 +204,34 @@ func (importFile *Import) IsValid() bool {
 //******************************
 // private methods
 //******************************
+func (importFile *Import) isXmlValid() (bool, error) {
+	fileInfo, errStat := os.Stat(importFile.fileName)
+	if errStat != nil {
+		importFile.logError(errStat)
+		return false, errStat
+	}
+	// get the size
+	if fileInfo.Size() > maxXmlFileSize {
+		importFile.logError(errors.New("File size is bigger than " +
+			strconv.Itoa(int(maxXmlFileSize)) + " bytes"))
+		return false, errStat
+	}
+	filerc, err := os.Open(importFile.fileName)
+	if err != nil {
+		importFile.logError(err)
+		return false, err
+	}
+	defer filerc.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(filerc)
+	contents := buf.Bytes()
+	err = xml.Unmarshal(contents, new(interface{}))
+	if err != nil {
+		importFile.logError(err)
+	}
+	return err == nil, err
+}
+
 func (importFile *Import) loadXml() {
 	referenceId := new(int32)
 	//var schemaId int32 = 0

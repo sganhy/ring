@@ -130,6 +130,25 @@ func Test__Table__Init(t *testing.T) {
 	if table.GetEntityType() != entitytype.Table {
 		t.Errorf("Table.Init() ==>  GetEntityType() <> entitytype.Table")
 	}
+	// should be equal to true always
+	if table.logStatment(ddlstatement.Create) != true {
+		t.Errorf("Table.Init() ==>  logStatment(Create) <> true")
+	}
+	if table.logStatment(ddlstatement.Drop) != true {
+		t.Errorf("Table.Init() ==>  logStatment(Drop) <> true")
+	}
+	if table.logStatment(ddlstatement.Alter) != true {
+		t.Errorf("Table.Init() ==>  logStatment(Alter) <> true")
+	}
+	if table.logStatment(ddlstatement.Truncate) != true {
+		t.Errorf("Table.Init() ==>  logStatment(Alter) <> true")
+	}
+	if table.GetFieldIdByIndex(1).name != "schema_id" {
+		t.Errorf("Table.Init() ==>  GetFieldIdByIndex(1) <> 'schema_id'")
+	}
+	if table.GetFieldByIndex(2).name != "data_type" {
+		t.Errorf("Table.Init() ==>  GetFieldByIndex(2) <> 'data_type'")
+	}
 
 }
 
@@ -694,6 +713,80 @@ func Test__Table__GetQueryResult(t *testing.T) {
 	}
 }
 
+func Test__Table__getVariableInfo(t *testing.T) {
+	schema := new(Schema)
+	table := new(Table)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+
+	//======================
+	//==== testing PostgreSql
+	//======================
+	table = table.getMetaTable(databaseprovider.PostgreSql, "zorba")
+	name, initialId := table.getVariableInfo()
+	if initialId != 1 {
+		t.Errorf("Table.getVariableInfo() ==> initial id must be equal to 1")
+	}
+	if name != "$" {
+		t.Errorf("Table.getVariableInfo() ==> initial name must be equal to '$'")
+	}
+	//======================
+	//==== testing Mysql
+	//======================
+	table = table.getMetaTable(databaseprovider.MySql, "zorba")
+	name, initialId = table.getVariableInfo()
+	if initialId != 0 {
+		t.Errorf("Table.getVariableInfo() ==> initial id must be equal to 1")
+	}
+	if name != "?" {
+		t.Errorf("Table.getVariableInfo() ==> initial name must be equal to '$'")
+	}
+	//======================
+	//==== testing Others
+	//======================
+	table = table.getMetaTable(databaseprovider.NotDefined, "zorba")
+	name, initialId = table.getVariableInfo()
+	if initialId != 0 {
+		t.Errorf("Table.getVariableInfo() ==> initial id must be equal to 0")
+	}
+	if name != "" {
+		t.Errorf("Table.getVariableInfo() ==> initial name must be equal to '$'")
+	}
+
+}
+
+func Test__Table__getTable(t *testing.T) {
+	schema := new(Schema)
+	table := new(Table)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+	table = table.getMetaTable(databaseprovider.PostgreSql, "")
+	tableId := table.GetId()
+	metaList := getTableMetas(tableId)
+	//t.Errorf("%d", len(metaList))
+	table = table.getTable(databaseprovider.PostgreSql, "", 0, metaList)
+	if table.name != metaTableName {
+		t.Errorf("Table.getTable() ==> name is diferent than '@meta'")
+	}
+	if table.id != tableId {
+		t.Errorf("Table.getTable() ==> id is diferent than 3")
+	}
+	if table.IsBaseline() != true {
+		t.Errorf("Table.getTable() ==> IsBaseline() is diferent than true")
+	}
+	if table.IsActive() != true {
+		t.Errorf("Table.getTable() ==> IsActive() is diferent than true")
+	}
+	if table.GetType() != tabletype.Business {
+		t.Errorf("Table.getTable() ==> GetType() is diferent than tabletype.Meta")
+	}
+	if table.GetDatabaseProvider() != databaseprovider.PostgreSql {
+		t.Errorf("Table.getTable() ==> GetDatabaseProvider() is diferent than databaseprovider.PostgreSql")
+	}
+	if table.GetEntityType() != entitytype.Table {
+		t.Errorf("Table.getTable() ==> GetEntityType() is diferent than entitytype.Table")
+	}
+
+}
+
 func abs(value int) int {
 	if value >= 0 {
 		return value
@@ -765,5 +858,29 @@ func getMtmTable() *Table {
 		0, "test", tabletype.Mtm, databaseprovider.PostgreSql, "",
 		true, false, true, true)
 
+	return result
+}
+
+func getTableMetas(referenceId int32) []*meta {
+	schema := new(Schema)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+	metaList := schema.toMeta()
+	result := make([]*meta, 0)
+	var fieldIndex = 0
+	for i := 0; i < len(metaList); i++ {
+		meta := metaList[i]
+		if meta.GetEntityType() == entitytype.Table && meta.id == referenceId {
+			result = append(result, meta)
+		}
+		if meta.refId == referenceId {
+			result = append(result, meta)
+			if meta.GetEntityType() == entitytype.Field {
+				if fieldIndex == 1 {
+					meta.objectType = int8(entitytype.Relation)
+				}
+				fieldIndex++
+			}
+		}
+	}
 	return result
 }
