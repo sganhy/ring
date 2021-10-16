@@ -353,7 +353,8 @@ func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) (int64, err
 			count++
 		}
 	} else {
-		// create dictionary : object_type_id, [reference_id], [upper(name)]
+
+		// create dictionary : object_type_id, [reference_id], [upper(name)]/[upper(index.value)]
 		dico := metaData.getMetaDictionary(prevMetaList)
 
 		//disallow slice
@@ -389,7 +390,7 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 
 	for i := 0; i < len(metaList); i++ {
 		var currMeta = metaList[i]
-		var prevMeta = dico[currMeta.objectType][currMeta.refId][strings.ToUpper(currMeta.name)]
+		var prevMeta = dico[currMeta.objectType][currMeta.refId][currMeta.getKey()]
 
 		if prevMeta == nil {
 			// insert
@@ -476,13 +477,13 @@ func (metaData *meta) setMetaDataId(newMeta *meta, dico []map[int32]map[string]*
 	dico[newMeta.objectType][newMeta.refId][strings.ToUpper(newMeta.name)] = newMeta
 }
 
+// create dictionary : [object_type_id], [reference_id], [upper(name)]/[upper(index.value)]
 func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[string]*meta {
 	result := make([]map[int32]map[string]*meta, entitytype.MaxEntityTypeId+1, entitytype.MaxEntityTypeId+1)
 
 	for i := 0; i <= entitytype.MaxEntityTypeId; i++ {
 		result[i] = make(map[int32]map[string]*meta)
 	}
-
 	for i := 0; i < len(currentMetaList); i++ {
 		var currMeta = &currentMetaList[i]
 		if currMeta.objectType >= 0 && currMeta.objectType <= entitytype.MaxEntityTypeId {
@@ -490,9 +491,18 @@ func (metaData *meta) getMetaDictionary(currentMetaList []meta) []map[int32]map[
 				result[currMeta.objectType][currMeta.refId] = make(map[string]*meta)
 			}
 			currMeta.enabled = false // set false to detect later if item deleted
-			result[currMeta.objectType][currMeta.refId][strings.ToUpper(currMeta.name)] = currMeta
+			result[currMeta.objectType][currMeta.refId][currMeta.getKey()] = currMeta
 		}
 	}
 
 	return result
+}
+
+func (metaData *meta) getKey() string {
+	if metaData.objectType == int8(entitytype.Index) {
+		return strings.ToUpper(metaData.value)
+	} else {
+		return strings.ToUpper(metaData.name)
+	}
+	return ""
 }

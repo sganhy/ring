@@ -1167,18 +1167,19 @@ func (newTable *Table) alterIndexes(jobId int64, currentTable *Table) error {
 	for i := 0; i < len(currentTable.indexes); i++ {
 		curDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))] = true
 	}
+	// drop indexes!!! drop first
+	for i := 0; i < len(currentTable.indexes); i++ {
+		if _, ok := newDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))]; !ok {
+			err = currentTable.indexes[i].drop(jobId, schema, currentTable)
+		}
+	}
 	// add new indexes
 	for i := 0; i < len(newTable.indexes); i++ {
 		if _, ok := curDico[strings.ToUpper(newTable.indexes[i].getFieldList(newTable))]; !ok {
 			err = newTable.indexes[i].create(jobId, schema, newTable)
 		}
 	}
-	// drop indexes
-	for i := 0; i < len(currentTable.indexes); i++ {
-		if _, ok := newDico[strings.ToUpper(currentTable.indexes[i].getFieldList(currentTable))]; !ok {
-			err = currentTable.indexes[i].drop(jobId, schema, currentTable)
-		}
-	}
+
 	//TODO modify index
 	return err
 }
@@ -1464,15 +1465,15 @@ func (tableA *Table) indexesEqual(tableB *Table) bool {
 		return false
 	}
 	if len(tableA.indexes) > 0 {
-		dico := make(map[string]*Index, len(tableA.indexes))
+		dico := make(map[int32]*Index, len(tableA.indexes))
 		for i := 0; i < len(tableA.indexes); i++ {
-			var fieldListA = strings.ToUpper(strings.Join(tableA.indexes[i].fields, metaIndexSeparator))
-			dico[fieldListA] = tableA.indexes[i]
+			dico[tableA.indexes[i].id] = tableA.indexes[i]
 		}
-		for i := 0; i < len(tableA.indexes); i++ {
-			var fieldListB = strings.ToUpper(strings.Join(tableB.indexes[i].fields, metaIndexSeparator))
-			if indexA, ok := dico[fieldListB]; ok {
+		for i := 0; i < len(tableB.indexes); i++ {
+			if indexA, ok := dico[tableB.indexes[i].id]; ok {
 				if !indexA.equal(tableB.indexes[i]) {
+					fmt.Println(indexA.String())
+					fmt.Println(tableB.indexes[i].String())
 					return false
 				}
 			} else {

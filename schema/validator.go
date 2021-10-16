@@ -108,6 +108,7 @@ func (valid *validator) loadStats(importFile *Import) {
 
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
+		//fmt.Println(metaData.String())
 		switch metaData.GetEntityType() {
 		case entitytype.Table:
 			valid.tableCount++
