@@ -60,7 +60,7 @@ func (constr *constraint) setRelation(relation *Relation) {
 	constr.relation = relation
 }
 
-func (constr *constraint) logStatment(statment ddlstatement.DdlStatement) bool {
+func (constr *constraint) logStatement(statment ddlstatement.DdlStatement) bool {
 	return constr.constType == constrainttype.ForeignKey || constr.constType == constrainttype.UniqueKey
 }
 
@@ -112,6 +112,7 @@ func (constr *constraint) getPhysicalName() string {
 	result := ""
 	switch constr.constType {
 	case constrainttype.PrimaryKey:
+		//name:  pk_{table_name}
 		var tableName = constr.table.GetName()
 		if constr.table.GetType() == tabletype.Mtm {
 			tableName = strings.Replace(tableName, mtmTableNamePrefix+mtmSeperator, "@", 1)

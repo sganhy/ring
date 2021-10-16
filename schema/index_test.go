@@ -52,8 +52,11 @@ func Test__Index__Init(t *testing.T) {
 	if elemi.GetFields() == nil {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
-	if elemi.logStatment(ddlstatement.Alter) != true {
+	if elemi.logStatement(ddlstatement.Alter) != true {
 		t.Errorf("Index.Init() ==> logStatment() must be equal to true")
+	}
+	if elemi.GetPhysicalName() != elemi.GetName() {
+		t.Errorf("Index.Init() ==> physical name <> name")
 	}
 }
 
@@ -282,5 +285,12 @@ func Test__Index__equal(t *testing.T) {
 	// positive test
 	if elemi1.equal(elemi0) != true {
 		t.Errorf("Index.equal() ==> {0} i0.equal(i1) must be equal to true")
+	}
+
+	// negative test - i0.unique <> i1.unique
+	elemi1 = elemi0.Clone()
+	elemi1.setUnique(false)
+	if elemi1.equal(elemi0) != false {
+		t.Errorf("Index.equal() ==> {0} i0.equal(i1) must be equal to false")
 	}
 }

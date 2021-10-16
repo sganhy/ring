@@ -17,11 +17,24 @@ func Test__Constraint__Init(t *testing.T) {
 	//======================
 	//==== testing PostgreSql
 	//======================
+	// === PRIMARY KEY
 	constr := new(constraint)
 	constr.Init(constrainttype.PrimaryKey, metaTable)
 
 	if constr.GetEntityType() != entitytype.Constraint {
-		t.Errorf("Constraint.GetEntityType() ==>  must be equal to " + entitytype.Constraint.String())
+		t.Errorf("Constraint.Init() ==> entityType must be equal to " + entitytype.Constraint.String())
+	}
+	if constr.GetId() != 0 {
+		t.Errorf("Constraint.Init() ==> id must be equal to 0")
+	}
+	if constr.GetName() != "" {
+		t.Errorf("Constraint.Init() ==> name must be equal empty")
+	}
+	if constr.GetPhysicalName() != "\"pk_@meta\"" {
+		t.Errorf("Constraint.Init() ==> physicalName must be equal to '%s'", "\"pk_@meta\"")
+	}
+	if constr.logStatement(ddlstatement.Create) == true {
+		t.Errorf("Constraint.Init() ==> logStatement must be equal false")
 	}
 
 }
@@ -49,6 +62,16 @@ func Test__Constraint__getDdlCreatePrimaryKey(t *testing.T) {
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCreatePrimaryKey() ==> query must be equal to " + expectedSql)
 	}
+
+	//==== constraint type not defined
+	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
+	constr = new(constraint)
+	constr.Init(constrainttype.NotDefined, metaTable)
+	expectedSql = ""
+	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
+		t.Errorf("Constraint.GetDdl() ==> query must be empty ")
+	}
+
 }
 
 func Test__Constraint__getDdlNotNull(t *testing.T) {
@@ -75,6 +98,7 @@ func Test__Constraint__getDdlNotNull(t *testing.T) {
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlNotNull() ==> query must be equal to " + expectedSql)
 	}
+
 }
 
 func Test__Constraint__getDdlCreateForeignKey(t *testing.T) {
@@ -135,5 +159,32 @@ func Test__Constraint__getDdlCheck(t *testing.T) {
 }
 
 func Test__Constraint__getPhysicalName(t *testing.T) {
+	table := getTestTable(databaseprovider.PostgreSql, "information_schema")
+	//======================
+	//==== testing PostgreSql
+	//======================
 
+	// === PRIMARY_KEY
+	// test1 - business tables
+	table.setName("test_test")
+	expectedValue := "pk_test_test"
+	constr := new(constraint)
+	constr.Init(constrainttype.PrimaryKey, table)
+	if constr.getPhysicalName() != expectedValue {
+		t.Errorf("Constraint.getPhysicalName() ==> physical name must be equal to " + expectedValue)
+	}
+	// test2 - mtm tables
+	expectedValue = "\"pk_@test_test\""
+	table.setTableType(tabletype.Mtm)
+	table.setName("@mtm_test_test")
+	if constr.getPhysicalName() != expectedValue {
+		t.Errorf("Constraint.getPhysicalName() ==> physical name must be equal to " + expectedValue)
+	}
+	// test3 - long name tables (short name prefix)
+	expectedValue = "pktest_test_test_test_test_test"
+	table.setTableType(tabletype.Business)
+	table.setName("test_test_test_test_test_test")
+	if constr.getPhysicalName() != expectedValue {
+		t.Errorf("Constraint.getPhysicalName() ==> physical name must be equal to " + expectedValue)
+	}
 }

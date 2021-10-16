@@ -10,5 +10,5 @@ type entity interface {
 	GetName() string
 	GetPhysicalName() string
 	GetEntityType() entitytype.EntityType
-	logStatment(statment ddlstatement.DdlStatement) bool
+	logStatement(statement ddlstatement.DdlStatement) bool
 }

@@ -65,7 +65,7 @@ func (tableSpace *tablespace) setName(name string) {
 	tableSpace.name = name
 }
 
-func (tableSpace *tablespace) logStatment(statment ddlstatement.DdlStatement) bool {
+func (tableSpace *tablespace) logStatement(statment ddlstatement.DdlStatement) bool {
 	return true
 }
 

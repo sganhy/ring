@@ -131,7 +131,7 @@ func (valid *validator) tableIdUnique(importFile *Import) {
 	var ok bool
 	var val []*meta
 
-	dico = make(map[int32][]*meta)
+	dico = make(map[int32][]*meta, valid.tableCount)
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
 		if metaData.GetEntityType() == entitytype.Table {
@@ -159,7 +159,7 @@ func (valid *validator) tableIdUnique(importFile *Import) {
 func (valid *validator) tableNameUnique(importFile *Import) {
 	var metaList = importFile.metaList
 	var dico map[string]*meta
-	dico = make(map[string]*meta)
+	dico = make(map[string]*meta, valid.tableCount)
 
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
@@ -264,8 +264,8 @@ func (valid *validator) fieldNameUnique(importFile *Import) {
 	var metaList = importFile.metaList
 	var dicoTable map[int32]map[string]bool
 	var dicoTableName map[int32]string
-	dicoTable = make(map[int32]map[string]bool)
-	dicoTableName = make(map[int32]string)
+	dicoTable = make(map[int32]map[string]bool, valid.tableCount)
+	dicoTableName = make(map[int32]string, valid.tableCount)
 
 	// (1) build table dictionary
 	for i := 0; i < len(metaList); i++ {
@@ -370,7 +370,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 	var ok bool
 	var val relationtype.RelationType
 
-	dicoRelation = make(map[int32]map[string]relationtype.RelationType)
+	dicoRelation = make(map[int32]map[string]relationtype.RelationType, valid.relationCount)
 	relations = make([]*meta, 0, 10)
 
 	// (1) generate dictionary
@@ -430,7 +430,7 @@ func (valid *validator) tableValueValid(importFile *Import) {
 	var metaList = importFile.metaList
 	var fieldDico map[int32]bool
 
-	fieldDico = make(map[int32]bool)
+	fieldDico = make(map[int32]bool, valid.fieldCount+valid.relationCount)
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {

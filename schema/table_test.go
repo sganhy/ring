@@ -131,16 +131,16 @@ func Test__Table__Init(t *testing.T) {
 		t.Errorf("Table.Init() ==>  GetEntityType() <> entitytype.Table")
 	}
 	// should be equal to true always
-	if table.logStatment(ddlstatement.Create) != true {
+	if table.logStatement(ddlstatement.Create) != true {
 		t.Errorf("Table.Init() ==>  logStatment(Create) <> true")
 	}
-	if table.logStatment(ddlstatement.Drop) != true {
+	if table.logStatement(ddlstatement.Drop) != true {
 		t.Errorf("Table.Init() ==>  logStatment(Drop) <> true")
 	}
-	if table.logStatment(ddlstatement.Alter) != true {
+	if table.logStatement(ddlstatement.Alter) != true {
 		t.Errorf("Table.Init() ==>  logStatment(Alter) <> true")
 	}
-	if table.logStatment(ddlstatement.Truncate) != true {
+	if table.logStatement(ddlstatement.Truncate) != true {
 		t.Errorf("Table.Init() ==>  logStatment(Alter) <> true")
 	}
 	if table.GetFieldIdByIndex(1).GetName() != "schema_id" {

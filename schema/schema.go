@@ -145,7 +145,7 @@ func (schema *Schema) getLogger() *log {
 	return schema.logger
 }
 
-func (schema *Schema) logStatment(statment ddlstatement.DdlStatement) bool {
+func (schema *Schema) logStatement(statment ddlstatement.DdlStatement) bool {
 	return schema.id != 0
 }
 

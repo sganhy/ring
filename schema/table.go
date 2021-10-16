@@ -224,7 +224,7 @@ func (table *Table) setTableType(tableType tabletype.TableType) {
 	table.tableType = tableType
 }
 
-func (table *Table) logStatment(statment ddlstatement.DdlStatement) bool {
+func (table *Table) logStatement(statment ddlstatement.DdlStatement) bool {
 	return true
 }
 
@@ -1460,23 +1460,27 @@ func (tableA *Table) relationsEqual(tableB *Table) bool {
 }
 
 func (tableA *Table) indexesEqual(tableB *Table) bool {
-	// compare indexes
-	indexListA := tableA.getIndexList()
-	//fmt.Println(indexListA)
-	indexListB := tableB.getIndexList()
-	return strings.EqualFold(indexListA, indexListB)
-}
-
-func (table *Table) getIndexList() string {
-	var sb strings.Builder
-
-	for i := 0; i < len(table.indexes); i++ {
-		var index = table.indexes[i]
-		// field list
-		sb.WriteString(strings.Join(index.fields, metaIndexSeparator))
-		sb.WriteString(relationSeparator)
+	if len(tableA.indexes) != len(tableB.indexes) {
+		return false
 	}
-	return sb.String()
+	if len(tableA.indexes) > 0 {
+		dico := make(map[string]*Index, len(tableA.indexes))
+		for i := 0; i < len(tableA.indexes); i++ {
+			var fieldListA = strings.ToUpper(strings.Join(tableA.indexes[i].fields, metaIndexSeparator))
+			dico[fieldListA] = tableA.indexes[i]
+		}
+		for i := 0; i < len(tableA.indexes); i++ {
+			var fieldListB = strings.ToUpper(strings.Join(tableB.indexes[i].fields, metaIndexSeparator))
+			if indexA, ok := dico[fieldListB]; ok {
+				if !indexA.equal(tableB.indexes[i]) {
+					return false
+				}
+			} else {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (table *Table) getSchema() *Schema {

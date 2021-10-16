@@ -84,8 +84,11 @@ func (index *Index) GetEntityType() entitytype.EntityType {
 	return entitytype.Index
 }
 
-func (index *Index) logStatment(statment ddlstatement.DdlStatement) bool {
+func (index *Index) logStatement(statment ddlstatement.DdlStatement) bool {
 	return true
+}
+func (index *Index) setUnique(unique bool) {
+	index.unique = unique
 }
 
 //******************************
@@ -124,7 +127,10 @@ func (index *Index) String() string {
 
 // compare if the physical indexes are equal
 func (indexA *Index) equal(indexB *Index) bool {
-	return strings.Join(indexA.fields, metaIndexSeparator) == strings.Join(indexB.fields, metaIndexSeparator) &&
+	//fmt.Println(indexA.String())
+	//fmt.Println(indexB.String())
+	return strings.EqualFold(strings.Join(indexA.fields, metaIndexSeparator),
+		strings.Join(indexB.fields, metaIndexSeparator)) &&
 		indexA.bitmap == indexB.bitmap &&
 		indexA.unique == indexB.unique
 }

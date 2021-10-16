@@ -263,3 +263,13 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	}
 
 }
+
+func Test__Relation__equal(t *testing.T) {
+	elemr0 := new(Relation)
+	elemr0.Init(23, "test", "hellkzae", nil, relationtype.Mtm, false, false, true, false)
+	elemr1 := elemr0.Clone()
+
+	if elemr1.equal(elemr0) == false {
+		t.Errorf("Relation.equal() ==>	r0 should be equal to r1")
+	}
+}

@@ -487,7 +487,7 @@ func (query *metaQuery) create(id int32, jobId int64, ent entity) error {
 	query.ddl = true
 	query.dml = false
 	err := query.schema.execute(query)
-	if ent.logStatment(ddlstatement.Create) {
+	if ent.logStatement(ddlstatement.Create) {
 		query.logDdl(id, jobId, ent, creationTime, ddlstatement.Create, err, operatorEqual)
 	}
 	return err
@@ -499,7 +499,7 @@ func (query *metaQuery) drop(id int32, jobId int64, ent entity) error {
 	query.ddl = true
 	query.dml = false
 	err := query.schema.execute(query)
-	if ent.logStatment(ddlstatement.Drop) {
+	if ent.logStatement(ddlstatement.Drop) {
 		query.logDdl(id, jobId, ent, eventTime, ddlstatement.Drop, err, operatorEqual)
 	}
 	return err
@@ -511,7 +511,7 @@ func (query *metaQuery) alter(id int32, jobId int64, ent entity, field *Field) e
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatment(ddlstatement.Alter) {
+	if ent.logStatement(ddlstatement.Alter) {
 		query.logDdl(id, jobId, ent, createTime, ddlstatement.Alter, err, field.GetName())
 	}
 	return err
@@ -523,7 +523,7 @@ func (query *metaQuery) truncate(id int32, jobId int64, ent entity) error {
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatment(ddlstatement.Truncate) {
+	if ent.logStatement(ddlstatement.Truncate) {
 		query.logDdl(id, jobId, ent, createTime, ddlstatement.Truncate, err, operatorEqual)
 	}
 	return err
@@ -535,7 +535,7 @@ func (query *metaQuery) vacuum(id int32, jobId int64, ent entity) error {
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatment(ddlstatement.NotDefined) {
+	if ent.logStatement(ddlstatement.NotDefined) {
 		query.logDdl(id, jobId, ent, createTime, ddlstatement.NotDefined, err, "Vacuum")
 	}
 
@@ -548,7 +548,7 @@ func (query *metaQuery) analyze(id int32, jobId int64, ent entity) error {
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatment(ddlstatement.NotDefined) {
+	if ent.logStatement(ddlstatement.NotDefined) {
 		query.logDdl(id, jobId, ent, eventTime, ddlstatement.NotDefined, err, "Analyze")
 	}
 

@@ -60,7 +60,7 @@ func Test__Schema__Init(t *testing.T) {
 	if schema.GetTableCount() != 0 {
 		t.Errorf("Schema.Init() ==> GetTableCount() <> 0")
 	}
-	if schema.logStatment(ddlstatement.Create) != true {
+	if schema.logStatement(ddlstatement.Create) != true {
 		t.Errorf("Schema.Init() ==> logStatment() <> true")
 	}
 	//
