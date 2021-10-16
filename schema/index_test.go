@@ -52,6 +52,9 @@ func Test__Index__Init(t *testing.T) {
 	if elemi.GetFields() == nil {
 		t.Errorf("Index.Init() ==> fields cannot be null")
 	}
+	if elemi.logStatment(ddlstatement.Alter) != true {
+		t.Errorf("Index.Init() ==> logStatment() must be equal to true")
+	}
 }
 
 // test mappers Meta to Index, and Index to Meta
@@ -268,4 +271,16 @@ func Test__Index__GetDdl(t *testing.T) {
 		t.Errorf("Index.GetDdl(Drop) ==> should be equal to null")
 	}
 
+}
+
+func Test__Index__equal(t *testing.T) {
+	elemi0 := new(Index)
+	aarr := []string{"Gga", "Zorba", "testllk", "testllk22", "xxxxxx", "x44"}
+	elemi0.Init(21, "rel test", "hellkzae", aarr, false, true, false, true)
+	elemi1 := elemi0.Clone()
+
+	// positive test
+	if elemi1.equal(elemi0) != true {
+		t.Errorf("Index.equal() ==> {0} i0.equal(i1) must be equal to true")
+	}
 }

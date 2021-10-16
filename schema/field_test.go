@@ -492,3 +492,36 @@ func Test__Field__getSearchableDdl(t *testing.T) {
 	}
 
 }
+
+func Test__Field__equal(t *testing.T) {
+	elemf0 := new(Field)
+	elemf0.Init(11, "a_name", "AField Test", fieldtype.String, 10, "test default", true, false, false, true, true)
+	elemf1 := elemf0.Clone()
+
+	// positive test
+	if elemf0.equal(elemf1) == false {
+		t.Errorf("Field.equal() ==> f0.equal(f0.Clone()) must be equal to true")
+	}
+	// positive test - name comparison is not case sensitive
+	elemf0.setName("test")
+	elemf1 = elemf0.Clone()
+	elemf1.setName("tEst")
+	if elemf0.equal(elemf1) == false {
+		t.Errorf("Field.equal() ==> {0} f0.equal(f1) must be equal to true")
+	}
+
+	// negative test - size changed
+	elemf1 = elemf0.Clone()
+	elemf1.setSize(11)
+	if elemf0.equal(elemf1) == true {
+		t.Errorf("Field.equal() ==> {1} f0.equal(f1) must be equal to false")
+	}
+	// negative test - casesensitive
+	elemf0.setCaseSensitive(false)
+	elemf1 = elemf0.Clone()
+	elemf1.setCaseSensitive(true)
+	if elemf0.equal(elemf1) == true {
+		t.Errorf("Field.equal() ==> {2} f0.equal(f1) must be equal to false")
+	}
+
+}

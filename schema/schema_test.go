@@ -58,7 +58,10 @@ func Test__Schema__Init(t *testing.T) {
 		t.Errorf("Schema.Init() ==> Native language <> 'English'")
 	}
 	if schema.GetTableCount() != 0 {
-		t.Errorf("Schema.GetTableCount() ==> GetTableCount() <> 0")
+		t.Errorf("Schema.Init() ==> GetTableCount() <> 0")
+	}
+	if schema.logStatment(ddlstatement.Create) != true {
+		t.Errorf("Schema.Init() ==> logStatment() <> true")
 	}
 	//
 	var schema2 *Schema

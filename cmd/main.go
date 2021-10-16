@@ -42,8 +42,10 @@ func main() {
 	if metaSchema != nil {
 		fmt.Println(metaSchema.GetId())
 		var tableBook = metaSchema.GetTableByName("feat14")
-		fmt.Println(metaSchema.GetId())
-		fmt.Println(tableBook.GetId())
+		if tableBook != nil {
+			fmt.Println(metaSchema.GetId())
+			fmt.Println(tableBook.GetId())
+		}
 	}
 
 	rcd := new(data.Record)

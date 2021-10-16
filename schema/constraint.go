@@ -131,7 +131,7 @@ func (constr *constraint) getPhysicalName() string {
 		if constr.table.GetType() == tabletype.Mtm {
 
 			//TODO define fk name for MTM tables
-			result = constraintFkPrefix + strconv.FormatInt(int64(constr.relation.id), 10)
+			result = constraintFkPrefix + strconv.FormatInt(int64(constr.relation.GetId()), 10)
 			result += strings.ReplaceAll(constr.table.GetName(), mtmTableNamePrefix, "")
 
 		} else {
@@ -195,8 +195,8 @@ func (constr *constraint) getDdlCreateForeignKey() string {
 		case databaseprovider.PostgreSql, databaseprovider.MySql:
 			return strings.Trim(fmt.Sprintf(createFkPostGreSql, ddlstatement.Alter.String(), entitytype.Table.String(),
 				constr.table.GetPhysicalName(), constr.getPhysicalName(), constrainttype.ForeignKey.String(),
-				constr.relation.GetPhysicalName(provider), constr.relation.toTable.GetPhysicalName(),
-				constr.relation.toTable.GetPrimaryKey().GetPhysicalName(provider)), " ")
+				constr.relation.GetPhysicalName(provider), constr.relation.GetToTable().GetPhysicalName(),
+				constr.relation.GetToTable().GetPrimaryKey().GetPhysicalName(provider)), " ")
 		}
 	}
 	return ""
@@ -235,7 +235,7 @@ func (constr *constraint) getDdlCheck() string {
 	if provider == databaseprovider.PostgreSql && constr.field != nil && constr.field.GetType() == fieldtype.Byte {
 		var minValue = -128
 
-		if constr.table.tableType == tabletype.Meta && constr.field.name == metaObjectType {
+		if constr.table.tableType == tabletype.Meta && constr.field.GetName() == metaObjectType {
 			minValue = 0
 		}
 

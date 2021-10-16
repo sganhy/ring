@@ -91,6 +91,7 @@ const (
 	relationSeparator    string = "|"
 	mysqlParameterName   string = "?"
 	relationNotFound     int    = -1
+	crlf                 string = "\n"
 )
 
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
@@ -289,6 +290,15 @@ func (table *Table) GetRelationByName(name string) *Relation {
 			indexerLeft = indexerMiddle + 1
 		} else {
 			indexerRight = indexerMiddle - 1
+		}
+	}
+	return nil
+}
+
+func (table *Table) GetRelationByNameI(name string) *Relation {
+	for i := len(table.relations) - 1; i >= 0; i-- {
+		if strings.EqualFold(name, table.relations[i].name) {
+			return table.relations[i]
 		}
 	}
 	return nil
@@ -631,6 +641,15 @@ func (table *Table) Truncate(jobId int64) error {
 	metaQuery.Init(schema, table)
 	metaQuery.query = table.GetDdl(ddlstatement.Truncate, nil, nil)
 	return metaQuery.truncate(eventId, jobId, table)
+}
+
+func (table *Table) String() string {
+	var b strings.Builder
+	for i := 0; i < len(table.fields); i++ {
+		b.WriteString(table.fields[i].String())
+		b.WriteString(crlf)
+	}
+	return b.String()
 }
 
 //******************************
@@ -1393,13 +1412,43 @@ func (table *Table) exists() bool {
 	return cata.exists(schema, table)
 }
 
-// used during upgrade to detect table changes
+// used during upgrade to detect table physical changes
 func (tableA *Table) equal(tableB *Table) bool {
 	return tableA.fieldsEqual(tableB) && tableA.indexesEqual(tableB) && tableA.relationsEqual(tableB)
 }
 
 func (tableA *Table) fieldsEqual(tableB *Table) bool {
-	return strings.EqualFold(tableA.fieldList, tableB.fieldList)
+	if len(tableA.fields) != len(tableB.fields) {
+		return false
+	}
+	var fieldA *Field
+	var fieldB *Field
+	for i := 0; i < len(tableA.fields); i++ {
+		// id of field cannot change (create after creation)
+		fieldA = tableA.GetFieldIdByIndex(i)
+		fieldB = tableB.GetFieldIdByIndex(i)
+		if fieldA.equal(fieldB) == false {
+			return false
+		}
+	}
+	return true
+}
+
+// ==> O(n²) complexity
+func (tableA *Table) relationsEqual(tableB *Table) bool {
+	if len(tableA.relations) != len(tableB.relations) {
+		return false
+	}
+	var relationA *Relation
+	var relationB *Relation
+	for i := 0; i < len(tableA.relations); i++ {
+		relationA = tableA.relations[i]
+		relationB = tableB.GetRelationByNameI(relationA.name)
+		if relationB == nil || relationA.equal(relationB) == false {
+			return false
+		}
+	}
+	return true
 }
 
 func (tableA *Table) indexesEqual(tableB *Table) bool {
@@ -1408,31 +1457,6 @@ func (tableA *Table) indexesEqual(tableB *Table) bool {
 	//fmt.Println(indexListA)
 	indexListB := tableB.getIndexList()
 	return strings.EqualFold(indexListA, indexListB)
-}
-
-func (tableA *Table) relationsEqual(tableB *Table) bool {
-	// compare relations
-	relationListA := tableA.getRelationList()
-	relationListB := tableB.getRelationList()
-	return strings.EqualFold(relationListA, relationListB)
-}
-
-func (table *Table) getRelationList() string {
-	var sb strings.Builder
-
-	for i := 0; i < len(table.relations); i++ {
-		var relation = table.relations[i]
-		// name
-		sb.WriteString(relation.GetName())
-		sb.WriteString(relationSeparator)
-		// type
-		sb.WriteString(relation.GetType().String())
-		sb.WriteString(relationSeparator)
-		// has constraint
-		sb.WriteString(strconv.FormatBool(relation.HasConstraint()))
-	}
-
-	return sb.String()
 }
 
 func (table *Table) getIndexList() string {
@@ -1641,9 +1665,9 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 
 	// indexes
 	var indexedFields = []string{entryTime.GetName()}
-	idxEntryTime.Init(1, entryTime.name, "", indexedFields, false, false, true, true)
-	indexedFields = []string{jobId.name}
-	idxJobId.Init(2, jobId.name, "", indexedFields, false, false, true, true)
+	idxEntryTime.Init(1, entryTime.GetName(), "", indexedFields, false, false, true, true)
+	indexedFields = []string{jobId.GetName()}
+	idxJobId.Init(2, jobId.GetName(), "", indexedFields, false, false, true, true)
 	indexes = append(indexes, idxEntryTime)
 	indexes = append(indexes, idxJobId)
 

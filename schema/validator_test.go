@@ -251,6 +251,29 @@ func Test__Validator__tableSpaceValueValid(t *testing.T) {
 	}
 }
 
+func Test__Validator__tableNameUnique(t *testing.T) {
+	importFile := getMetaImportFile()
+	valid := new(validator)
+
+	tablespace := getTableMeta(importFile, false)
+	tablespace.objectType = int8(entitytype.Tablespace)
+	valid.tableNameUnique(importFile)
+
+	// positive test
+	if importFile.errorCount != 0 {
+		t.Errorf("validator.tableNameUnique() ==> importFile.errorCount <> 0")
+	}
+
+	// negative test
+	meta := getTableMeta(importFile, true)
+	importFile.metaList = append(importFile.metaList, meta)
+	valid.tableNameUnique(importFile)
+	if importFile.errorCount != 1 {
+		t.Errorf("validator.tableNameUnique() ==> importFile.errorCount <> 1")
+	}
+
+}
+
 func getMetaImportFile() *Import {
 	var result = new(Import)
 	schema := new(Schema)

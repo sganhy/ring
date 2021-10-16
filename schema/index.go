@@ -91,7 +91,6 @@ func (index *Index) logStatment(statment ddlstatement.DdlStatement) bool {
 //******************************
 // public methods
 //******************************
-
 func (index *Index) Clone() *Index {
 	newIndex := new(Index)
 
@@ -122,6 +121,14 @@ func (index *Index) String() string {
 //******************************
 // private methods
 //******************************
+
+// compare if the physical indexes are equal
+func (indexA *Index) equal(indexB *Index) bool {
+	return strings.Join(indexA.fields, metaIndexSeparator) == strings.Join(indexB.fields, metaIndexSeparator) &&
+		indexA.bitmap == indexB.bitmap &&
+		indexA.unique == indexB.unique
+}
+
 func (index *Index) getPhysicalName(table *Table) string {
 	var result strings.Builder
 	result.Grow(30)

@@ -143,10 +143,10 @@ func Test__Table__Init(t *testing.T) {
 	if table.logStatment(ddlstatement.Truncate) != true {
 		t.Errorf("Table.Init() ==>  logStatment(Alter) <> true")
 	}
-	if table.GetFieldIdByIndex(1).name != "schema_id" {
+	if table.GetFieldIdByIndex(1).GetName() != "schema_id" {
 		t.Errorf("Table.Init() ==>  GetFieldIdByIndex(1) <> 'schema_id'")
 	}
-	if table.GetFieldByIndex(2).name != "data_type" {
+	if table.GetFieldByIndex(2).GetName() != "data_type" {
 		t.Errorf("Table.Init() ==>  GetFieldByIndex(2) <> 'data_type'")
 	}
 
@@ -783,6 +783,49 @@ func Test__Table__getTable(t *testing.T) {
 	}
 	if table.GetEntityType() != entitytype.Table {
 		t.Errorf("Table.getTable() ==> GetEntityType() is diferent than entitytype.Table")
+	}
+
+}
+
+func Test__Table__equal(t *testing.T) {
+	schema := new(Schema)
+	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
+	table1 := schema.GetTableByName(metaTableName)
+	table2 := table1.Clone()
+
+	// positive test
+	if table1.equal(table2) == false {
+		t.Errorf("Table.equal() ==> {1} table1 <> table2")
+	}
+
+	// positive - modify case of a field name
+	table2 = table1.Clone()
+	field2 := table2.GetFieldByIndex(2)
+	field2.setName(strings.ToUpper(field2.name))
+	temp := make([]Field, len(table2.fields), len(table2.fields))
+	for i := 0; i < len(table2.fields); i++ {
+		temp[i] = *table2.fields[i]
+	}
+	table2.loadFields(temp, tabletype.Meta)
+	table2.loadMapper() // !!! load after loadFields()
+	if table1.equal(table2) == false {
+		t.Errorf("Table.equal() ==> {2} table1 <> table2")
+	}
+
+	// negative - change a field
+	table2 = table1.Clone()
+	field2 = table2.GetFieldByIndex(0)
+	field2.setSize(555)
+	if table1.equal(table2) == true {
+		t.Errorf("Table.equal() ==> {3} table1 == table2")
+	}
+
+	// negative - add a field
+	table2 = table1.Clone()
+	field2 = table2.GetFieldByIndex(0)
+	table2.fields = append(table2.fields, field2.Clone())
+	if table1.equal(table2) == true {
+		t.Errorf("Table.equal() ==> {4} table1 == table2")
 	}
 
 }

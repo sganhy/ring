@@ -60,7 +60,7 @@ const (
 	mySqlVarcharMaxSize        uint16 = 65535
 	sqliteVarcharMaxSize       int64  = 1000000000
 	searchableFieldPrefix      string = "s_"
-	fieldToStringFormat        string = "name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
+	fieldToStringFormat        string = "id=%d; name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
 )
 
 var (
@@ -94,8 +94,6 @@ var (
 		fieldtype.DateTime:      "TIMESTAMP",
 		fieldtype.LongDateTime:  "TIMESTAMP"}
 )
-
-// sql key words ==> SQL:2003,SQL:1999,SQL-92, and PostgreSQL
 
 func init() {
 	//64
@@ -188,6 +186,14 @@ func (field *Field) setType(fieldType fieldtype.FieldType) {
 
 func (field *Field) setName(name string) {
 	field.name = name
+}
+
+func (field *Field) setSize(size uint16) {
+	field.size = size
+}
+
+func (field *Field) setCaseSensitive(caseSensitive bool) {
+	field.caseSensitive = caseSensitive
 }
 
 //******************************
@@ -308,7 +314,7 @@ func (field *Field) String() string {
 	if field.fieldType == fieldtype.String && field.size > 0 {
 		fieldTyp += fmt.Sprintf("(%d)", field.size)
 	}
-	return fmt.Sprintf(fieldToStringFormat, field.name, field.description, fieldTyp, field.defaultValue, field.baseline,
+	return fmt.Sprintf(fieldToStringFormat, field.id, field.name, field.description, fieldTyp, field.defaultValue, field.baseline,
 		field.notNull, field.caseSensitive, field.multilingual, field.active)
 }
 
@@ -361,6 +367,14 @@ func (field *Field) getSearchableDdl(provider databaseprovider.DatabaseProvider,
 	}
 	return strings.TrimSpace(field.getPhysicalName(provider, field.getSearchableFieldName()+" "+
 		field.getSqlDataType(provider)))
+}
+
+// compare if the physical fields are equal
+func (fieldA *Field) equal(fieldB *Field) bool {
+	return strings.EqualFold(fieldA.name, fieldB.name) &&
+		fieldA.size == fieldB.size &&
+		fieldA.fieldType == fieldB.fieldType &&
+		fieldA.caseSensitive == fieldB.caseSensitive
 }
 
 func (field *Field) getSearchableFieldName() string {

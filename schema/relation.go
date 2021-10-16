@@ -157,6 +157,14 @@ func (relation *Relation) GetTableId() int32 {
 //******************************
 // private methods
 //******************************
+
+// compare if the physical relations are equal
+func (relationA *Relation) equal(relationB *Relation) bool {
+	return strings.EqualFold(relationA.name, relationB.name) &&
+		relationA.constraint == relationB.constraint &&
+		relationA.relationType == relationB.relationType
+}
+
 func (relation *Relation) toField() *Field {
 	if relation.toTable != nil {
 		targetPrimaryKey := relation.toTable.GetPrimaryKey()
