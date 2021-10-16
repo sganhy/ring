@@ -408,6 +408,8 @@ func (metaData *meta) updateMetaList(schemaId int32, metaList []*meta, dico []ma
 					fmt.Println("== UPDATE META ==")
 					fmt.Println(currMeta.String())
 				*/
+				fmt.Println("== UPDATE META ==")
+				fmt.Println(currMeta.String())
 				queryUpdate.updateMeta(currMeta, schemaId)
 				count++
 			}

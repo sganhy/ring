@@ -429,7 +429,7 @@ func Test__Field__GetValue(t *testing.T) {
 	elemf0 := new(Field)
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Int, 5, "test default", true, false, false, true, true)
 
-	//*** test 1
+	//*** test 1 - int32
 	value, err := elemf0.GetValue("2222")
 	if value != "2222" {
 		t.Errorf("Field.GetValue() ==> GetValue('2222') must be equal to '2222'")
@@ -437,7 +437,7 @@ func Test__Field__GetValue(t *testing.T) {
 	if err != nil {
 		t.Errorf("Field.GetValue() ==> GetValue('2222') error must be equal to null")
 	}
-	//*** test 2
+	//*** test 2 - int32
 	value, err = elemf0.GetValue("22222222222222")
 	if value != invalidValue {
 		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') must be equal to invalidValue")
@@ -445,25 +445,25 @@ func Test__Field__GetValue(t *testing.T) {
 	if err.Error() != errorInvalidValueType {
 		t.Errorf("Field.GetValue() ==> GetValue('22222222222222') error must be equal to null to '%s'", errorInvalidValueType)
 	}
-	//*** test 3
+	//*** test 3 - int64
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Long, 5, "test default", true, false, false, true, true)
 	value, err = elemf0.GetValue("-9223372036854775808")
 	if value != "-9223372036854775808" {
 		t.Errorf("Field.GetValue() ==> GetValue('-9223372036854775808') must be equal to '-9223372036854775808'")
 	}
-	//*** test 4
+	//*** test 4 - bool
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.Boolean, 5, "test default", true, false, false, true, true)
 	value, err = elemf0.GetValue("true")
 	if value != "true" {
 		t.Errorf("Field.GetValue() ==> GetValue('true') must be equal to 'true'")
 	}
-	//*** test 5
+	//*** test 5 - bool
 	value, err = elemf0.GetValue("22222")
 	if value != invalidValue {
 		t.Errorf("Field.GetValue() ==> GetValue('22222') must be equal to invalidValue")
 	}
 
-	//*** test 6
+	//*** test 6 - string
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.String, 10, "test default", true, false, false, true, true)
 	value, err = elemf0.GetValue("01234567890")
 	if value != "0123456789" {
@@ -474,6 +474,22 @@ func Test__Field__GetValue(t *testing.T) {
 		t.Errorf("Field.GetValue() ==> GetValue('0123456789') must be equal to '0123456789'")
 	}
 
+	//*** test 7 - dateTime
+	elemf0.Init(11, "aName Test", "AField Test", fieldtype.DateTime, 10, "test default", true, false, false, true, true)
+	value, err = elemf0.GetValue("2020-04-30T00:00:00.000Z")
+	if value != "2020-04-29T22:00:00.000" {
+		t.Errorf("Field.GetValue() ==> GetValue('2020-04-30T00:00:00.000Z') must be equal to '2020-04-29T22:00:00.000'")
+	}
+}
+
+func Test__Field__IsValueValid(t *testing.T) {
+	elemf0 := new(Field)
+	elemf0.Init(11, "a_name", "AField Test", fieldtype.NotDefined, 10, "test default", true, false, false, true, true)
+
+	// get default validation should be equal to false
+	if elemf0.IsValueValid("00") != false {
+		t.Errorf("Field.IsValueValid() ==> IsValueValid('00') must be equal to false")
+	}
 }
 
 func Test__Field__getSearchableDdl(t *testing.T) {

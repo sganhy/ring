@@ -1101,15 +1101,17 @@ func (table *Table) drop(jobId int64) error {
 }
 
 func (newTable *Table) alter(jobId int64, currentTable *Table) error {
+
 	if newTable.fieldsEqual(currentTable) == false {
 		newTable.alterFields(jobId, currentTable)
-	}
-	if newTable.indexesEqual(currentTable) == false {
-		newTable.alterIndexes(jobId, currentTable)
 	}
 	//TODO alter relation type!!!
 	if newTable.relationsEqual(currentTable) == false {
 		newTable.alterRelations(jobId, currentTable)
+	}
+	//!!! indexes after fields and relationships
+	if newTable.indexesEqual(currentTable) == false {
+		newTable.alterIndexes(jobId, currentTable)
 	}
 	return nil
 }
@@ -1124,6 +1126,7 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 	newProvider := newTable.GetDatabaseProvider()
 	currentProvider := currentTable.GetDatabaseProvider()
 
+	// build dico
 	for i := 0; i < len(newTable.fields); i++ {
 		newDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newProvider))] =
 			newTable.fields[i]
@@ -1135,17 +1138,17 @@ func (newTable *Table) alterFields(jobId int64, currentTable *Table) error {
 	// add new fields
 	for i := 0; i < len(newTable.fields); i++ {
 		if _, ok := curDico[strings.ToUpper(newTable.fields[i].GetPhysicalName(newProvider))]; !ok {
-			currentTable.addField(jobId, newTable.fields[i])
+			newTable.addField(jobId, currentTable, newTable.fields[i])
 		}
 	}
 	// drop obsolete fields
 	for i := 0; i < len(currentTable.fields); i++ {
 		if _, ok := newDico[strings.ToUpper(currentTable.fields[i].GetPhysicalName(currentProvider))]; !ok {
 			// be sure field is available into currentTable
-			currentTable.dropField(jobId, currentTable.fields[i])
+			newTable.dropField(jobId, currentTable, currentTable.fields[i])
 		}
 	}
-	//TODO modify fields
+	//TODO alter fields
 	return nil
 }
 
@@ -1201,74 +1204,79 @@ func (newTable *Table) alterRelations(jobId int64, currentTable *Table) error {
 	// add new relations
 	for i := 0; i < len(newTable.relations); i++ {
 		if _, ok := curDico[strings.ToUpper(newTable.relations[i].GetPhysicalName(newProvider))]; !ok {
-			currentTable.addRelation(jobId, newTable.relations[i])
+			newTable.addRelation(jobId, currentTable, newTable.relations[i])
 		}
 	}
 	// drop obsolete relations
 	for i := 0; i < len(currentTable.relations); i++ {
 		if _, ok := newDico[strings.ToUpper(currentTable.relations[i].GetPhysicalName(currentProvider))]; !ok {
 			// be sure field is available into currentTable
-			currentTable.dropRelation(jobId, currentTable.relations[i])
+			newTable.dropRelation(jobId, currentTable, currentTable.relations[i])
 		}
 	}
-	//TODO modify relations
+	//TODO alter relations
 	return err
 }
 
-func (table *Table) dropField(jobId int64, field *Field) error {
-	var queryRmv = metaQuery{}
-	var schema = table.getSchema()
+func (newTable *Table) dropField(jobId int64, currentTable *Table, field *Field) error {
+	var queryRmv = new(metaQuery)
+	var schema = currentTable.getSchema()
 	var err error
 	var eventId int32 = 43
 
-	queryRmv.Init(schema, table)
-	queryRmv.query = table.GetDdl(ddlstatement.Alter, nil, field)
+	queryRmv.Init(schema, currentTable)
+	queryRmv.query = currentTable.GetDdl(ddlstatement.Alter, nil, field)
 
 	// alter table add field
-	err = queryRmv.alter(eventId, jobId, table, field)
+	err = queryRmv.alter(eventId, jobId, currentTable, field)
 
 	// searchable field?
 	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
 		// generate ddl query 4 searchable field
-		tableCopy := table.Clone()
+		tableCopy := currentTable.Clone()
 		searchableField := tableCopy.GetFieldByName(field.GetName())
 		searchableField.setName(field.getSearchableFieldName())
 		tableCopy.sortFields() // sort fields
-
+		queryRmv = new(metaQuery)
+		queryRmv.Init(schema, tableCopy)
 		queryRmv.query = tableCopy.GetDdl(ddlstatement.Alter, nil, searchableField)
-		err = queryRmv.alter(eventId, jobId, table, field)
+		err = queryRmv.alter(eventId, jobId, currentTable, searchableField)
 	}
 	return err
 }
 
-func (table *Table) addField(jobId int64, field *Field) error {
+func (newTable *Table) addField(jobId int64, currentTable *Table, field *Field) error {
 
-	var metaquery = metaQuery{}
-	var schema = table.getSchema()
+	var metaquery = new(metaQuery)
+	var schema = currentTable.getSchema()
 	var err error
 	var eventId int32 = 41
 
-	metaquery.Init(schema, table)
-	metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
+	metaquery.Init(schema, newTable)
+	metaquery.query = currentTable.GetDdl(ddlstatement.Alter, nil, field)
 
 	// alter table add field
-	err = metaquery.alter(eventId, jobId, table, field)
+	err = metaquery.alter(eventId, jobId, newTable, field)
 
 	// searchable field?
 	if err == nil && field.GetType() == fieldtype.String && field.IsCaseSensitive() == false {
-		searchableField := field.Clone()
+		tableCopy := newTable.Clone()
+		searchableField := tableCopy.GetFieldByName(field.GetName())
 		searchableField.setName(field.getSearchableFieldName())
-		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, searchableField)
-		err = metaquery.alter(eventId, jobId, table, field)
+		tableCopy.sortFields() // sort fields
+		metaquery = new(metaQuery)
+		metaquery.Init(schema, tableCopy)
+		metaquery.query = currentTable.GetDdl(ddlstatement.Alter, nil, searchableField)
+		err = metaquery.alter(eventId, jobId, newTable, searchableField)
 	}
 
 	return err
 }
 
-func (table *Table) dropRelation(jobId int64, relation *Relation) error {
+func (newTable *Table) dropRelation(jobId int64, currentTable *Table, relation *Relation) error {
 	var relationType = relation.GetType()
 	if relationType == relationtype.Mto || relationType == relationtype.Otop {
-		return table.dropField(jobId, relation.toField())
+		return newTable.dropField(jobId, currentTable, relation.toField())
 	}
 	if relationType == relationtype.Mtm {
 		// avoid two drops on mtm table take min relation id
@@ -1279,9 +1287,9 @@ func (table *Table) dropRelation(jobId int64, relation *Relation) error {
 	return nil
 }
 
-func (table *Table) addRelation(jobId int64, relation *Relation) error {
+func (newTable *Table) addRelation(jobId int64, currentTable *Table, relation *Relation) error {
 	var metaquery = metaQuery{}
-	var schema = table.getSchema()
+	var schema = currentTable.getSchema()
 	var logger = schema.getLogger()
 	var foreignKeyConstraint = new(constraint)
 	var notNullConstraint = new(constraint)
@@ -1289,13 +1297,13 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 	var eventId int32 = 45
 	var err error
 
-	metaquery.Init(schema, table)
+	metaquery.Init(schema, newTable)
 
 	if relationType == relationtype.Mto || relationType == relationtype.Otop {
 		var field = relation.toField()
-		metaquery.query = table.GetDdl(ddlstatement.Alter, nil, field)
+		metaquery.query = currentTable.GetDdl(ddlstatement.Alter, nil, field)
 		// alter table add relation
-		err = metaquery.alter(eventId, jobId, table, field)
+		err = metaquery.alter(eventId, jobId, currentTable, field)
 	} else if relationType == relationtype.Mtm && relation.GetMtmTable().exists() == false {
 		relation.GetMtmTable().create(jobId)
 		relation.GetMtmTable().createConstraints(jobId, schema)
@@ -1305,8 +1313,8 @@ func (table *Table) addRelation(jobId int64, relation *Relation) error {
 		return nil
 	}
 
-	foreignKeyConstraint.Init(constrainttype.ForeignKey, table)
-	notNullConstraint.Init(constrainttype.NotNull, table)
+	foreignKeyConstraint.Init(constrainttype.ForeignKey, newTable)
+	notNullConstraint.Init(constrainttype.NotNull, newTable)
 	foreignKeyConstraint.setRelation(relation)
 	notNullConstraint.setRelation(relation)
 

@@ -27,7 +27,11 @@ const (
 )
 
 type validator struct {
-	errorCount int
+	errorCount    int
+	fieldCount    int
+	relationCount int
+	tableCount    int
+	indexCount    int
 }
 
 func (valid *validator) Init() {
@@ -51,6 +55,9 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 		valid.errorCount++
 		return false
 	}
+
+	//{0} - step0
+	valid.loadStats(importFile)
 
 	//{1} - step1
 	valid.tableIdUnique(importFile)
@@ -92,6 +99,32 @@ func (valid *validator) ValidateImport(importFile *Import) bool {
 //******************************
 // private methods
 //******************************
+func (valid *validator) loadStats(importFile *Import) {
+	var metaList = importFile.metaList
+	valid.tableCount = 0
+	valid.fieldCount = 0
+	valid.relationCount = 0
+	valid.indexCount = 0
+
+	for i := 0; i < len(metaList); i++ {
+		metaData := metaList[i]
+		switch metaData.GetEntityType() {
+		case entitytype.Table:
+			valid.tableCount++
+			break
+		case entitytype.Field:
+			valid.fieldCount++
+			break
+		case entitytype.Relation:
+			valid.relationCount++
+			break
+		case entitytype.Index:
+			valid.indexCount++
+			break
+		}
+	}
+}
+
 func (valid *validator) tableIdUnique(importFile *Import) {
 	var metaList = importFile.metaList
 	var dico map[int32][]*meta
@@ -423,9 +456,9 @@ func (valid *validator) tableValueValid(importFile *Import) {
 // Check if indexes reference existing fields
 func (valid *validator) indexValid(importFile *Import) {
 	var metaList = importFile.metaList
-	// Upper(field)+Refid string
+	// field name+Refid string
 	var dicoField map[string]bool
-	dicoField = make(map[string]bool)
+	dicoField = make(map[string]bool, valid.fieldCount)
 
 	// (1) generate dictionary
 	for i := 0; i < len(metaList); i++ {
