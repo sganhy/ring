@@ -534,6 +534,7 @@ func (field *Field) getDateTimeIso8601(value string) (*time.Time, error) {
 	var t time.Time
 	var e error
 
+	//fmt.Println("getDateTimeIso8601()")
 	//short format
 	// YYYY-MM-DD
 	if len(value) >= 10 {
@@ -547,6 +548,7 @@ func (field *Field) getDateTimeIso8601(value string) (*time.Time, error) {
 			return nil, e
 		}
 		if strings.Contains(value, "Z") || strings.Contains(value, "-") || strings.Contains(value, "+") {
+			//TODO WRONG way!!!
 			_, offset := time.Now().Zone()
 			t = t.Add(time.Second * time.Duration(offset*-1))
 		}

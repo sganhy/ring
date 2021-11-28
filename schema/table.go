@@ -72,13 +72,22 @@ const (
 	metaLogTableName     string = "@log"
 	metaLogThreadId      string = "thread_id"
 	metaName             string = "name"
+	metaUuid             string = "uuid"
+	metaLexTableId       string = "table_id"
+	metaLexFromFieldId   string = "source_field_id"
+	metaLexToFieldId     string = "target_field_id"
+	metaLexRelationId    string = "relation_id"
+	metaLexRelationValue string = "relation_value"
+	metaLexModifyStmp    string = "modify_stmp"
 	metaObjectType       string = "object_type"
 	metaReferenceId      string = "reference_id"
 	metaSchemaId         string = "schema_id"
 	metaTableName        string = "@meta"
 	metaIdTableName      string = "@meta_id"
+	metaLexTableName     string = "@lexicon"
 	metaLongTableName    string = "@long"
 	metaValue            string = "value"
+	metaDataModifyStmp   string = "modify_stmp"
 	metaActive           string = "active"
 	postGreAddColumn     string = "ADD"
 	postGreDropColumn    string = "DROP"
@@ -340,7 +349,8 @@ func (table *Table) GetRelationIndexByName(name string) int {
 }
 
 func (table *Table) GetPrimaryKey() *Field {
-	if len(table.fields) > 0 && table.tableType == tabletype.Business {
+	if len(table.fields) > 0 && (table.tableType == tabletype.Business ||
+		table.tableType == tabletype.Lexicon) {
 		return table.fields[table.mapper[0]]
 	}
 	return nil
@@ -779,7 +789,7 @@ func (table *Table) getUniqueFieldList() string {
 	// capacity
 	var b strings.Builder
 	switch table.tableType {
-	case tabletype.Business:
+	case tabletype.Business, tabletype.Lexicon:
 		b.WriteString(table.GetPrimaryKey().GetPhysicalName(table.provider))
 		break
 	case tabletype.Meta:
@@ -1080,7 +1090,7 @@ func (table *Table) create(jobId int64) error {
 	if table.tableType != tabletype.Mtm {
 		var primaryKey = new(constraint)
 		var logger = schema.getLogger()
-		primaryKey.Init(constrainttype.PrimaryKey, table)
+		primaryKey.Init(constrainttype.PrimaryKey, table, nil, nil)
 		err := primaryKey.create(jobId, schema)
 		if err != nil {
 			logger.Error(-1, 0, err)
@@ -1314,10 +1324,8 @@ func (newTable *Table) addRelation(jobId int64, currentTable *Table, relation *R
 		return nil
 	}
 
-	foreignKeyConstraint.Init(constrainttype.ForeignKey, newTable)
-	notNullConstraint.Init(constrainttype.NotNull, newTable)
-	foreignKeyConstraint.setRelation(relation)
-	notNullConstraint.setRelation(relation)
+	foreignKeyConstraint.Init(constrainttype.ForeignKey, newTable, nil, relation)
+	notNullConstraint.Init(constrainttype.NotNull, newTable, nil, relation)
 
 	if relation.HasConstraint() == true {
 		err := foreignKeyConstraint.create(jobId, schema)
@@ -1357,9 +1365,9 @@ func (table *Table) createConstraints(jobId int64, schema *Schema) {
 
 func (table *Table) createFieldConstraints(jobId int64, schema *Schema) {
 	var checkConstraint = new(constraint)
-	checkConstraint.Init(constrainttype.Check, table)
+	checkConstraint.Init(constrainttype.Check, table, nil, nil)
 	var notNullConstraint = new(constraint)
-	notNullConstraint.Init(constrainttype.NotNull, table)
+	notNullConstraint.Init(constrainttype.NotNull, table, nil, nil)
 	var logger = schema.getLogger()
 
 	// not null constraints
@@ -1385,8 +1393,8 @@ func (table *Table) createRelationConstraints(jobId int64, schema *Schema) {
 	var notNullConstraint = new(constraint)
 	var logger = schema.getLogger()
 
-	foreignKeyConstraint.Init(constrainttype.ForeignKey, table)
-	notNullConstraint.Init(constrainttype.NotNull, table)
+	foreignKeyConstraint.Init(constrainttype.ForeignKey, table, nil, nil)
+	notNullConstraint.Init(constrainttype.NotNull, table, nil, nil)
 
 	// foreign Key constraints
 	for i := 0; i < len(table.relations); i++ {
@@ -1686,6 +1694,75 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 
 	result.Init(int32(tabletype.Log), metaLogTableName, "", fields, relations, indexes, physicaltype.Table, 0, schemaPhysicalName,
 		tabletype.Log, provider, "", false, false, true, true)
+	return result
+}
+
+func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+	var result = new(Table)
+	var idxUuid = Index{}
+	var idxUk = Index{}
+	var id = Field{}
+	var schemaId = Field{}
+	var name = Field{}
+	var description = Field{}
+	var uuid = Field{}
+	var tableId = Field{}
+	var fromFieldId = Field{}
+	var toFieldId = Field{}
+	var relationId = Field{}
+	var relationValue = Field{}
+	var updateStmp = Field{}
+	var active = Field{}
+
+	id.Init(5441, metaLogId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	schemaId.Init(5449, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	name.Init(5477, metaName, "", fieldtype.String, 80, "", true, true, false, false, true)
+	description.Init(5483, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
+	uuid.Init(5503, metaUuid, "", fieldtype.String, 36, "", true, true, false, false, true)
+	tableId.Init(5519, metaLexTableId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	fromFieldId.Init(5527, metaLexFromFieldId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	toFieldId.Init(5557, metaLexToFieldId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	relationId.Init(5569, metaLexRelationId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	relationValue.Init(5581, metaLexRelationValue, "", fieldtype.Long, 0, "", true, false, true, false, true)
+	updateStmp.Init(5623, metaLexModifyStmp, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
+	active.Init(5641, metaActive, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
+
+	fields = append(fields, id)            //1
+	fields = append(fields, schemaId)      //2
+	fields = append(fields, name)          //3
+	fields = append(fields, description)   //4
+	fields = append(fields, uuid)          //5
+	fields = append(fields, tableId)       //6
+	fields = append(fields, fromFieldId)   //7
+	fields = append(fields, toFieldId)     //8
+	fields = append(fields, relationId)    //9
+	fields = append(fields, relationValue) //10
+	fields = append(fields, updateStmp)    //11
+	fields = append(fields, active)        //12
+
+	/*
+	   -----
+	   unique key(1)      guid
+	   unique key(2)      schema_id, table_id, from_field_id, to_field_id,relation_id, relation_value
+	*/
+
+	// indexes
+	var indexedUuidFields = []string{uuid.GetName()}
+	idxUuid.Init(1, uuid.GetName(), "", indexedUuidFields, false, true, true, true)
+
+	var indexedUkFields = []string{schemaId.GetName(), tableId.GetName(), fromFieldId.GetName(),
+		toFieldId.GetName(), relationId.GetName(), relationValue.GetName()}
+	idxUk.Init(2, schemaId.GetName(), "", indexedUkFields, false, true, true, true)
+
+	indexes = append(indexes, idxUuid)
+	indexes = append(indexes, idxUk)
+
+	result.Init(int32(tabletype.Lexicon), metaLexTableName, "", fields, relations, indexes, physicaltype.Table,
+		0, schemaPhysicalName, tabletype.Lexicon, provider, "", false, false, true, true)
+
 	return result
 }
 

@@ -19,7 +19,7 @@ func Test__Constraint__Init(t *testing.T) {
 	//======================
 	// === PRIMARY KEY
 	constr := new(constraint)
-	constr.Init(constrainttype.PrimaryKey, metaTable)
+	constr.Init(constrainttype.PrimaryKey, metaTable, nil, nil)
 
 	if constr.GetEntityType() != entitytype.Constraint {
 		t.Errorf("Constraint.Init() ==> entityType must be equal to " + entitytype.Constraint.String())
@@ -46,7 +46,7 @@ func Test__Constraint__getDdlCreatePrimaryKey(t *testing.T) {
 	//======================
 	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	constr := new(constraint)
-	constr.Init(constrainttype.PrimaryKey, metaTable)
+	constr.Init(constrainttype.PrimaryKey, metaTable, nil, nil)
 	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"pk_@meta\" PRIMARY KEY (id,schema_id,object_type,reference_id)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCreatePrimaryKey() ==> query must be equal to " + expectedSql)
@@ -57,7 +57,7 @@ func Test__Constraint__getDdlCreatePrimaryKey(t *testing.T) {
 	//======================
 	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
 	constr = new(constraint)
-	constr.Init(constrainttype.PrimaryKey, metaTable)
+	constr.Init(constrainttype.PrimaryKey, metaTable, nil, nil)
 	expectedSql = "ALTER TABLE information_schema.`@meta` ADD CONSTRAINT `pk_@meta` PRIMARY KEY (id,schema_id,object_type,reference_id)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlCreatePrimaryKey() ==> query must be equal to " + expectedSql)
@@ -66,7 +66,7 @@ func Test__Constraint__getDdlCreatePrimaryKey(t *testing.T) {
 	//==== constraint type not defined
 	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
 	constr = new(constraint)
-	constr.Init(constrainttype.NotDefined, metaTable)
+	constr.Init(constrainttype.NotDefined, metaTable, nil, nil)
 	expectedSql = ""
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.GetDdl() ==> query must be empty ")
@@ -81,7 +81,7 @@ func Test__Constraint__getDdlNotNull(t *testing.T) {
 	//======================
 	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	constr := new(constraint)
-	constr.Init(constrainttype.NotNull, metaTable)
+	constr.Init(constrainttype.NotNull, metaTable, nil, nil)
 	constr.setField(metaTable.GetFieldByName("reference_id"))
 	expectedSql := "ALTER TABLE information_schema.\"@meta\" ALTER COLUMN reference_id SET NOT NULL"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
@@ -92,7 +92,7 @@ func Test__Constraint__getDdlNotNull(t *testing.T) {
 	//==== testing MySql
 	//======================
 	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
-	constr.Init(constrainttype.NotNull, metaTable)
+	constr.Init(constrainttype.NotNull, metaTable, nil, nil)
 	constr.setField(metaTable.GetFieldByName("reference_id"))
 	expectedSql = "ALTER TABLE information_schema.`@meta` MODIFY reference_id INT(11) NOT NULL"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
@@ -135,7 +135,7 @@ func Test__Constraint__getDdlCreateForeignKey(t *testing.T) {
 	//==== testing PostgreSql
 	//======================
 	elemt01.setDatabaseProvider(databaseprovider.PostgreSql)
-	constr.Init(constrainttype.ForeignKey, &elemt01)
+	constr.Init(constrainttype.ForeignKey, &elemt01, nil, nil)
 	constr.setRelation(elemt01.relations[0])
 	expectedSql := "ALTER TABLE information_schema.t_table_a ADD CONSTRAINT fk_00022_00025 FOREIGN KEY (relation_to_B) REFERENCES t_table_b (id)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
@@ -150,7 +150,7 @@ func Test__Constraint__getDdlCheck(t *testing.T) {
 	//======================
 	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "information_schema")
 	constr := new(constraint)
-	constr.Init(constrainttype.Check, metaTable)
+	constr.Init(constrainttype.Check, metaTable, nil, nil)
 	constr.setField(metaTable.GetFieldByName("object_type"))
 	expectedSql := "ALTER TABLE information_schema.\"@meta\" ADD CONSTRAINT \"ck_@meta_1019\" CHECK (object_type BETWEEN 0 AND 127)"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
@@ -169,7 +169,7 @@ func Test__Constraint__getPhysicalName(t *testing.T) {
 	table.setName("test_test")
 	expectedValue := "pk_test_test"
 	constr := new(constraint)
-	constr.Init(constrainttype.PrimaryKey, table)
+	constr.Init(constrainttype.PrimaryKey, table, nil, nil)
 	if constr.getPhysicalName() != expectedValue {
 		t.Errorf("Constraint.getPhysicalName() ==> physical name must be equal to " + expectedValue)
 	}

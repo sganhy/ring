@@ -33,9 +33,11 @@ const (
 	createCkPostGreSql      string = "%s %s %s ADD CONSTRAINT %s CHECK (%s BETWEEN %d AND 127)"
 )
 
-func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *Table) {
+func (constr *constraint) Init(consttype constrainttype.ConstraintType, table *Table, field *Field, relation *Relation) {
 	constr.constType = consttype
 	constr.table = table
+	constr.field = field
+	constr.relation = relation
 }
 
 //******************************
@@ -83,10 +85,17 @@ func (constr *constraint) GetDdl(statment ddlstatement.DdlStatement, tableSpace 
 	return ""
 }
 
+func (constr *constraint) Clone() *constraint {
+	newConstraint := new(constraint)
+	newConstraint.Init(constr.constType, constr.table, constr.field, constr.relation)
+	return newConstraint
+}
+
 //******************************
 // private methods
 //******************************
 func (constr *constraint) create(jobId int64, schema *Schema) error {
+	var err error
 	if constr.constType == constrainttype.NotNull && constr.table.GetType() == tabletype.Business {
 		// do nothing for busines tables
 		return nil
@@ -103,9 +112,12 @@ func (constr *constraint) create(jobId int64, schema *Schema) error {
 		metaQuery.query = query
 		metaQuery.Init(schema, constr.table)
 		// create table
-		return metaQuery.create(eventId, jobId, constr)
+		err = metaQuery.create(eventId, jobId, constr)
+		if err == nil {
+			err = constr.createOnSearchable(jobId, schema)
+		}
 	}
-	return nil
+	return err
 }
 
 func (constr *constraint) getPhysicalName() string {
@@ -156,12 +168,11 @@ func (constr *constraint) getCheckName() string {
 		result = constraintCkPrefix + strconv.Itoa(int(constr.table.GetId())) + "_" +
 			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break
-	case tabletype.Meta, tabletype.MetaId, tabletype.Log:
+	case tabletype.Meta, tabletype.MetaId, tabletype.Log, tabletype.Lexicon:
 		//name: ck_{table_name}_{field_id}
 		result = constraintCkPrefix + constr.table.GetName() + "_" +
 			sqlfmt.PadLeft(strconv.Itoa(int(constr.field.GetId())), "0", 4)
 		break
-
 	}
 	return result
 }
@@ -246,4 +257,17 @@ func (constr *constraint) getDdlCheck() string {
 
 	}
 	return ""
+}
+
+func (constr *constraint) createOnSearchable(jobId int64, schema *Schema) error {
+	if constr.constType == constrainttype.NotNull && constr.field != nil && constr.table != nil &&
+		constr.field.IsCaseSensitive() == false && constr.field.GetType() == fieldtype.String {
+		var searchableField = constr.field.Clone()
+		searchableField.setCaseSensitive(true) // avoid infinite loop
+		searchableField.setName(constr.field.getSearchableFieldName())
+		var newConstraint = constr.Clone()
+		newConstraint.setField(searchableField)
+		return newConstraint.create(jobId, schema)
+	}
+	return nil
 }

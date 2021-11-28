@@ -253,6 +253,7 @@ func (valid *validator) duplicateMetaKey(importFile *Import) {
 			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d", strings.ToLower(metaData.GetEntityType().String()),
 				metaData.refId, metaData.id)
 
+			fmt.Println("ERROR: " + description)
 			importFile.logErrorStr(527, message, description)
 		} else {
 			dicoEntities[metaKey] = true
@@ -293,7 +294,6 @@ func (valid *validator) fieldNameUnique(importFile *Import) {
 			}
 		}
 	}
-
 }
 
 func (valid *validator) joinMeta(metaList []*meta, operation int) string {
@@ -333,7 +333,7 @@ func (valid *validator) languageCodeValid(importFile *Import) {
 		metaType := metaData.GetEntityType()
 
 		if metaType == entitytype.Language {
-			_, err := lang.IsCodeValid(metaData.value)
+			_, err := lang.IsCodeValid(metaData.name)
 			if err != nil {
 				importFile.logErrorStr(549, "Invalid language code", err.Error())
 			}

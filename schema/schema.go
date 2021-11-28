@@ -746,6 +746,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaTable = table.getMetaTable(provider, physicalName)
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
 	var metaLogTable = table.getLogTable(provider, physicalName)
+	var metaLexiconTable = table.getLexicon(provider, physicalName)
 	var metaLongTable = table.getLongTable()
 	var param = new(parameter)
 	var ver = new(version)
@@ -756,6 +757,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, metaIdTable)
 	tables = append(tables, metaLogTable)
 	tables = append(tables, metaLongTable)
+	tables = append(tables, metaLexiconTable)
 
 	parameters = append(parameters, *param.getCreationTimeParameter(schemaId, schemaId, entitytype.Schema))
 	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.String()))
@@ -836,8 +838,11 @@ func (schema *Schema) getConnectionString(metaList []meta, disablePool bool) str
 	return result
 }
 
+// save meta schema
 func (schema *Schema) toMeta() []*meta {
 	var metaList = make([]*meta, 0, 100)
+	var language = Language{}
+
 	for _, table := range schema.tables {
 		metaList = append(metaList, table.toMeta())
 		for _, field := range table.fields {
@@ -849,6 +854,10 @@ func (schema *Schema) toMeta() []*meta {
 		for _, relation := range table.relations {
 			metaList = append(metaList, relation.toMeta(table.id))
 		}
+
+	}
+	for _, language := range language.getList() {
+		metaList = append(metaList, language.toMeta())
 	}
 	return metaList
 }
