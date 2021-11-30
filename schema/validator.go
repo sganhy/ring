@@ -250,10 +250,11 @@ func (valid *validator) duplicateMetaKey(importFile *Import) {
 		if _, ok := dicoEntities[metaKey]; ok {
 			// error duplicate meta key
 			var message = fmt.Sprintf("Duplicate meta key")
-			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d", strings.ToLower(metaData.GetEntityType().String()),
-				metaData.refId, metaData.id)
+			var description = fmt.Sprintf("duplicate meta key (type=%s): refid=%d, id=%d, ,name=%s",
+				strings.ToLower(metaData.GetEntityType().String()),
+				metaData.refId, metaData.id, metaData.name)
 
-			fmt.Println("ERROR: " + description)
+			//fmt.Println("ERROR: " + description)
 			importFile.logErrorStr(527, message, description)
 		} else {
 			dicoEntities[metaKey] = true

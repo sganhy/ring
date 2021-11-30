@@ -79,12 +79,14 @@ const (
 	metaLexRelationId    string = "relation_id"
 	metaLexRelationValue string = "relation_value"
 	metaLexModifyStmp    string = "modify_stmp"
+	metaLexItmLexId      string = "lexicon_id"
 	metaObjectType       string = "object_type"
 	metaReferenceId      string = "reference_id"
 	metaSchemaId         string = "schema_id"
 	metaTableName        string = "@meta"
 	metaIdTableName      string = "@meta_id"
 	metaLexTableName     string = "@lexicon"
+	metaLexItmTableName  string = "@lexicon_itm"
 	metaLongTableName    string = "@long"
 	metaValue            string = "value"
 	metaDataModifyStmp   string = "modify_stmp"
@@ -1717,7 +1719,7 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 	var updateStmp = Field{}
 	var active = Field{}
 
-	id.Init(5441, metaLogId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	id.Init(5441, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	schemaId.Init(5449, metaSchemaId, "", fieldtype.Int, 0, "", true, true, true, false, true)
 	name.Init(5477, metaName, "", fieldtype.String, 80, "", true, true, false, false, true)
 	description.Init(5483, metaDescription, "", fieldtype.String, 0, "", true, false, true, false, true)
@@ -1762,6 +1764,50 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 
 	result.Init(int32(tabletype.Lexicon), metaLexTableName, "", fields, relations, indexes, physicaltype.Table,
 		0, schemaPhysicalName, tabletype.Lexicon, provider, "", false, false, true, true)
+
+	return result
+}
+
+func (table *Table) getLexiconItem(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+	var fields []Field
+	var relations []Relation
+	var indexes []Index
+	var result = new(Table)
+	var idxUk = Index{}
+	var id = Field{}
+	var lexiconId = Field{}
+	var referenceId = Field{}
+	var value = Field{}
+
+	id.Init(5801, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	lexiconId.Init(5813, metaLexItmLexId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	referenceId.Init(5827, metaReferenceId, "", fieldtype.Int, 0, "", true, false, true, false, true)
+	value.Init(5843, metaValue, "", fieldtype.String, 0, "", true, true, true, false, true)
+
+	/*
+	   (0)  id,           // line of excel / languageId
+	   (1)  lexicon_id,
+	   (3)  reference_id,
+	   (4)  value,
+	*/
+
+	fields = append(fields, id)          //1
+	fields = append(fields, lexiconId)   //2
+	fields = append(fields, referenceId) //3
+	fields = append(fields, value)       //4
+
+	/*
+	   -----
+	   unique key(1)      id, lexicon_id, reference_id
+	*/
+
+	// indexes
+	var indexedUkFields = []string{id.GetName(), lexiconId.GetName(), referenceId.GetName(), value.GetName()}
+	idxUk.Init(1, metaLexItmTableName, "", indexedUkFields, false, true, true, true)
+	indexes = append(indexes, idxUk)
+
+	result.Init(int32(tabletype.LexiconItem), metaLexItmTableName, "", fields, relations, indexes, physicaltype.Table,
+		0, schemaPhysicalName, tabletype.LexiconItem, provider, "", false, false, true, true)
 
 	return result
 }

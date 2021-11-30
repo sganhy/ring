@@ -45,15 +45,23 @@ func main() {
 	importFile.Load()
 	importFile.Upgrade()
 
-	var metaSchema = schema.GetSchemaByName("RpgSheet")
-	if metaSchema != nil {
-		fmt.Println(metaSchema.GetId())
-		var tableBook = metaSchema.GetTableByName("feat14")
-		if tableBook != nil {
-			fmt.Println(metaSchema.GetId())
-			fmt.Println(tableBook.GetId())
+	var metaSchema = schema.GetSchemaByName("@meta")
+	var meto = metaSchema.ToMeta()
+	for i := 0; i < len(meto); i++ {
+		if meto[i].GetEntityType() == 0 {
+			fmt.Println(meto[i].String())
 		}
 	}
+	/*
+		if metaSchema != nil {
+			fmt.Println(metaSchema.GetId())
+			var tableBook = metaSchema.GetTableByName("feat14")
+			if tableBook != nil {
+				fmt.Println(metaSchema.GetId())
+				fmt.Println(tableBook.GetId())
+			}
+		}
+	*/
 
 	rcd := new(data.Record)
 	location, _ := time.LoadLocation("MST")

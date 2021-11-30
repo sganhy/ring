@@ -149,6 +149,10 @@ func (schema *Schema) logStatement(statment ddlstatement.DdlStatement) bool {
 	return schema.id != 0
 }
 
+func (schema *Schema) ToMeta() []*meta {
+	return schema.toMeta()
+}
+
 //******************************
 // public methods
 //******************************
@@ -747,6 +751,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
 	var metaLogTable = table.getLogTable(provider, physicalName)
 	var metaLexiconTable = table.getLexicon(provider, physicalName)
+	var metaLexiconItmTable = table.getLexiconItem(provider, physicalName)
 	var metaLongTable = table.getLongTable()
 	var param = new(parameter)
 	var ver = new(version)
@@ -758,6 +763,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	tables = append(tables, metaLogTable)
 	tables = append(tables, metaLongTable)
 	tables = append(tables, metaLexiconTable)
+	tables = append(tables, metaLexiconItmTable) // should be created after the lexicon
 
 	parameters = append(parameters, *param.getCreationTimeParameter(schemaId, schemaId, entitytype.Schema))
 	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.String()))
