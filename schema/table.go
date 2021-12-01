@@ -1613,8 +1613,8 @@ func (table *Table) getMetaTable(provider databaseprovider.DatabaseProvider, sch
 	var indexedUkFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
 	var indexedNukFields = []string{schemaId.GetName(), objectType.GetName()}
 
-	uk.Init(1, metaTableName, "", indexedUkFields, false, true, true, true)
-	nuk.Init(2, metaTableName, "", indexedNukFields, false, false, true, true)
+	nuk.Init(1, metaTableName, "", indexedNukFields, false, false, true, true)
+	uk.Init(2, metaTableName, "", indexedUkFields, false, true, true, true)
 
 	indexes = append(indexes, uk)
 	indexes = append(indexes, nuk)

@@ -19,7 +19,7 @@ func Test__Schema__Init(t *testing.T) {
 	var parameters = []parameter{}
 	var schema = Schema{}
 
-	language.Init(890, "en-US")
+	language.Init("en-US")
 
 	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", language, tables, tablespaces, sequences,
 		parameters, databaseprovider.Influx, 0, 0, true, true, true)

@@ -44,6 +44,7 @@ const (
 	metaMaxInt32                      int64  = 2147483647
 	metaMaxInt8                       int64  = 127
 	metaIndexSeparator                string = ";"
+	metaToStringFormat                string = "id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; line_number: %d; description: %s"
 )
 
 //******************************
@@ -109,9 +110,9 @@ func (metaData *meta) GetRelationType() relationtype.RelationType {
 
 func (metaData *meta) String() string {
 	// used for debug only
-	return fmt.Sprintf("id: %d; name: %s; object_type: %d; reference_id: %d; dataType: %d; flags: %d; value: %s; line_number: %d; description: %s",
-		metaData.id, metaData.name, metaData.objectType, metaData.refId, metaData.dataType, metaData.flags,
-		metaData.value, metaData.lineNumber, metaData.description)
+	return fmt.Sprintf(metaToStringFormat, metaData.id, metaData.name, metaData.objectType,
+		metaData.refId, metaData.dataType, metaData.flags, metaData.value, metaData.lineNumber,
+		metaData.description)
 }
 
 func (metaData *meta) GetParameterType() entitytype.EntityType {
@@ -224,7 +225,7 @@ func (metaData *meta) toParameter(schemaId int32) *parameter {
 func (metaData *meta) toLanguage() *Language {
 	if metaData.GetEntityType() == entitytype.Language {
 		var lang = new(Language)
-		lang.Init(metaData.id, metaData.value)
+		lang.Init(metaData.value)
 		return lang
 	}
 	return nil

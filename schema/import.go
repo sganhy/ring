@@ -766,7 +766,7 @@ func (importFile *Import) getSchemaVersion(value string) *meta {
 
 func (importFile *Import) getSchemaLanguage(value string) *meta {
 	lang := new(Language)
-	lang.Init(1, value)
+	lang.Init(value)
 	return lang.toMeta()
 }
 

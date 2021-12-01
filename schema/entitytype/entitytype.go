@@ -1,5 +1,6 @@
 package entitytype
 
+// Set of values available for the object_type in the @meta table
 type EntityType int8
 
 //!!! reserved value for unit testing {4, 5, 6} !!!

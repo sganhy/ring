@@ -580,7 +580,7 @@ func (schema *Schema) getEmptySchema() *Schema {
 	var parameters = []parameter{}
 	var result = new(Schema)
 	var language = Language{}
-	language.Init(1, "en-US")
+	language.Init("en-US")
 
 	var connectionstring string = ""
 	var disablePool = true
@@ -756,7 +756,7 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var param = new(parameter)
 	var ver = new(version)
 
-	language.Init(1, "en-US")
+	language.Init("en-US")
 
 	tables = append(tables, metaTable)
 	tables = append(tables, metaIdTable)

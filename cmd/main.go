@@ -36,8 +36,13 @@ func main() {
 
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/rpg_sheet_test", 10, 20)
 	var lang = new(schema.Language)
-
-	lang.Init(1, "eu-ES")
+	var langList = lang.GetList()
+	fmt.Println(len(langList))
+	for i := 0; i < len(langList); i++ {
+		var lang2 = langList[i]
+		fmt.Println(lang2.String())
+	}
+	lang.Init("eu-ES")
 	_, _ = lang.IsCodeValid("FR")
 
 	var importFile = schema.Import{}
