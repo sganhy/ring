@@ -42,7 +42,10 @@ func main() {
 		var lang2 = langList[i]
 		fmt.Println(lang2.String())
 	}
-	lang.Init("eu-ES")
+	lang.Init("es-MX")
+	lang.Init("es")
+	fmt.Println(lang.String())
+
 	_, _ = lang.IsCodeValid("FR")
 
 	var importFile = schema.Import{}

@@ -31,13 +31,27 @@ func Test__Language__toMeta(t *testing.T) {
 	if eleml0.GetNativeName() != eleml1.GetNativeName() {
 		t.Errorf("Language.toMeta() ==> l0.GetNativeName() must be equal to l1.GetNativeName()")
 	}
-
+	if eleml0.GetLanguageCode() != "es" {
+		t.Errorf("Language.toMeta() ==> l0.GetLanguageCode() must be equal to 'es'")
+	}
+	if eleml0.GetCountryCode() != "MX" {
+		t.Errorf("Language.toMeta() ==> l0.GetLanguageCode() must be equal to 'MX'")
+	}
+	if eleml0.GetEntityType() != entitytype.Language {
+		t.Errorf("Language.toMeta() ==> l0.GetEntityType() must be equal to entitytype.Language")
+	}
+	eleml0.Init("es")
+	if eleml0.GetCountryCode() != "" {
+		t.Errorf("Language.toMeta() ==> l0.GetCountryCode() must be equal to ''")
+	}
+	if eleml0.GetLanguageCode() != "es" {
+		t.Errorf("Language.toMeta() ==> l0.GetLanguageCode() must be equal to 'es'")
+	}
 	metaData.objectType = int8(entitytype.Constraint)
 	eleml2 := metaData.toLanguage()
 	if eleml2 != nil {
 		t.Errorf("Language.toMeta() ==> l2 must be equal NULL")
 	}
-
 }
 
 func Test__Language__IsCodeValid(t *testing.T) {

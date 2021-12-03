@@ -46,7 +46,7 @@ var languages = map[string]*Language{
 	"av": {id: 11201, code: "av", name: "Avaric", nativeName: "авар мацӀ", valid: true},
 	"ay": {id: 11211, code: "ay", name: "Aymara", nativeName: "aymar aru", valid: true},
 	"az": {id: 11221, code: "az", name: "Azerbaijani", nativeName: "azərbaycan dili", valid: true},
-	"ba": {id: 11231, code: "ba", name: "Bashkir", nativeName: "башҡорт теле", valid: true},
+	"ba": {id: 11232, code: "ba", name: "Bashkir", nativeName: "башҡорт теле", valid: true},
 	"be": {id: 11241, code: "be", name: "Belarusian", nativeName: "беларуская мова", valid: true},
 	"bg": {id: 11251, code: "bg", name: "Bulgarian", nativeName: "български език", valid: true},
 	"bh": {id: 11261, code: "bh", name: "Bihari", nativeName: "भोजपुरी", valid: true},
@@ -222,7 +222,7 @@ var languages = map[string]*Language{
 
 // [10000, 20000] - country
 var countries = map[string]country{
-	"AF": {id: 11103, code: "AF", name: "Afghanistan"},
+	"AF": {id: 11102, code: "AF", name: "Afghanistan"},
 	"AX": {id: 11113, code: "AX", name: "Åland Islands"},
 	"AL": {id: 11123, code: "AL", name: "Albania"},
 	"DZ": {id: 11133, code: "DZ", name: "Algeria"},
@@ -232,7 +232,7 @@ var countries = map[string]country{
 	"AI": {id: 11173, code: "AI", name: "Anguilla"},
 	"AQ": {id: 11183, code: "AQ", name: "Antarctica"},
 	"AG": {id: 11193, code: "AG", name: "Antigua and Barbuda"},
-	"AR": {id: 11203, code: "AR", name: "Argentina"},
+	"AR": {id: 11202, code: "AR", name: "Argentina"},
 	"AM": {id: 11213, code: "AM", name: "Armenia"},
 	"AW": {id: 11223, code: "AW", name: "Aruba"},
 	"AU": {id: 11233, code: "AU", name: "Australia"},
@@ -343,7 +343,7 @@ var countries = map[string]country{
 	"KR": {id: 12283, code: "KR", name: "Korea, Republic of"},
 	"KW": {id: 12293, code: "KW", name: "Kuwait"},
 	"KG": {id: 12303, code: "KG", name: "Kyrgyzstan"},
-	"LA": {id: 12313, code: "LA", name: "Lao People's Democratic Republic"},
+	"LA": {id: 12310, code: "LA", name: "Lao People's Democratic Republic"},
 	"LV": {id: 12323, code: "LV", name: "Latvia"},
 	"LB": {id: 12333, code: "LB", name: "Lebanon"},
 	"LS": {id: 12343, code: "LS", name: "Lesotho"},
@@ -473,6 +473,22 @@ var countries = map[string]country{
 	"ZW": {id: 13583, code: "ZW", name: "Zimbabwe"},
 }
 
+/* Missing:
+-en-CB      English (Caribbean)
+-en-029 	English (Caribbean)
+-hsb-DE     Upper Sorbian (Germany)
+-iu-Latn-CA Inuktitut (Latin) (Canada)
+-kok-IN	    Konkani (India)
+-moh-CA     Mohawk (Canada)
+-iu-Cans-CA Inuktitut (Syllabics) (Canada)
+-nso-ZA     Sesotho sa Leboa (South Africa)
+-ns-za      ????
+-sah-RU	    Yakut (Russia)
+-qut-GT     K'iche (Guatemala)
+-quz-BO     Quechua (Bolivia)
+-quz-EC     Quechua (Ecuador)
+-quz-PE     Quechua (Peru)
+*/
 var languageCountry = map[string]bool{
 	"af-za": true,
 	"ar-ae": true,
@@ -491,9 +507,18 @@ var languageCountry = map[string]bool{
 	"ar-sy": true,
 	"ar-tn": true,
 	"ar-ye": true,
+	"az-az": true,
+	"as-in": true,
+	"ba-ru": true,
 	"be-by": true,
 	"bg-bg": true,
+	"bn-bd": true,
+	"bn-in": true,
+	"bo-cn": true,
+	"br-fr": true,
+	"bs-ba": true,
 	"ca-es": true,
+	"co-fr": true,
 	"cs-cz": true,
 	"cy-gb": true,
 	"da-dk": true,
@@ -510,8 +535,11 @@ var languageCountry = map[string]bool{
 	"en-gb": true,
 	"en-ie": true,
 	"en-jm": true,
+	"en-in": true,
+	"en-my": true,
 	"en-nz": true,
 	"en-ph": true,
+	"en-sg": true,
 	"en-tt": true,
 	"en-us": true,
 	"en-za": true,
@@ -546,8 +574,12 @@ var languageCountry = map[string]bool{
 	"fr-ch": true,
 	"fr-lu": true,
 	"fr-mc": true,
+	"fy-nl": true,
+	"ga-ie": true,
+	"gd-gb": true,
 	"gl-es": true,
 	"gu-in": true,
+	"ha-ng": true,
 	"he-il": true,
 	"hi-in": true,
 	"hr-ba": true,
@@ -555,15 +587,21 @@ var languageCountry = map[string]bool{
 	"hu-hu": true,
 	"hy-am": true,
 	"id-id": true,
+	"ig-ng": true,
+	"ii-cn": true,
 	"is-is": true,
 	"it-ch": true,
 	"it-it": true,
 	"ja-jp": true,
 	"ka-ge": true,
 	"kk-kz": true,
+	"kl-gl": true,
+	"km-kh": true,
 	"kn-in": true,
 	"ko-kr": true,
 	"ky-kg": true,
+	"lb-lu": true,
+	"lo-la": true,
 	"lt-lt": true,
 	"lv-lv": true,
 	"mi-nz": true,
@@ -574,14 +612,17 @@ var languageCountry = map[string]bool{
 	"ms-my": true,
 	"mt-mt": true,
 	"nb-no": true,
+	"ne-np": true,
 	"nl-be": true,
 	"nl-nl": true,
 	"nn-no": true,
-	//"ns-za": true,
+	"oc-fr": true,
+	"or-in": true,
 	"pa-in": true,
 	"pl-pl": true,
 	"pt-br": true,
 	"pt-pt": true,
+	"ps-af": true,
 	"qu-bo": true,
 	"qu-ec": true,
 	"qu-pe": true,
@@ -600,13 +641,17 @@ var languageCountry = map[string]bool{
 	"ta-in": true,
 	"te-in": true,
 	"th-th": true,
+	"tk-tm": true,
 	"tn-za": true,
 	"tr-tr": true,
 	"tt-ru": true,
+	"ug-cn": true,
 	"uk-ua": true,
 	"ur-pk": true,
 	"vi-vn": true,
+	"wo-sn": true,
 	"xh-za": true,
+	"yo-ng": true,
 	"zh-cn": true,
 	"zh-hk": true,
 	"zh-mo": true,
@@ -621,13 +666,13 @@ func init() {
 	// Complete language list with combination of language-country
 	//-> languages
 	for key, _ := range languageCountry {
-		lang := tempLang.getLanguage(key)
+		lang := tempLang.getLanguage(key, true)
 		if lang == nil {
 			panic(errorMessage + key)
 		}
 		lang = lang.Clone()
 		lang.currentCountry = lang.getCountry(key)
-		lang = lang
+		lang.code += languageCountrySeparator + lang.currentCountry.code
 
 		if lang.currentCountry == nil {
 			panic(errorMessage + key)
@@ -638,21 +683,10 @@ func init() {
 }
 
 func (language *Language) Init(code string) {
-	/*
-		lang :=
-		result.id = language.id
-		result.code = language.code
-		result.name = language.name
-		result.nativeName = language.nativeName
-		if result.currentCountry != nil {
-			countryResult := new(country)
-			result.currentCountry = countryResult
-			result.currentCountry.id = language.currentCountry.id
-			result.currentCountry.name = language.currentCountry.name
-			result.currentCountry.code = language.currentCountry.code
-		}
-		result.valid = language.valid
-	*/
+	lang := language.getLanguage(code, false)
+	if lang != nil {
+		lang.copyTo(language)
+	}
 }
 
 //******************************
@@ -664,20 +698,6 @@ func (language *Language) GetId() int32 {
 
 func (language *Language) GetCode() string {
 	return language.code
-}
-
-func (language *Language) GetLanguageCode() string {
-	if language.currentCountry != nil {
-		return language.code[strings.Index(language.code, languageCountrySeparator):]
-	}
-	return language.code
-}
-
-func (language *Language) GetCountryCode() string {
-	if language.currentCountry != nil {
-		return language.currentCountry.code
-	}
-	return ""
 }
 
 func (language *Language) GetName() string {
@@ -695,6 +715,20 @@ func (language *Language) GetEntityType() entitytype.EntityType {
 //******************************
 // public methods
 //******************************
+func (language *Language) GetLanguageCode() string {
+	if language.currentCountry != nil && strings.Index(language.code, languageCountrySeparator) >= 0 {
+		return language.code[:strings.Index(language.code, languageCountrySeparator)]
+	}
+	return language.code
+}
+
+func (language *Language) GetCountryCode() string {
+	if language.currentCountry != nil {
+		return language.currentCountry.code
+	}
+	return ""
+}
+
 func (language *Language) GetDescription() string {
 	var result = ""
 	result += language.name
@@ -707,11 +741,11 @@ func (language *Language) GetDescription() string {
 
 func (language *Language) IsCodeValid(code string) (bool, error) {
 	var codeFormat = strings.ReplaceAll(code, " ", "")
-	if len(code) == 0 {
+	if len(code) <= 0 {
 		return false, errors.New(languageErrorEmpty)
 	}
 
-	if strings.Contains(codeFormat, "-") == true {
+	if strings.Contains(codeFormat, languageCountrySeparator) == true {
 		var country = language.getCountry(code)
 		if country == nil {
 			return false, errors.New(fmt.Sprintf(languageErrorInvalidCountry, code))
@@ -720,13 +754,11 @@ func (language *Language) IsCodeValid(code string) (bool, error) {
 		if _, ok := languageCountry[strings.ToLower(codeFormat)]; !ok {
 			return false, errors.New(fmt.Sprintf(languageErrorInvalidCounLang, code))
 		}
-
-	} else {
-		var lang = language.getLanguage(code)
-		// just language
-		if lang == nil {
-			return false, errors.New(fmt.Sprintf(languageErrorInvalidLang, code))
-		}
+	}
+	var lang = language.getLanguage(code, true)
+	// just language
+	if lang == nil {
+		return false, errors.New(fmt.Sprintf(languageErrorInvalidLang, code))
 	}
 	return true, nil
 }
@@ -737,30 +769,34 @@ func (language *Language) GetList() []Language {
 
 func (language *Language) Clone() *Language {
 	result := new(Language)
-	result.id = language.id
-	result.code = language.code
-	result.name = language.name
-	result.nativeName = language.nativeName
-	if result.currentCountry != nil {
-		countryResult := new(country)
-		result.currentCountry = countryResult
-		result.currentCountry.id = language.currentCountry.id
-		result.currentCountry.name = language.currentCountry.name
-		result.currentCountry.code = language.currentCountry.code
-	}
-	result.valid = language.valid
+	language.copyTo(result)
 	return result
 }
 
 func (language *Language) String() string {
-	// used for debug only
 	// languageToStringFormat: "id: %d; code: %s; name: %s; nativeName: %s"
-	return fmt.Sprintf(languageToStringFormat, language.id, language.code, language.name, language.GetDescription())
+	return fmt.Sprintf(languageToStringFormat, language.id, language.code, language.name, language.GetLanguageCode())
 }
 
 //******************************
 // private methods
 //******************************
+func (source *Language) copyTo(target *Language) {
+	target.id = source.id
+	target.code = source.code
+	target.name = source.name
+	target.nativeName = source.nativeName
+	if source.currentCountry != nil {
+		target.currentCountry = new(country)
+		target.currentCountry.id = source.currentCountry.id
+		target.currentCountry.name = source.currentCountry.name
+		target.currentCountry.code = source.currentCountry.code
+	} else {
+		target.currentCountry = nil
+	}
+	target.valid = source.valid
+}
+
 func (language *Language) getList() []Language {
 	var result = make([]Language, 0, len(languages))
 	for _, value := range languages {
@@ -795,19 +831,12 @@ func (language *Language) toMeta() *meta {
 
 	// key
 	metaTable.id = language.id
-	if language.currentCountry == nil {
-		metaTable.name = language.code
-	} else {
-		metaTable.name = language.code + "-" + strings.ToUpper(language.currentCountry.code)
-	}
+	metaTable.name = language.code
 	metaTable.description = language.GetDescription()
 	metaTable.objectType = int8(entitytype.Language)
 	metaTable.dataType = 0
 	metaTable.setEntityBaseline(true)
-	metaTable.value = language.nativeName
-	if language.currentCountry != nil {
-		metaTable.value += "-" + language.currentCountry.code
-	}
+	metaTable.value = language.code
 	metaTable.enabled = true
 
 	return metaTable
@@ -815,7 +844,7 @@ func (language *Language) toMeta() *meta {
 
 func (language *Language) getCountry(code string) *country {
 	var formattedCode = strings.ReplaceAll(code, " ", "")
-	var index = strings.Index(formattedCode, "-")
+	var index = strings.Index(formattedCode, languageCountrySeparator)
 
 	if index > 0 && index+1 < len(formattedCode) {
 		var countryCode = formattedCode[index+1:]
@@ -826,14 +855,17 @@ func (language *Language) getCountry(code string) *country {
 	return nil
 }
 
-func (language *Language) getLanguage(code string) *Language {
+func (language *Language) getLanguage(code string, languageOnly bool) *Language {
 	var formattedCode = strings.ReplaceAll(code, " ", "")
+	var languageCode string = formattedCode
 
-	if len(formattedCode) >= 2 {
-		var languageCode = formattedCode[:2]
-		if val, ok := languages[strings.ToLower(languageCode)]; ok {
-			return val
+	if languageOnly {
+		if len(languageCode) >= 2 {
+			languageCode = formattedCode[:2]
 		}
+	}
+	if val, ok := languages[strings.ToLower(languageCode)]; ok {
+		return val
 	}
 	return nil
 }
