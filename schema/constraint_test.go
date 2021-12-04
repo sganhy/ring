@@ -94,7 +94,7 @@ func Test__Constraint__getDdlNotNull(t *testing.T) {
 	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
 	constr.Init(constrainttype.NotNull, metaTable, nil, nil)
 	constr.setField(metaTable.GetFieldByName("reference_id"))
-	expectedSql = "ALTER TABLE information_schema.`@meta` MODIFY reference_id INT(11) NOT NULL"
+	expectedSql = "ALTER TABLE information_schema.`@meta` MODIFY reference_id INT NOT NULL"
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.getDdlNotNull() ==> query must be equal to " + expectedSql)
 	}

@@ -19,7 +19,7 @@ func Test__Catalogue__GetDql(t *testing.T) {
 	//======================
 	//==== testing MySql
 	//======================
-	expectedSql = "SELECT 1 FROM information_schema.tables WHERE upper(table_schema)=? AND upper(table_name)=?"
+	expectedSql = "SELECT 1 FROM information_schema.tables WHERE upper(table_name)=? AND upper(table_schema)=?"
 	if cata.GetDql(databaseprovider.MySql, entitytype.Table) != expectedSql {
 		t.Errorf("Catalogue.GetDql() ==> query must be equal to " + expectedSql)
 	}

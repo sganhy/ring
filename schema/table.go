@@ -541,6 +541,7 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 			switch value.(type) {
 			case string:
 				strValue = value.(string)
+				// long text==> mysql
 				break
 			case float32:
 				// conversion issues
@@ -582,6 +583,12 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 			case uint64:
 				strValue = strconv.FormatUint(value.(uint64), 10)
 				break
+			/*
+				case []uint8:
+					var array = value.([]byte) //No problem
+					strValue = string(array)
+					break
+			*/
 			case time.Time:
 				strValue = currentField.GetDateTimeString(value.(time.Time))
 			default:
