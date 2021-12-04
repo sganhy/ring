@@ -836,10 +836,15 @@ func (language *Language) toMeta() *meta {
 	metaTable.objectType = int8(entitytype.Language)
 	metaTable.dataType = 0
 	metaTable.setEntityBaseline(true)
-	metaTable.value = language.code
 	metaTable.enabled = true
 
 	return metaTable
+}
+
+func (language *Language) toParameter(schemaId int32) *parameter {
+	param := new(parameter)
+
+	return param
 }
 
 func (language *Language) getCountry(code string) *country {

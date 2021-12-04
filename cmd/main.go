@@ -32,9 +32,9 @@ func main() {
 	fmt.Println(value)
 	fmt.Println("2020-04-29Tr22:00:00.000")
 
-	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	//schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
-	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/rpg_sheet_test", 10, 20)
 	var lang = new(schema.Language)
 	var langList = lang.GetList()
 	fmt.Println(len(langList))

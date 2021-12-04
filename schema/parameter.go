@@ -19,10 +19,15 @@ type parameter struct {
 }
 
 const (
-	parameterToStringFormat string = "name=%s; description=%s"
-	parameterVersion        string = "@version"
-	parameterCreationTime   string = "@creation_time"
-	parameterLastUpgrade    string = "@last_upgrade"
+	parameterToStringFormat    string = "name=%s; description=%s; value=%s"
+	parameterVersion           string = "@version"
+	parameterCreationTime      string = "@creation_time"
+	parameterLastUpgrade       string = "@last_upgrade"
+	parameterDefaultLanguage   string = "@language"
+	parameterIdVersion         int32  = 1
+	parameterIdCreationTime    int32  = 2
+	parameterIdLastUpdate      int32  = 3
+	parameterIdDefaultLanguage int32  = 4
 )
 
 func (param *parameter) Init(id int32, name string, description string, schemaId int32, parameterType entitytype.EntityType,
@@ -83,7 +88,7 @@ func (param *parameter) Clone() *parameter {
 }
 
 func (param *parameter) String() string {
-	return fmt.Sprintf(parameterToStringFormat, param.name, param.description)
+	return fmt.Sprintf(parameterToStringFormat, param.name, param.description, param.value)
 }
 
 func (param *parameter) Save() error {
@@ -162,9 +167,9 @@ func (param *parameter) getVersionParameter(schemaId int32, refId int32, paramet
 	switch parameterType {
 	case entitytype.Schema:
 		if refId > 0 {
-			result.Init(refId+41, parameterVersion, "Schema version", schemaId, parameterType, fieldtype.String, value)
+			result.Init(parameterIdVersion, parameterVersion, "Schema version", schemaId, parameterType, fieldtype.String, value)
 		} else {
-			result.Init(3, parameterVersion, "Ring version", schemaId, parameterType, fieldtype.String, value)
+			result.Init(parameterIdVersion, parameterVersion, "Ring version", schemaId, parameterType, fieldtype.String, value)
 		}
 		break
 	}
@@ -175,7 +180,7 @@ func (param *parameter) getCreationTimeParameter(schemaId int32, refId int32, pa
 	result := new(parameter)
 	value := time.Now().UTC().Format(time.RFC3339)
 	message := strings.Title(strings.ToLower(parameterType.String())) + " creation time"
-	result.Init(1, parameterCreationTime, message, schemaId, parameterType, fieldtype.DateTime, value)
+	result.Init(parameterIdCreationTime, parameterCreationTime, message, schemaId, parameterType, fieldtype.DateTime, value)
 	return result
 }
 
@@ -183,6 +188,17 @@ func (param *parameter) getLastUpgradeParameter(schemaId int32, refId int32, par
 	result := new(parameter)
 	value := time.Now().UTC().Format(time.RFC3339)
 	message := "Last " + strings.Title(strings.ToLower(parameterType.String())) + " upgrade"
-	result.Init(2, parameterLastUpgrade, message, schemaId, parameterType, fieldtype.DateTime, value)
+	result.Init(parameterIdLastUpdate, parameterLastUpgrade, message, schemaId, parameterType, fieldtype.DateTime, value)
+	return result
+}
+
+func (param *parameter) getLanguageParameter(schemaId int32, languageCode string) *parameter {
+	result := new(parameter)
+	lang := new(Language)
+	lang.Init(languageCode)
+	value := lang.GetCode()
+	message := "Default language"
+	result.Init(parameterIdDefaultLanguage, parameterDefaultLanguage, message, schemaId, entitytype.Language,
+		fieldtype.String, value)
 	return result
 }

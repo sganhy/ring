@@ -22,6 +22,7 @@ type Import struct {
 	fileName          string
 	schemaId          int32
 	schemaName        string
+	isNewSchema       bool
 	source            sourcetype.SourceType
 	initialized       bool
 	loaded            bool
@@ -741,13 +742,19 @@ func (importFile *Import) loadSchemaInfo() {
 		case xml.StartElement:
 			if strings.ToLower(ty.Name.Local) == importSchemaTag {
 				importFile.schemaName = importFile.getXmlAttribute(&ty.Attr, importXmlAttributeNameTag)
-				importFile.schemaId = getSchemaId(importFile.schemaName)
+				importFile.schemaId, importFile.isNewSchema = getSchemaId(importFile.schemaName)
 				importFile.logger.setSchemaId(importFile.schemaId)
+
 				// add @version parameter
 				var metaParam = importFile.getSchemaVersion(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeVersionTag))
 				var metaLanguage = importFile.getSchemaLanguage(importFile.getXmlAttribute(&ty.Attr, importXmlAttributeLangTag))
+				var metaLastUpgrade = importFile.getLastUpgrade()
+				var metaCreationTime = importFile.getCreationTime()
+
 				importFile.metaList = append(importFile.metaList, metaParam)
+				importFile.metaList = append(importFile.metaList, metaLastUpgrade)
 				importFile.metaList = append(importFile.metaList, metaLanguage)
+				importFile.metaList = append(importFile.metaList, metaCreationTime)
 				return
 			}
 			continue
@@ -759,15 +766,37 @@ func (importFile *Import) getSchemaVersion(value string) *meta {
 	parameter := new(parameter)
 
 	var schemaVersion = parameter.getVersionParameter(importFile.schemaId, importFile.schemaId, entitytype.Schema, value)
-	var metaData = schemaVersion.toMeta(importFile.schemaId)
-	metaData.refId = importFile.schemaId
+	var metaData = schemaVersion.toMeta(0)
+
 	return metaData
 }
 
 func (importFile *Import) getSchemaLanguage(value string) *meta {
-	lang := new(Language)
-	lang.Init(value)
-	return lang.toMeta()
+	lang := new(parameter)
+	var schema = GetSchemaById(importFile.schemaId)
+	if schema != nil && schema.getParameterByName(parameterDefaultLanguage) != nil {
+		lang = schema.getParameterByName(parameterDefaultLanguage)
+	} else {
+		lang = lang.getLanguageParameter(importFile.schemaId, value)
+	}
+	return lang.toMeta(0)
+}
+
+func (importFile *Import) getLastUpgrade() *meta {
+	param := new(parameter)
+	param = param.getLastUpgradeParameter(importFile.schemaId, 0, entitytype.Schema)
+	return param.toMeta(0)
+}
+
+func (importFile *Import) getCreationTime() *meta {
+	param := new(parameter)
+	var schema = GetSchemaById(importFile.schemaId)
+	if schema != nil && schema.getParameterByName(parameterCreationTime) != nil {
+		param = schema.getParameterByName(parameterCreationTime)
+	} else {
+		param = param.getCreationTimeParameter(importFile.schemaId, 0, entitytype.Schema)
+	}
+	return param.toMeta(0)
 }
 
 func (importFile *Import) saveMetaList() error {

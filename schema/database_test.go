@@ -20,7 +20,6 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	var tableSpace = tablespace{}
 	var schema = Schema{}
 	var schemas = []*Schema{}
-	var language = Language{}
 
 	// disable connection pool empty connection, string min & max == 0
 	Init(databaseprovider.MySql, "", 0, 0)
@@ -39,7 +38,7 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 	elemt.Init(22, "zorro", "hellkzae", fields, relations, indexes,
 		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined, "subject test", true, false, true, false)
 	tables = append(tables, &elemt)
-	schema.Init(212, "test", "test", "test", "test", language, tables, tablespaces, sequences, parameters,
+	schema.Init(211, "test", "test", "test", "test", tables, tablespaces, sequences, parameters,
 		databaseprovider.Influx, 0, 0, true, true, true)
 	for i := -100; i < SCHEMA_COUNT; i++ {
 		var newSchema = schema.Clone()

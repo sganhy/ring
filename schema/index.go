@@ -25,6 +25,7 @@ type Index struct {
 
 const (
 	createIndexPostGreSql string = "%s%s %s %s ON %s USING btree (%s) %s"
+	createIndexMysql      string = "%s%s %s %s ON %s (%s) USING btree %s"
 	physicalIndexPrefix   string = "idx_"
 	indexToStringFormat   string = "name=%s; description=%s; bitmap=%t; unique=%t; baseline=%t; fields=%s"
 )
@@ -242,6 +243,9 @@ func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 	switch table.GetDatabaseProvider() {
 	case databaseprovider.PostgreSql:
 		return strings.Trim(fmt.Sprintf(createIndexPostGreSql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
+			index.getPhysicalName(table), table.GetPhysicalName(), fields, sqlTablespace), ddlSpace)
+	case databaseprovider.MySql:
+		return strings.Trim(fmt.Sprintf(createIndexMysql, ddlstatement.Create.String(), sqlUnique, entitytype.Index.String(),
 			index.getPhysicalName(table), table.GetPhysicalName(), fields, sqlTablespace), ddlSpace)
 	}
 	return ""

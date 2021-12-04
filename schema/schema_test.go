@@ -13,16 +13,16 @@ import (
 // INIT
 func Test__Schema__Init(t *testing.T) {
 	var tables = []*Table{}
-	var language = Language{}
 	var tablespaces = []tablespace{}
 	var sequences = []Sequence{}
+	var param = parameter{}
 	var parameters = []parameter{}
 	var schema = Schema{}
 
-	language.Init("en-US")
-
-	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", language, tables, tablespaces, sequences,
-		parameters, databaseprovider.Influx, 0, 0, true, true, true)
+	parameters = append(parameters, *param.getLanguageParameter(212, "en"))
+	//t.Errorf(parameters[0].String())
+	schema.Init(212, "test name", "test physical name", "test desc", "test connectionString", tables,
+		tablespaces, sequences, parameters, databaseprovider.Influx, 0, 0, true, true, true)
 
 	if schema.GetName() != "test name" {
 		t.Errorf("Schema.Init() ==> name <> GetName()")
@@ -82,7 +82,6 @@ func Test__Schema__GetTableByName(t *testing.T) {
 	var tableSpace = tablespace{}
 
 	var schema = Schema{}
-	var language = Language{}
 	const TABLE_COUNT = 20000
 
 	// creating fields
@@ -110,7 +109,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 		id int32, name string, description string, connectionString string, language Language, tables []Table,
 		tablespaces []Tablespace, provider databaseprovider.DatabaseProvider, baseline bool, active bool
 	*/
-	schema.Init(212, "test", "test", "phys test", "", language, tables, tablespaces, sequences, parameters,
+	schema.Init(213, "test", "test", "phys test", "", tables, tablespaces, sequences, parameters,
 		databaseprovider.Influx, 0, 0, true, true, true)
 	// GetTableByName()
 	for i := 0; i < len(tables); i++ {
@@ -230,7 +229,6 @@ func Test__Schema__findTablespace(t *testing.T) {
 	var sequences = []Sequence{}
 	var parameters = []parameter{}
 	var schema = Schema{}
-	var language = Language{}
 	var uk Index = Index{}
 
 	// creating tablepaces
@@ -259,7 +257,7 @@ func Test__Schema__findTablespace(t *testing.T) {
 		"subject test", true, false, true, false)
 	tables = append(tables, &elemt)
 
-	schema.Init(212, "test", "test", "phys test", "", language, tables, tablespaces, sequences, parameters,
+	schema.Init(214, "test", "test", "phys test", "", tables, tablespaces, sequences, parameters,
 		databaseprovider.Influx, 0, 0, true, true, true)
 
 	tblspcResult := schema.findTablespace(&elemt, nil, nil)

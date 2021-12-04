@@ -225,7 +225,7 @@ func (metaData *meta) toParameter(schemaId int32) *parameter {
 func (metaData *meta) toLanguage() *Language {
 	if metaData.GetEntityType() == entitytype.Language {
 		var lang = new(Language)
-		lang.Init(metaData.value)
+		lang.Init(metaData.name)
 		return lang
 	}
 	return nil

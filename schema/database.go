@@ -186,11 +186,14 @@ func formatSchemaName(name string) string {
 	return result
 }
 
-func getSchemaId(schemaName string) int32 {
+// schemaId, isNewSchema?
+func getSchemaId(schemaName string) (int32, bool) {
 	var result int32
+	var newSchema bool
 	// must be greater than 0
 	schemaCacheId.syncRoot.Lock()
 
+	newSchema = false
 	// schema already exist ?
 	schema := GetSchemaByName(schemaName)
 	if schema != nil {
@@ -203,10 +206,11 @@ func getSchemaId(schemaName string) int32 {
 			schemaCacheId.currentId++
 			result = int32(schemaCacheId.currentId)
 			schemaReservedId[name] = result
+			newSchema = true
 		}
 	}
 	schemaCacheId.syncRoot.Unlock()
-	return result
+	return result, newSchema
 }
 
 // not thread safe !! slow!! Used only during initialization
@@ -327,9 +331,6 @@ func createMetaParameters(schema *Schema) {
 		if parameter.exists() == false {
 			parameter.create()
 		}
-	}
-	if schema.language.exists(schema) == false {
-		schema.language.create(schema)
 	}
 }
 

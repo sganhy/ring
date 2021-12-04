@@ -35,6 +35,7 @@ type Schema struct {
 
 const (
 	metaSchemaName        string = "@meta"
+	metaSchemaID          int32  = 0
 	metaSchemaDescription string = "@meta"
 	postgreSqlSchema      string = "rpg_sheet_test"
 	emptySchemaName       string = ""
@@ -44,7 +45,7 @@ var (
 	createSchemaSql string = "%s %s %s"
 )
 
-func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string, language Language,
+func (schema *Schema) Init(id int32, name string, physicalName string, description string, connectionString string,
 	tables []*Table, tableSpaces []tablespace, sequences []Sequence, parameters []parameter, provider databaseprovider.DatabaseProvider,
 	minConnection uint16, maxConnection uint16, baseline bool, active bool, disablePool bool) {
 
@@ -59,7 +60,6 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.sequences = make([]*Sequence, 0, 1)
 	schema.parameters = make([]*parameter, 0, 1)
 	schema.connections = new(connectionPool)
-	schema.language = language
 
 	if disablePool == false {
 		// load sequences ==> before log init
@@ -83,6 +83,13 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.loadSequences(sequences)
 	schema.loadParameters(parameters)
 	schema.loadMtmTables()
+
+	schema.language = Language{}
+	var paramLanguage = schema.getParameterByName(parameterDefaultLanguage)
+	if paramLanguage != nil {
+		//fmt.Println(paramLanguage.GetValue())
+		schema.language.Init(paramLanguage.GetValue())
+	}
 
 }
 
@@ -221,7 +228,7 @@ func (schema *Schema) Clone() *Schema {
 	if schema.connections.poolId == -1 {
 		disabledPool = true
 	}
-	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), schema.language, tables,
+	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), tables,
 		tableSpaces, sequences, parameters,
 		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
 		schema.baseline, schema.active, disabledPool)
@@ -296,7 +303,7 @@ func (schema *Schema) GetDdl(statement ddlstatement.DdlStatement) string {
 // private methods
 //******************************
 func (schema *Schema) getParameterByName(name string) *parameter {
-	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(schema.sequences) - 1, 0, 0
+	var indexerLeft, indexerRight, indexerMiddle, indexerCompare = 0, len(schema.parameters) - 1, 0, 0
 	for indexerLeft <= indexerRight {
 		indexerMiddle = indexerLeft + indexerRight
 		indexerMiddle >>= 1 // indexerMiddle <-- indexerMiddle /2
@@ -518,7 +525,6 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
 		initCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
 		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
-		schema.sequences = append(schema.sequences, seq.getLanguageId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getIndexId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getEventId(schema.id))
@@ -586,7 +592,7 @@ func (schema *Schema) getEmptySchema() *Schema {
 	var disablePool = true
 	var provider = databaseprovider.NotDefined
 
-	result.Init(-1, emptySchemaName, "", "", connectionstring, language, tables,
+	result.Init(-1, emptySchemaName, "", "", connectionstring, tables,
 		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
@@ -603,13 +609,12 @@ func (schema *Schema) getSchema(schemaId int32, metaList []meta, metaIdList []me
 	var sequences = schema.getSequences(schemaId, metaList)
 	var parameters = schema.getParameters(metaList)
 	var result = new(Schema)
-	var language = schema.getDefaultLanguage(metaList)
 
 	// manage pool information
 	var connectionstring = schema.getConnectionString(metaList, disablePool)
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	result.Init(schemaId, schemaName, physicalName, schemaDescription, connectionstring, language, tables,
+	result.Init(schemaId, schemaName, physicalName, schemaDescription, connectionstring, tables,
 		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
@@ -738,14 +743,13 @@ func (schema *Schema) loadRelations(tables []*Table, metaList []meta) {
 }
 
 func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, connectionstring string, minConnection uint16, maxConnection uint16, disablePool bool) *Schema {
-	const schemaId int32 = 0
+	const schemaId int32 = metaSchemaID
 	var table = new(Table)
 	var tables []*Table
 	var tablespaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
 	var result = new(Schema)
-	var language = Language{}
 	var physicalName = result.getPhysicalName(provider, metaSchemaName)
 	var metaTable = table.getMetaTable(provider, physicalName)
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
@@ -755,8 +759,6 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaLongTable = table.getLongTable()
 	var param = new(parameter)
 	var ver = new(version)
-
-	language.Init("en-US")
 
 	tables = append(tables, metaTable)
 	tables = append(tables, metaIdTable)
@@ -768,9 +770,10 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	parameters = append(parameters, *param.getCreationTimeParameter(schemaId, schemaId, entitytype.Schema))
 	parameters = append(parameters, *param.getVersionParameter(schemaId, schemaId, entitytype.Schema, ver.String()))
 	parameters = append(parameters, *param.getLastUpgradeParameter(schemaId, schemaId, entitytype.Schema))
+	parameters = append(parameters, *param.getLanguageParameter(schemaId, "en-US"))
 
 	// schema.Init(212, "test", "test", "test", language, tables, tablespaces, databaseprovider.Influx, true, true)
-	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, language, tables,
+	result.Init(schemaId, metaSchemaName, physicalName, metaSchemaDescription, connectionstring, tables,
 		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
 		disablePool)
 
@@ -860,10 +863,13 @@ func (schema *Schema) toMeta() []*meta {
 		for _, relation := range table.relations {
 			metaList = append(metaList, relation.toMeta(table.id))
 		}
+	}
 
+	if schema.id == metaSchemaID {
+		for _, language := range language.getList() {
+			metaList = append(metaList, language.toMeta())
+		}
 	}
-	for _, language := range language.getList() {
-		metaList = append(metaList, language.toMeta())
-	}
+
 	return metaList
 }

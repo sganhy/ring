@@ -24,7 +24,6 @@ const (
 	initialJobId      int64  = 101007
 	sequenceJobIdName string = "@job_id"
 	sequenceLexId     string = "@lexicon_id"
-	sequenceLangId    string = "@language_id"
 	sequenceUserId    string = "@user_id"
 	sequenceIndexId   string = "@index_id"
 	sequenceEventId   string = "@event_id"
@@ -127,13 +126,6 @@ func (sequence *Sequence) getLexiconId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(1, sequenceLexId, "Unique lexicon number assigned based on auto-numbering definition", schemaId, maxLexIdValue, true, true)
 	result.value.SetCurrentId(103) // assign min value
-	return result
-}
-
-func (sequence *Sequence) getLanguageId(schemaId int32) *Sequence {
-	result := new(Sequence)
-	result.Init(2, sequenceLangId, "Unique language number assigned based on auto-numbering definition", schemaId, maxLangIdValue, true, true)
-	result.value.SetCurrentId(1) // assign min value
 	return result
 }
 

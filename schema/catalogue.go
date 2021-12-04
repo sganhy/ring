@@ -20,7 +20,7 @@ var (
 		entitytype.Tablespace: {fieldEntityName: "spcname", fieldSchemaName: "", viewName: "pg_tablespace"},
 	}
 	mySqlCatalogue = map[entitytype.EntityType]catalogue{
-		entitytype.Table:      {fieldEntityName: "table_schema", fieldSchemaName: "table_name", viewName: "information_schema.tables"},
+		entitytype.Table:      {fieldEntityName: "table_name", fieldSchemaName: "table_schema", viewName: "information_schema.tables"},
 		entitytype.Schema:     {fieldEntityName: "", fieldSchemaName: "schema_name", viewName: "information_schema.schemata"},
 		entitytype.Tablespace: {fieldEntityName: "", fieldSchemaName: "", viewName: ""},
 	}
