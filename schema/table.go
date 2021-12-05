@@ -425,7 +425,6 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 		//fmt.Printf("GetDml() len(str)/sql.Cap() %d /%d\n", len(result.String()), result.Cap())
 		break
 	case dmlstatement.Update:
-		variableName, index := table.getVariableInfo()
 		result.Grow(int(table.sqlCapacity))
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
@@ -434,12 +433,10 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 		for i := 0; i < len(fields); i++ {
 			result.WriteString(fields[i].GetPhysicalName(table.provider))
 			result.WriteString(operatorEqual)
-			result.WriteString(variableName)
-			result.WriteString(strconv.Itoa(index))
+			result.WriteString(table.getVariableName(i))
 			if i < len(fields)-1 {
 				result.WriteString(fieldListSeparator)
 			}
-			index++
 		}
 		result.WriteString(dqlWhere)
 		table.addPrimaryKeyFilter(&result, len(fields))
@@ -527,6 +524,7 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 	var value interface{}
 	var strValue string
 	var index int
+	var array []byte
 
 	// manage fields first
 	for i := 0; i < capacity; i++ {
@@ -583,12 +581,10 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 			case uint64:
 				strValue = strconv.FormatUint(value.(uint64), 10)
 				break
-			/*
-				case []uint8:
-					var array = value.([]byte) //No problem
-					strValue = string(array)
-					break
-			*/
+			case []uint8:
+				array = value.([]byte) //my SQL longtext & varchar
+				strValue = string(array)
+				break
 			case time.Time:
 				strValue = currentField.GetDateTimeString(value.(time.Time))
 			default:
@@ -793,9 +789,20 @@ func (table *Table) getFieldList() string {
 	return b.String()
 }
 
+func (table *Table) getUniqueKey() *Index {
+	switch table.tableType {
+	case tabletype.Meta:
+		return table.GetIndexByName(metaTableName)
+	case tabletype.MetaId:
+		return table.GetIndexByName(metaIdTableName)
+
+	}
+	return nil
+}
+
 func (table *Table) getUniqueFieldList() string {
 	// reduce memory usage
-	// capacity
+	// detect ==> capacity
 	var b strings.Builder
 	switch table.tableType {
 	case tabletype.Business, tabletype.Lexicon:
@@ -1038,29 +1045,17 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 		variableName = mysqlParameterName
 		break
 	}
-
-	//tableType    tabletype.TableType
 	switch table.tableType {
-	case tabletype.Meta:
-		var ukIndex = table.GetIndexByName(metaTableName)
+	case tabletype.Meta, tabletype.MetaId:
+		//case :
+		var ukIndex = table.getUniqueKey()
 		for i := 0; i < len(ukIndex.fields); i++ {
 			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			query.WriteString(operatorEqual)
 			query.WriteString(variableName)
-			query.WriteString(strconv.Itoa(addedIndex))
-			if i < len(ukIndex.fields)-1 {
-				query.WriteString(filterSeparator)
-				addedIndex++
+			if table.provider != databaseprovider.MySql {
+				query.WriteString(strconv.Itoa(addedIndex))
 			}
-		}
-		break
-	case tabletype.MetaId:
-		var ukIndex = table.GetIndexByName(metaIdTableName)
-		for i := 0; i < len(ukIndex.fields); i++ {
-			query.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
-			query.WriteString(operatorEqual)
-			query.WriteString(variableName)
-			query.WriteString(strconv.Itoa(addedIndex))
 			if i < len(ukIndex.fields)-1 {
 				query.WriteString(filterSeparator)
 				addedIndex++
@@ -1070,7 +1065,9 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 	case tabletype.Business:
 		query.WriteString(defaultPrimaryKeyInt64.GetName())
 		query.WriteString(operatorEqual)
-		query.WriteString(strconv.Itoa(addedIndex))
+		if table.provider != databaseprovider.MySql {
+			query.WriteString(strconv.Itoa(addedIndex))
+		}
 		break
 	}
 }
