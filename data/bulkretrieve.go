@@ -14,13 +14,15 @@ type BulkRetrieve struct {
 	language      *schema.Language
 }
 
-const errorInvalidIndex = "This BulkRetrieve does not have a level #%d to retrieve results for."
-const errorInvalidPageSize = "An invalid page size was detected (page size should be greater than 0)."
-const errorInvalidPageNumber = "An invalid page number was detected (page number should be greater or equal than 1)."
-const errorIndexAlreadyExist = "ThisIndex %d already exist."
-const errorUnknownSchema = "Unknown schema."
-const errorInvalidObject = "Object type '%s' is not valid."
-const initialSliceCount = 4
+const (
+	errorInvalidIndex      = "This BulkRetrieve does not have a level #%d to retrieve results for."
+	errorInvalidPageSize   = "An invalid page size was detected (page size should be greater than 0)."
+	errorInvalidPageNumber = "An invalid page number was detected (page number should be greater or equal than 1)."
+	errorIndexAlreadyExist = "ThisIndex %d already exist."
+	errorUnknownSchema     = "Unknown schema."
+	errorInvalidObject     = "Object type '%s' is not valid."
+	initialSliceCount      = 4
+)
 
 func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
 	bulkRetrieve.currentSchema = schema

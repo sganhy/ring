@@ -12,6 +12,10 @@ type metaId struct {
 	value      int64
 }
 
+const (
+	metaIdToStringFormat string = "id: %d; schema_id: %d; object_type: %d; value: %d"
+)
+
 //******************************
 // getters and setters
 //******************************
@@ -32,8 +36,7 @@ func (metaid *metaId) GetValue() int64 {
 // public methods
 //******************************
 func (metaid *metaId) String() string {
-	return fmt.Sprintf("id: %d; schema_id: %d; object_type: %d; value: %d",
-		metaid.id, metaid.schemaId, metaid.objectType, metaid.value)
+	return fmt.Sprintf(metaIdToStringFormat, metaid.id, metaid.schemaId, metaid.objectType, metaid.value)
 }
 
 //******************************

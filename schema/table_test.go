@@ -523,6 +523,20 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
+	// table @meta_id
+	table = tbl.getMetaIdTable(databaseprovider.MySql, "information_schema")
+	expectedSQl = "UPDATE information_schema.`@meta_id` SET `value`=? WHERE id=? AND schema_id=? AND object_type=?"
+	field = table.GetFieldByName("value")
+	fields = []*Field{field}
+	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
+	// table @meta
+	table = tbl.getMetaTable(databaseprovider.MySql, "information_schema")
+	expectedSQl = "DELETE FROM information_schema.`@meta` WHERE id=? AND schema_id=? AND object_type=? AND reference_id=?"
+	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
 }
 
 func Test__Table__GetDql(t *testing.T) {

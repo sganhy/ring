@@ -7,6 +7,7 @@ const (
 	PostgreSql DatabaseProvider = 2
 	MySql      DatabaseProvider = 3
 	Influx     DatabaseProvider = 4
+	SqlServer  DatabaseProvider = 5
 	NotDefined DatabaseProvider = 101
 )
 
@@ -24,8 +25,9 @@ func (provider *DatabaseProvider) String() string {
 		return "postgres"
 	case MySql:
 		return "mysql"
+	case SqlServer:
+		return "sqlserver"
 	}
-
 	return ""
 }
 

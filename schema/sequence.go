@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"fmt"
 	"ring/schema/entitytype"
 	"strconv"
 )
@@ -17,16 +18,17 @@ type Sequence struct {
 }
 
 const (
-	maxJobIdValue     int64  = 9223372036854775807
-	maxLexIdValue     int64  = 2147483647
-	maxLangIdValue    int64  = 32767
-	maxUserIdValue    int64  = 2147483647
-	initialJobId      int64  = 101007
-	sequenceJobIdName string = "@job_id"
-	sequenceLexId     string = "@lexicon_id"
-	sequenceUserId    string = "@user_id"
-	sequenceIndexId   string = "@index_id"
-	sequenceEventId   string = "@event_id"
+	maxJobIdValue        int64  = 9223372036854775807
+	maxLexIdValue        int64  = 2147483647
+	maxLangIdValue       int64  = 32767
+	maxUserIdValue       int64  = 2147483647
+	initialJobId         int64  = 101007
+	sequenceJobIdName    string = "@job_id"
+	sequenceLexId        string = "@lexicon_id"
+	sequenceUserId       string = "@user_id"
+	sequenceIndexId      string = "@index_id"
+	sequenceEventId      string = "@event_id"
+	sequenceStringFormat string = "id=%d; name=%s; description=%s; schemaId=%d; maxValue=%d"
 )
 
 func (sequence *Sequence) Init(id int32, name string, description string, schemaId int32, maxValue int64, baseline bool, active bool) {
@@ -85,6 +87,12 @@ func (sequence *Sequence) Clone() *Sequence {
 	// reference copy
 	newSequence.value = sequence.value
 	return sequence
+}
+
+func (sequence *Sequence) String() string {
+	//	id=%d; name=%s; description=%s; schemaId=%d; maxValue=%d
+	return fmt.Sprintf(sequenceStringFormat, sequence.id, sequence.name, sequence.description, sequence.schemaId,
+		sequence.schemaId)
 }
 
 //******************************

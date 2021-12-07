@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -32,8 +33,10 @@ func main() {
 	fmt.Println(value)
 	fmt.Println("2020-04-29Tr22:00:00.000")
 
-	//schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
-	schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
+	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
+	//schema.Init(databaseprovider.SqlServer, "server=localhost;User id=NA_USER;Password=NA_USER_PWD;database=CQL_CIV;port=1434", 10, 20)
+	//server=SAKHALOO-PC;user id=sakhaloo;password=hoollehayerazi;database=webApp
+	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
 	var lang = new(schema.Language)
 	var langList = lang.GetList()
@@ -46,12 +49,12 @@ func main() {
 	lang.Init("es")
 	fmt.Println(lang.String())
 
-	_, _ = lang.IsCodeValid("FR")
-
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
+
+	_, _ = lang.IsCodeValid("FR")
 
 	var metaSchema = schema.GetSchemaByName("@meta")
 	var meto = metaSchema.ToMeta()
