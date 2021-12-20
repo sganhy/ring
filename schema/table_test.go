@@ -577,7 +577,7 @@ func Test__Table__GetDdl(t *testing.T) {
 	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
 	createScript := table.GetDdl(ddlstatement.Create, tblspc, nil)
 	createScript = strings.ReplaceAll(createScript, "\n", " ")
-	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, schema_id int4, thread_id int2, call_site varchar(255), s_call_site varchar(255), test2test int8 ) "
+	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, schema_id int4, thread_id int2, call_site varchar(255) COLLATE \"C\", s_call_site varchar(255) COLLATE \"C\", test2test int8 ) "
 	expectedSQl += "WITH (autovacuum_enabled=false)  TABLESPACE Test"
 	if createScript != expectedSQl {
 		t.Errorf("Table.GetDdl(Create) ==> query must be equal to " + expectedSQl)

@@ -557,7 +557,7 @@ func (schema *Schema) loadParameters(parameters []parameter) {
 
 func (schema *Schema) getPhysicalName(provider databaseprovider.DatabaseProvider, name string) string {
 	//
-	if name == "" {
+	if len(name) <= 0 {
 		return ""
 	}
 	if name == metaSchemaName {
@@ -754,8 +754,8 @@ func (schema *Schema) getMetaSchema(provider databaseprovider.DatabaseProvider, 
 	var metaTable = table.getMetaTable(provider, physicalName)
 	var metaIdTable = table.getMetaIdTable(provider, physicalName)
 	var metaLogTable = table.getLogTable(provider, physicalName)
-	var metaLexiconTable = table.getLexicon(provider, physicalName)
-	var metaLexiconItmTable = table.getLexiconItem(provider, physicalName)
+	var metaLexiconTable = table.getLexiconTable(provider, physicalName)
+	var metaLexiconItmTable = table.getLexiconItemTable(provider, physicalName)
 	var metaLongTable = table.getLongTable()
 	var param = new(parameter)
 	var ver = new(version)

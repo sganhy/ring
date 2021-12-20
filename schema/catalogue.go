@@ -66,7 +66,7 @@ func (cata *catalogue) GetDql(provider databaseprovider.DatabaseProvider, entity
 	result.WriteString(mapper[entityType].viewName)
 	result.WriteString(dqlWhere)
 
-	if objectName != "" {
+	if len(objectName) > 0 {
 		result.WriteString("upper(")
 		result.WriteString(mapper[entityType].fieldEntityName)
 		result.WriteString(")=")

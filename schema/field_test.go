@@ -136,15 +136,15 @@ func Test__Field__GetDdl(t *testing.T) {
 
 	elemf0.Init(11, "aName", "AField Test", fieldtype.String, 5, "test default", true, true, false, true, true)
 	sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Meta)
-	if strings.ToUpper(sql) != "ANAME VARCHAR(5)" {
-		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME VARCHAR(5)")
+	if strings.ToUpper(sql) != "ANAME VARCHAR(5) COLLATE \"C\"" {
+		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME VARCHAR(5) COLLATE \"C\"")
 	}
 
 	// generated long text datatype
 	elemf0.Init(11, "aName", "AField Test", fieldtype.String, 50000000, "test default", true, true, false, true, true)
 	sql = elemf0.GetDdl(databaseprovider.PostgreSql, tabletype.Meta)
-	if strings.ToUpper(sql) != "ANAME TEXT" {
-		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME TEXT")
+	if strings.ToUpper(sql) != "ANAME TEXT COLLATE \"C\"" {
+		t.Errorf("Field.GetSql() ==> (1) sql should be equal to ANAME TEXT COLLATE \"C\"")
 	}
 
 }
@@ -501,7 +501,7 @@ func Test__Field__getSearchableDdl(t *testing.T) {
 	var provider = databaseprovider.PostgreSql
 	var tableType = tabletype.Business
 
-	if elemf0.getSearchableDdl(provider, tableType) != "s_a_name varchar(10)" {
+	if elemf0.getSearchableDdl(provider, tableType) != "s_a_name varchar(10) COLLATE \"C\"" {
 		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl('a_name') must be equal to 's_a_name varchar(10)'")
 	}
 

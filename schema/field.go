@@ -61,6 +61,7 @@ const (
 	sqliteVarcharMaxSize       int64  = 1000000000
 	searchableFieldPrefix      string = "s_"
 	fieldToStringFormat        string = "id=%d; name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
+	postGreDefaultCollate      string = "COLLATE \"C\""
 )
 
 var (
@@ -240,11 +241,21 @@ func (field *Field) GetSearchableValue(value string, searchableType searchablety
 }
 
 func (field *Field) GetDdl(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+	var result strings.Builder
+	const fieldDdlSeparator string = " "
 	datatype := field.getSqlDataType(provider)
 	if datatype == unknownFieldDataType {
 		return unknownFieldDataType
 	}
-	return strings.TrimSpace(field.GetPhysicalName(provider) + " " + field.getSqlDataType(provider))
+	collate := field.getCollation(provider)
+	result.WriteString(field.GetPhysicalName(provider))
+	result.WriteString(fieldDdlSeparator)
+	result.WriteString(datatype)
+	if len(collate) > 0 {
+		result.WriteString(fieldDdlSeparator)
+		result.WriteString(collate)
+	}
+	return result.String()
 }
 
 // reformat value for records
@@ -361,12 +372,9 @@ func (field *Field) GetPhysicalName(provider databaseprovider.DatabaseProvider) 
 // private methods
 //******************************
 func (field *Field) getSearchableDdl(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
-	datatype := field.getSqlDataType(provider)
-	if datatype == unknownFieldDataType {
-		return unknownFieldDataType
-	}
-	return strings.TrimSpace(field.getPhysicalName(provider, field.getSearchableFieldName()+" "+
-		field.getSqlDataType(provider)))
+	searchableField := field.Clone()
+	searchableField.name = field.getSearchableFieldName()
+	return searchableField.GetDdl(provider, tableType)
 }
 
 // compare if the physical fields are equal
@@ -497,6 +505,22 @@ func (field *Field) getDefaultPrimaryKey() *Field {
 		return defaultPrimaryKeyInt16
 	}
 	return defaultPrimaryKeyInt64
+}
+
+func (field *Field) getDdlDefault(provider databaseprovider.DatabaseProvider) string {
+	return ""
+}
+
+func (field *Field) getCollation(provider databaseprovider.DatabaseProvider) string {
+	var result string
+	if field.fieldType == fieldtype.String {
+		switch provider {
+		case databaseprovider.PostgreSql:
+			result = postGreDefaultCollate
+			break
+		}
+	}
+	return result
 }
 
 func (field *Field) getSqlDataType(provider databaseprovider.DatabaseProvider) string {

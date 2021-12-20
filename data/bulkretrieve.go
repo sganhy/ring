@@ -21,31 +21,34 @@ const (
 	errorIndexAlreadyExist = "ThisIndex %d already exist."
 	errorUnknownSchema     = "Unknown schema."
 	errorInvalidObject     = "Object type '%s' is not valid."
+	errorInvalidSchemaName = "Invalid schema name: %s."
 	initialSliceCount      = 4
 )
 
-func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
-	bulkRetrieve.currentSchema = schema
-	if schema != nil {
-		bulkRetrieve.language = schema.GetLanguage()
-	}
-}
-
-func (bulkRetrieve *BulkRetrieve) SetSchema(schemaName string) error {
+//******************************
+// getters and setters
+//******************************
+func (bulkRetrieve *BulkRetrieve) SetSchema(schemaName string) {
 	var newSchema = schema.GetSchemaByName(schemaName)
-	if newSchema != nil {
-		bulkRetrieve.currentSchema = newSchema
-		return nil
+	if newSchema == nil {
+		panic(fmt.Sprintf(errorInvalidSchemaName, schemaName))
 	}
-	return errors.New(fmt.Sprintf("Invalid, name schema name: %s", schemaName))
+	bulkRetrieve.setSchema(newSchema)
 }
 
-func (bulkRetrieve *BulkRetrieve) setLanguage(language *schema.Language) {
-	if language != nil {
-		bulkRetrieve.language = language
-	}
+func (bulkRetrieve *BulkRetrieve) SetLanguage(language *schema.Language) {
+	bulkRetrieve.language = language
 }
 
+func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
+	// schema ==> cannot be null
+	bulkRetrieve.currentSchema = schema
+	bulkRetrieve.SetLanguage(schema.GetLanguage())
+}
+
+//******************************
+// public methods
+//******************************
 func (bulkRetrieve *BulkRetrieve) SimpleQuery(entryIndex int, objectName string) error {
 	if bulkRetrieve.data == nil {
 		data := make([]schema.Query, 0, initialSliceCount)

@@ -212,7 +212,7 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 func (query *metaQuery) addSort(fieldName string, ascending bool) {
 	var field = query.getField(fieldName)
 	if field != nil {
-		if query.sort != "" {
+		if len(query.sort) > 0 {
 			query.sort = query.sort + "," + field.GetPhysicalName(query.table.GetDatabaseProvider())
 		} else {
 			query.sort = field.GetPhysicalName(query.table.GetDatabaseProvider())
@@ -359,7 +359,7 @@ func (query *metaQuery) run(resultCount int) error {
 			result := make([]interface{}, 0, resultCount)
 			query.result = &result
 		}
-		if query.query == "" {
+		if len(query.query) <= 0 {
 			query.query = query.getQuery()
 		}
 	} else {
@@ -374,7 +374,7 @@ func (query *metaQuery) run(resultCount int) error {
 // is table exist
 func (query *metaQuery) exists() (bool, error) {
 	// sql empty ?
-	if query.query == "" {
+	if len(query.query) <= 0 {
 		query.query = query.getQuery()
 	}
 	query.returnResultList = false
@@ -409,7 +409,7 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 	description := query.getLogDescription(entityName, ent, creationTime, statement, operation)
 
 	if err == nil {
-		if ent.GetPhysicalName() != "" {
+		if len(ent.GetPhysicalName()) > 0 {
 			var log = logger.getNewLog(id, levelInfo, logger.schemaId, jobId, message, description)
 			logger.writeToDb(log)
 		}

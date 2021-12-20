@@ -91,6 +91,7 @@ const (
 	metaValue            string = "value"
 	metaDataModifyStmp   string = "modify_stmp"
 	metaActive           string = "active"
+	metaCached           string = "cached"
 	postGreAddColumn     string = "ADD"
 	postGreDropColumn    string = "DROP"
 	postGreColumn        string = "COLUMN "
@@ -457,12 +458,12 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 func (table *Table) GetDql(whereClause string, orderClause string) string {
 	capacity := len(dqlSelect) + len(dqlFrom) + len(table.fieldList) + len(table.physicalName)
 
-	if whereClause != "" {
+	if len(whereClause) > 0 {
 		capacity += len(dqlWhere)
 		capacity += len(whereClause)
 	}
 
-	if orderClause != "" {
+	if len(orderClause) > 0 {
 		capacity += len(dqlOrderBy)
 		capacity += len(orderClause)
 	}
@@ -474,12 +475,12 @@ func (table *Table) GetDql(whereClause string, orderClause string) string {
 	result.WriteString(dqlFrom)
 	result.WriteString(table.physicalName)
 
-	if whereClause != "" {
+	if len(whereClause) > 0 {
 		result.WriteString(dqlWhere)
 		result.WriteString(whereClause)
 	}
 
-	if orderClause != "" {
+	if len(orderClause) > 0 {
 		result.WriteString(dqlOrderBy)
 		result.WriteString(orderClause)
 	}
@@ -750,7 +751,7 @@ func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, 
 	physicalSchemaName string) string {
 	var physicalName = physicalSchemaName
 
-	if physicalName != "" {
+	if len(physicalName) > 0 {
 		physicalName += "."
 	}
 	if tableType == tabletype.Business {
@@ -1703,7 +1704,7 @@ func (table *Table) getLogTable(provider databaseprovider.DatabaseProvider, sche
 	return result
 }
 
-func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+func (table *Table) getLexiconTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index
@@ -1721,6 +1722,7 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 	var relationId = Field{}
 	var relationValue = Field{}
 	var updateStmp = Field{}
+	var cached = Field{}
 	var active = Field{}
 
 	id.Init(5441, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
@@ -1734,7 +1736,8 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 	relationId.Init(5569, metaLexRelationId, "", fieldtype.Int, 0, "", true, false, true, false, true)
 	relationValue.Init(5581, metaLexRelationValue, "", fieldtype.Long, 0, "", true, false, true, false, true)
 	updateStmp.Init(5623, metaLexModifyStmp, "", fieldtype.DateTime, 0, "", true, true, true, false, true)
-	active.Init(5641, metaActive, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
+	cached.Init(5641, metaCached, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
+	active.Init(5651, metaActive, "", fieldtype.Boolean, 0, "", true, true, true, false, true)
 
 	fields = append(fields, id)            //1
 	fields = append(fields, schemaId)      //2
@@ -1747,7 +1750,8 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 	fields = append(fields, relationId)    //9
 	fields = append(fields, relationValue) //10
 	fields = append(fields, updateStmp)    //11
-	fields = append(fields, active)        //12
+	fields = append(fields, cached)        //12
+	fields = append(fields, active)        //13
 
 	/*
 	   -----
@@ -1772,7 +1776,7 @@ func (table *Table) getLexicon(provider databaseprovider.DatabaseProvider, schem
 	return result
 }
 
-func (table *Table) getLexiconItem(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
+func (table *Table) getLexiconItemTable(provider databaseprovider.DatabaseProvider, schemaPhysicalName string) *Table {
 	var fields []Field
 	var relations []Relation
 	var indexes []Index

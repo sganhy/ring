@@ -31,7 +31,7 @@ const (
 func (ver *version) String() string {
 	ver.getCurrentVersion()
 	var result = fmt.Sprintf(displayVersion, ver.majorVersion, ver.minorVersion, ver.patchVersion)
-	if currentpreReleaseVersion != "" {
+	if len(currentpreReleaseVersion) > 0 {
 		result += "-" + ver.preReleaseVersion
 	}
 	return result

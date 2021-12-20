@@ -31,7 +31,6 @@ type bulkRetrieveQuery struct {
 //******************************
 // public methods (Interface schema.Query implementations)
 //******************************
-
 func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB) error {
 	var provider = query.targetObject.GetDatabaseProvider()
 	var whereClause, parameters = query.getWhereClause(provider)

@@ -393,7 +393,7 @@ func (valid *validator) inverseRelationValid(importFile *Import) {
 	for i := 0; i < len(relations); i++ {
 		metaData := relations[i]
 
-		if metaData.value == "" {
+		if len(metaData.value) <= 0 {
 			var description = fmt.Sprintf("empty inverse relation definition"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(955, invalidRelationValue, description)
 			continue

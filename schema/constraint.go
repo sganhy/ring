@@ -106,7 +106,7 @@ func (constr *constraint) create(jobId int64, schema *Schema) error {
 	}
 	var query = constr.GetDdl(ddlstatement.Create, schema.findTablespace(nil, nil, constr))
 	//	var firstUniqueIndex = true
-	if query != "" {
+	if len(query) > 0 {
 		var metaQuery = metaQuery{}
 		var eventId int32 = 23
 		metaQuery.query = query
@@ -183,7 +183,7 @@ func (constr *constraint) getDdlCreatePrimaryKey(tableSpace *tablespace) string 
 	var provider = constr.table.GetDatabaseProvider()
 
 	// unique fields ?
-	if fields != "" {
+	if len(fields) > 0 {
 		if tableSpace != nil && provider == databaseprovider.PostgreSql {
 			// postgresql only ==>
 			sqlTablespace = "USING INDEX " + tableSpace.GetDdl(ddlstatement.NotDefined, constr.table.GetDatabaseProvider())
