@@ -40,7 +40,7 @@ const (
 	Array         FieldType = 21
 	Boolean       FieldType = 23
 	LongString    FieldType = 27
-	Undefined     FieldType = 125
+	Undefined     FieldType = 127
 )
 
 func (fieldType FieldType) String() string {

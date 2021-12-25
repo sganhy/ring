@@ -22,7 +22,7 @@ const (
 	Mtm       RelationType = 3
 	Mto       RelationType = 11
 	Otof      RelationType = 12
-	Undefined RelationType = 123
+	Undefined RelationType = 127
 )
 
 func (relationType RelationType) String() string {

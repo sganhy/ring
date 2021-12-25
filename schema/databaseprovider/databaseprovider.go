@@ -8,7 +8,7 @@ const (
 	MySql      DatabaseProvider = 3
 	Influx     DatabaseProvider = 4
 	SqlServer  DatabaseProvider = 5
-	Undefined  DatabaseProvider = 101
+	Undefined  DatabaseProvider = 127
 )
 
 /*
