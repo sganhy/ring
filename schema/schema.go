@@ -270,14 +270,14 @@ func (schema *Schema) LogFatal(id int32, messages ...interface{}) {
 	}
 }
 
-func (schema *Schema) Execute(queries []Query) error {
+func (schema *Schema) Execute(queries []Query, transaction bool) error {
 	var connection = schema.connections.get()
 	var err error
 
 	connection.lastGet = time.Now()
 
 	for i := 0; i < len(queries); i++ {
-		err = queries[i].Execute(connection.dbConnection)
+		err = queries[i].Execute(connection.dbConnection, nil)
 		if err != nil {
 			schema.connections.put(connection)
 			return err
@@ -288,6 +288,11 @@ func (schema *Schema) Execute(queries []Query) error {
 	duration := time.Now().Sub(connection.lastGet)
 	fmt.Println("Execution Time:")
 	fmt.Println(duration.Milliseconds())
+	return nil
+}
+
+func (schema *Schema) ExecuteTransaction(queries []Query) error {
+
 	return nil
 }
 
@@ -325,7 +330,7 @@ func (schema *Schema) execute(query Query) error {
 	var err error
 
 	conn.lastGet = time.Now()
-	err = query.Execute(conn.dbConnection)
+	err = query.Execute(conn.dbConnection, nil)
 	if err != nil {
 		schema.connections.put(conn)
 		return err

@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"fmt"
 	"ring/data/bulksavetype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
@@ -33,16 +34,16 @@ func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.Bulk
 //******************************
 // public methods (Interface schema.Query implementations)
 //******************************
-func (query bulkSaveQuery) Execute(dbConnection *sql.DB) error {
+func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	// execute without transaction!
-	var provider = query.targetObject.GetDatabaseProvider()
+	//var provider = query.targetObject.GetDatabaseProvider()
 	var dmlStatement = query.getDmlStatement()
-	var parameters = query.getParameters(provider)
+	//var parameters = query.getParameters(provider)
 	var sqlQuery = query.targetObject.GetDml(dmlStatement, nil)
 
-	_, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
-
-	return err
+	//_, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
+	fmt.Println(sqlQuery)
+	return nil
 }
 
 //******************************

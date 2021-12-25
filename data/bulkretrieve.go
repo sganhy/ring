@@ -9,7 +9,7 @@ import (
 )
 
 type BulkRetrieve struct {
-	data          *[]schema.Query
+	data          []schema.Query
 	currentSchema *schema.Schema
 	language      *schema.Language
 }
@@ -51,12 +51,11 @@ func (bulkRetrieve *BulkRetrieve) setSchema(schema *schema.Schema) {
 //******************************
 func (bulkRetrieve *BulkRetrieve) SimpleQuery(entryIndex int, objectName string) error {
 	if bulkRetrieve.data == nil {
-		data := make([]schema.Query, 0, initialSliceCount)
-		bulkRetrieve.data = &data
+		bulkRetrieve.data = make([]schema.Query, 0, initialSliceCount)
 		// get default schema
 		bulkRetrieve.currentSchema = schema.GetDefaultSchema()
 	}
-	queryCount := len(*bulkRetrieve.data)
+	queryCount := len(bulkRetrieve.data)
 	if entryIndex > queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}
@@ -70,20 +69,20 @@ func (bulkRetrieve *BulkRetrieve) SimpleQuery(entryIndex int, objectName string)
 	if table == nil {
 		return errors.New(fmt.Sprintf(errorInvalidObject, objectName))
 	}
-	*bulkRetrieve.data = append(*bulkRetrieve.data, newSimpleQuery(table))
+	bulkRetrieve.data = append(bulkRetrieve.data, newSimpleQuery(table))
 	return nil
 }
 
 func (bulkRetrieve *BulkRetrieve) AppendFilter(entryIndex int, fieldName string, operation operationtype.OperationType,
 	operand interface{}) error {
-	queryCount := len(*bulkRetrieve.data)
+	queryCount := len(bulkRetrieve.data)
 
 	if entryIndex < 0 || entryIndex >= queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}
 
 	// cast interface schema.Query
-	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	var query = bulkRetrieve.data[entryIndex].(bulkRetrieveQuery)
 	var field = query.targetObject.GetFieldByName(fieldName)
 
 	if field == nil {
@@ -98,14 +97,14 @@ func (bulkRetrieve *BulkRetrieve) AppendFilter(entryIndex int, fieldName string,
 }
 
 func (bulkRetrieve *BulkRetrieve) AppendSort(entryIndex int, fieldName string, sortType sortordertype.SortOrderType) error {
-	queryCount := len(*bulkRetrieve.data)
+	queryCount := len(bulkRetrieve.data)
 
 	if entryIndex < 0 || entryIndex >= queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}
 
 	// cast interface schema.Query
-	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	var query = bulkRetrieve.data[entryIndex].(bulkRetrieveQuery)
 	var field = query.targetObject.GetFieldByName(fieldName)
 
 	if field == nil {
@@ -118,28 +117,28 @@ func (bulkRetrieve *BulkRetrieve) AppendSort(entryIndex int, fieldName string, s
 }
 
 func (bulkRetrieve *BulkRetrieve) RetrieveRecords() error {
-	return bulkRetrieve.currentSchema.Execute(*bulkRetrieve.data)
+	return bulkRetrieve.currentSchema.Execute(bulkRetrieve.data, false)
 }
 
 func (bulkRetrieve *BulkRetrieve) GetRecordList(entryIndex int) List {
-	queryCount := len(*bulkRetrieve.data)
+	queryCount := len(bulkRetrieve.data)
 	if entryIndex >= queryCount {
 		var emptyResult = List{}
 		return emptyResult
 	}
-	var query = (*bulkRetrieve.data)[entryIndex].(bulkRetrieveQuery)
+	var query = bulkRetrieve.data[entryIndex].(bulkRetrieveQuery)
 	return *query.result
 }
 
 func (bulkRetrieve *BulkRetrieve) Clear() {
 	if bulkRetrieve.data != nil {
 		// re-slicing
-		*bulkRetrieve.data = (*bulkRetrieve.data)[:0]
+		bulkRetrieve.data = bulkRetrieve.data[:0]
 	}
 }
 
 func (bulkRetrieve *BulkRetrieve) SetPage(entryIndex int, pageNumber int, pageSize int) error {
-	queryCount := len(*bulkRetrieve.data)
+	queryCount := len(bulkRetrieve.data)
 	if entryIndex < 0 || entryIndex >= queryCount {
 		return errors.New(fmt.Sprintf(errorInvalidIndex, queryCount))
 	}

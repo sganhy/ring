@@ -103,7 +103,7 @@ func (query *metaQuery) getTable() *Table {
 //******************************
 // public methods
 //******************************
-func (query metaQuery) Execute(dbConnection *sql.DB) error {
+func (query metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	var sqlQuery = query.query
 	var columns []interface{}
 	var columnPointers []interface{}

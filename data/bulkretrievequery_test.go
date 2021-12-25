@@ -41,7 +41,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	bulkQuery.addSort(newQuerySort(field, sortordertype.Ascending))
 	field = table.GetFieldByName("reference_id")
 	bulkQuery.addSort(newQuerySort(field, sortordertype.Descending))
-	err = bulkQuery.Execute(db)
+	err = bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -67,7 +67,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	queryItem2.operand = "1"
 	bulkQuery.addFilter(queryItem2)
 
-	bulkQuery.Execute(db)
+	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -89,7 +89,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	queryItem3.operand = "abi%"
 	bulkQuery.addFilter(queryItem3)
 
-	bulkQuery.Execute(db)
+	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -115,7 +115,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	}
 	field = table.GetFieldByName("reference_id")
 	bulkQuery.addSort(newQuerySort(field, sortordertype.Descending))
-	bulkQuery.Execute(db)
+	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -136,7 +136,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		bulkQuery.addFilter(queryItem2)
 	}
-	bulkQuery.Execute(db)
+	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -163,7 +163,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	for i := 0; i < 255; i++ {
 		bulkQuery.addFilter(queryItem2)
 	}
-	bulkQuery.Execute(db)
+	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
@@ -182,7 +182,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 			WithArgs().
 			WillReturnRows(rs)
 		bulkQuery.addFilter(queryItem2)
-		bulkQuery.Execute(db)
+		bulkQuery.Execute(db, nil)
 		if bulkQuery.result.Count() <= 0 {
 			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 		}
@@ -198,7 +198,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM").
 		WithArgs().
 		WillReturnRows(rs)
-	err = bulkQuery.Execute(db)
+	err = bulkQuery.Execute(db, nil)
 	if err == nil {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> must return an error")
 	}

@@ -32,11 +32,19 @@ func main() {
 	value, _ := elemf0.GetValue("2020-04-30T00:00:00.000Z")
 	fmt.Println(value)
 	fmt.Println("2020-04-29Tr22:00:00.000")
+	rcd := new(data.Record)
 
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	//schema.Init(databaseprovider.SqlServer, "server=localhost;User id=NA_USER;Password=NA_USER_PWD;database=CQL_CIV;port=1434", 10, 20)
 	//server=SAKHALOO-PC;user id=sakhaloo;password=hoollehayerazi;database=webApp
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
+
+	rcd.SetRecordType("RpgSheet.skill")
+
+	var bs = new(data.BulkSave)
+	bs.InsertRecord(rcd)
+	bs.InsertRecord(rcd)
+	bs.Save()
 
 	var lang = new(schema.Language)
 	var langList = lang.GetList()
@@ -76,13 +84,12 @@ func main() {
 		}
 	*/
 
-	rcd := new(data.Record)
 	location, _ := time.LoadLocation("MST")
 	ttt := time.Now().In(location)
 	zone, offset := ttt.Zone()
 	fmt.Println(offset)
 	fmt.Println(zone)
-
+	rcd = new(data.Record)
 	rcd.SetRecordType("@log")
 	rcd.SetField("entry_time", "2014-04-15T21:14:55")
 	fmt.Println(rcd.GetField("entry_time"))

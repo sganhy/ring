@@ -5,5 +5,5 @@ import (
 )
 
 type Query interface {
-	Execute(dbConnection *sql.DB) error
+	Execute(dbConnection *sql.DB, transaction *sql.Tx) error
 }

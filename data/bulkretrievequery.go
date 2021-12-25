@@ -38,7 +38,7 @@ func init() {
 //******************************
 // public methods (Interface schema.Query implementations)
 //******************************
-func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB) error {
+func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	var provider = query.targetObject.GetDatabaseProvider()
 	var whereClause, parameters = query.getWhereClause(provider)
 	var orderClause = query.getOrderClause(provider)

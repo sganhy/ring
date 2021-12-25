@@ -21,8 +21,9 @@ const (
 
 // sorted by id
 var (
-	schemaById          *[]*Schema   // assign firstly --> sorted by Id
-	schemaIndexByName   *[]*database // assign secondly  --> sorted by name
+	schemaById          *[]*Schema       // assign firstly --> sorted by Id
+	schemaIndexByName   *[]*database     // assign secondly  --> sorted by name
+	schemaCount         int          = 0 // number of schema
 	defaultSchemaName   string
 	databaseInitialized = false
 	schemaCacheId       *cacheId         // used to generate new schema Id
@@ -97,6 +98,7 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 		var schemas = getSchemaIdList()
 		for i := 0; i < len(schemas); i++ {
 			addSchema(getSchemaById(schemas[i], disableConnectionPool, false))
+			schemaCount++
 		}
 	}
 	// call garbage collector
@@ -105,6 +107,10 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 func GetDefaultSchema() *Schema {
 	return GetSchemaByName(metaSchemaName)
+}
+
+func GetSchemaCount() int {
+	return schemaCount
 }
 
 func GetTableBySchemaName(recordType string) *Table {
