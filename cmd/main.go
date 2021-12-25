@@ -107,7 +107,6 @@ func main() {
 	*/
 	br.RetrieveRecords()
 
-	time.Sleep(time.Second * 10)
 	runtime.GC()
 
 	//time.Sleep(time.Second * 10)
