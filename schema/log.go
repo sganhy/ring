@@ -125,9 +125,17 @@ func (logger *log) setMessage(message string) {
 func (logger *log) setEntryTime() {
 	// truncate preserving the monotonic clock
 	currTime := time.Now().UTC()
-	nano := currTime.Nanosecond() % 1000000
-	// truncate nano seconds
-	logger.entryTime = currTime.Add(time.Duration(-nano) * time.Nanosecond)
+	/*
+			nano := currTime.Nanosecond() % 1000000
+			milli := math.Trunc(float64(currTime.Nanosecond() / 1000000))
+			currTime = currTime.Add(time.Duration(-nano) * time.Nanosecond)
+				if math.Mod(milli, 10) == 0 {
+					// adapt for display! add 1 ms
+					currTime = currTime.Add(1 * time.Millisecond)
+				}
+		// truncate nano seconds
+	*/
+	logger.entryTime = currTime
 }
 func (logger *log) setCallSite(callSite string) {
 	if len(callSite) > 255 {

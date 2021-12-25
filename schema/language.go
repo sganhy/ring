@@ -9,7 +9,7 @@ import (
 
 // Language is an ISO 639-1 language with code, name and native name.
 type Language struct {
-	id             int32
+	id             int16
 	code           string
 	name           string
 	nativeName     string
@@ -18,7 +18,7 @@ type Language struct {
 }
 
 type country struct {
-	id   int32
+	id   int16
 	code string
 	name string
 }
@@ -693,7 +693,7 @@ func (language *Language) Init(code string) {
 // getters and setters
 //******************************
 func (language *Language) GetId() int32 {
-	return language.id
+	return int32(language.id)
 }
 
 func (language *Language) GetCode() string {
@@ -830,7 +830,7 @@ func (language *Language) toMeta() *meta {
 	var metaTable = new(meta)
 
 	// key
-	metaTable.id = language.id
+	metaTable.id = language.GetId()
 	metaTable.name = language.code
 	metaTable.description = language.GetDescription()
 	metaTable.objectType = int8(entitytype.Language)
@@ -839,12 +839,6 @@ func (language *Language) toMeta() *meta {
 	metaTable.enabled = true
 
 	return metaTable
-}
-
-func (language *Language) toParameter(schemaId int32) *parameter {
-	param := new(parameter)
-
-	return param
 }
 
 func (language *Language) getCountry(code string) *country {

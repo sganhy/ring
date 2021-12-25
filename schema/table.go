@@ -82,6 +82,7 @@ const (
 	metaLexItmLexId      string = "lexicon_id"
 	metaObjectType       string = "object_type"
 	metaReferenceId      string = "reference_id"
+	metaLangId           string = "lang_id"
 	metaSchemaId         string = "schema_id"
 	metaTableName        string = "@meta"
 	metaIdTableName      string = "@meta_id"
@@ -98,6 +99,7 @@ const (
 	postGreCreateOptions string = " WITH (autovacuum_enabled=false) "
 	postGreParameterName string = "$"
 	postGreVacuum        string = "VACUUM %s"
+	postGreFullVacuum    string = "FULL "
 	postGreCascade       string = "CASCADE"
 	postGreAnalyze       string = "ANALYZE %s"
 	relationSeparator    string = "|"
@@ -609,10 +611,15 @@ func (table *Table) Vacuum(jobId int64) error {
 
 	switch table.provider {
 	case databaseprovider.PostgreSql:
-		sql = fmt.Sprintf(postGreVacuum, table.physicalName)
+		if table.tableType == tabletype.Meta {
+			sql = fmt.Sprintf(postGreVacuum, postGreFullVacuum)
+			sql += table.physicalName
+		} else {
+			sql = fmt.Sprintf(postGreVacuum, table.physicalName)
+		}
 		break
 	}
-	if sql != "" {
+	if len(sql) > 0 {
 		var metaQuery = metaQuery{}
 		var eventId int32 = 20
 		var schema = GetSchemaById(table.schemaId)
@@ -631,7 +638,7 @@ func (table *Table) Analyze(jobId int64) error {
 		sql = fmt.Sprintf(postGreAnalyze, table.physicalName)
 		break
 	}
-	if sql != "" {
+	if len(sql) > 0 {
 		var metaQuery = metaQuery{}
 		var eventId int32 = 21
 		var schema = GetSchemaById(table.schemaId)
@@ -809,15 +816,8 @@ func (table *Table) getUniqueFieldList() string {
 	case tabletype.Business, tabletype.Lexicon:
 		b.WriteString(table.GetPrimaryKey().GetPhysicalName(table.provider))
 		break
-	case tabletype.Meta:
-		var ukIndex = table.GetIndexByName(metaTableName)
-		for i := 0; i < len(ukIndex.fields); i++ {
-			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
-			b.WriteString(fieldListSeparator)
-		}
-		break
-	case tabletype.MetaId:
-		var ukIndex = table.GetIndexByName(metaIdTableName)
+	case tabletype.Meta, tabletype.MetaId, tabletype.LexiconItem:
+		var ukIndex = table.GetIndexByName(table.name)
 		for i := 0; i < len(ukIndex.fields); i++ {
 			b.WriteString(table.GetFieldByName(ukIndex.fields[i]).GetPhysicalName(table.provider))
 			b.WriteString(fieldListSeparator)
@@ -1354,7 +1354,8 @@ func (table *Table) createIndexes(jobId int64, schema *Schema) {
 
 	for i := 0; i < len(table.indexes); i++ {
 		index := table.indexes[i]
-		if (table.tableType == tabletype.Meta || table.tableType == tabletype.MetaId) && index.IsUnique() {
+		if (table.tableType == tabletype.Meta || table.tableType == tabletype.MetaId ||
+			table.tableType == tabletype.LexiconItem) && index.IsUnique() {
 			continue
 		}
 		err := index.create(jobId, schema, table)
@@ -1784,33 +1785,33 @@ func (table *Table) getLexiconItemTable(provider databaseprovider.DatabaseProvid
 	var idxUk = Index{}
 	var id = Field{}
 	var lexiconId = Field{}
-	var referenceId = Field{}
+	var langId = Field{}
 	var value = Field{}
 
 	id.Init(5801, metaFieldId, "", fieldtype.Int, 0, "", true, true, true, false, true)
-	lexiconId.Init(5813, metaLexItmLexId, "", fieldtype.Int, 0, "", true, false, true, false, true)
-	referenceId.Init(5827, metaReferenceId, "", fieldtype.Int, 0, "", true, false, true, false, true)
-	value.Init(5843, metaValue, "", fieldtype.String, 0, "", true, true, true, false, true)
+	lexiconId.Init(5813, metaLexItmLexId, "", fieldtype.Int, 0, "", true, true, true, false, true)
+	langId.Init(5827, metaLangId, "", fieldtype.Short, 0, "", true, true, true, false, true)
+	value.Init(5843, metaValue, "", fieldtype.String, 0, "", true, true, false, false, true)
 
 	/*
-	   (0)  id,           // line of excel / languageId
-	   (1)  lexicon_id,
-	   (3)  reference_id,
-	   (4)  value,
+	   (0)  id,           // line of excel
+	   (1)  lang_id,      // current language Id
+	   (2)  lexicon_id,
+	   (3)  value,
 	*/
 
-	fields = append(fields, id)          //1
-	fields = append(fields, lexiconId)   //2
-	fields = append(fields, referenceId) //3
-	fields = append(fields, value)       //4
+	fields = append(fields, id)        //1
+	fields = append(fields, lexiconId) //2
+	fields = append(fields, langId)    //3
+	fields = append(fields, value)     //4
 
 	/*
 	   -----
-	   unique key(1)      id, lexicon_id, reference_id
+	   unique key(1)    id, lexicon_id, lang_id
 	*/
 
 	// indexes
-	var indexedUkFields = []string{id.GetName(), lexiconId.GetName(), referenceId.GetName(), value.GetName()}
+	var indexedUkFields = []string{id.GetName(), lexiconId.GetName(), langId.GetName()}
 	idxUk.Init(1, metaLexItmTableName, "", indexedUkFields, false, true, true, true)
 	indexes = append(indexes, idxUk)
 

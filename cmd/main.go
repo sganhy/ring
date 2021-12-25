@@ -58,6 +58,8 @@ func main() {
 
 	var metaSchema = schema.GetSchemaByName("@meta")
 	var meto = metaSchema.ToMeta()
+	var lexicon = metaSchema.GetTableByName("@lexicon")
+	fmt.Println(lexicon.GetName())
 	for i := 0; i < len(meto); i++ {
 		if meto[i].GetEntityType() == 0 {
 			fmt.Println(meto[i].String())

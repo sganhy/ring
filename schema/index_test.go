@@ -61,7 +61,7 @@ func Test__Index__Init(t *testing.T) {
 }
 
 // test mappers Meta to Index, and Index to Meta
-func Test__Index__ToMeta(t *testing.T) {
+func Test__Index__toMeta(t *testing.T) {
 
 	elemi0 := Index{}
 	aarr := []string{"Gga", "Zorba", "testllk", "testllk22"}

@@ -62,6 +62,7 @@ const (
 	searchableFieldPrefix      string = "s_"
 	fieldToStringFormat        string = "id=%d; name=%s; description=%s; type=%s; defaultValue=%s; baseline=%t; notNull=%t; caseSensitive=%t; multilingual=%t; active=%t"
 	postGreDefaultCollate      string = "COLLATE \"C\""
+	postGreDefaultValue        string = "DEFAULT \"C\""
 )
 
 var (
@@ -246,6 +247,11 @@ func (field *Field) GetDdl(provider databaseprovider.DatabaseProvider, tableType
 	datatype := field.getSqlDataType(provider)
 	if datatype == unknownFieldDataType {
 		return unknownFieldDataType
+	}
+	defaultValue := field.getDdlDefault(provider, tableType)
+	if len(defaultValue) > 0 {
+		result.WriteString(fieldDdlSeparator)
+		result.WriteString(defaultValue)
 	}
 	collate := field.getCollation(provider)
 	result.WriteString(field.GetPhysicalName(provider))
@@ -507,8 +513,17 @@ func (field *Field) getDefaultPrimaryKey() *Field {
 	return defaultPrimaryKeyInt64
 }
 
-func (field *Field) getDdlDefault(provider databaseprovider.DatabaseProvider) string {
-	return ""
+func (field *Field) getDdlDefault(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType) string {
+	var result string
+	if tableType != tabletype.Mtm && tableType != tabletype.Business {
+		switch provider {
+		case databaseprovider.PostgreSql:
+			//result = postGreDefaultValue + ""
+			result = ""
+			break
+		}
+	}
+	return result
 }
 
 func (field *Field) getCollation(provider databaseprovider.DatabaseProvider) string {

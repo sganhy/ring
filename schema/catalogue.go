@@ -91,7 +91,7 @@ func (cata *catalogue) GetDql(provider databaseprovider.DatabaseProvider, entity
 //******************************
 func (cata *catalogue) exists(schema *Schema, ent entity) bool {
 	query := cata.GetDql(schema.GetDatabaseProvider(), ent.GetEntityType())
-	if query != "" {
+	if len(query) > 0 {
 		var metaQuery = metaQuery{}
 		metaQuery.query = query
 		metaQuery.Init(schema, catalogTable)

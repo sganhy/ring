@@ -184,7 +184,6 @@ func (importFile *Import) Upgrade() {
 			importFile.logError(err)
 			return
 		}
-		go importFile.analyzeMetaTables()
 		//TODO rollback !!
 		// no error
 		importFile.loaded = false
@@ -193,8 +192,12 @@ func (importFile *Import) Upgrade() {
 
 		// database.go
 		upgradeSchema(importFile.jobId, importFile.newSchema)
-		runtime.GC()
 
+		// at the end perform vacuum
+		go importFile.analyzeMetaTables()
+
+		// release ressources
+		runtime.GC()
 	}
 }
 
@@ -829,7 +832,7 @@ func (importFile *Import) analyzeMetaTables() {
 		table.Vacuum(importFile.jobId)
 		table.Analyze(importFile.jobId)
 	}
-	if importFile.metaChangeCount > 0 {
+	if importFile.metaChangeCount > 10 {
 		table = metaSchema.GetTableByName(metaTableName)
 		table.Vacuum(importFile.jobId)
 		table.Analyze(importFile.jobId)
