@@ -81,7 +81,7 @@ func (tableSpace *tablespace) Clone() *tablespace {
 
 func (tableSpace *tablespace) GetDdl(statement ddlstatement.DdlStatement, provider databaseprovider.DatabaseProvider) string {
 	switch statement {
-	case ddlstatement.NotDefined:
+	case ddlstatement.Undefined:
 		return tableSpace.GetEntityType().String() + " " + tableSpace.name
 	case ddlstatement.Create:
 		return tableSpace.getDdlCreate(provider)

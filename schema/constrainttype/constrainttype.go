@@ -10,7 +10,7 @@ const (
 	Check      ConstraintType = 3
 	NotNull    ConstraintType = 8
 	ForeignKey ConstraintType = 9
-	NotDefined ConstraintType = 125
+	Undefined  ConstraintType = 125
 )
 
 func (constraintType ConstraintType) String() string {

@@ -175,7 +175,7 @@ func getDefaultDbProvider() databaseprovider.DatabaseProvider {
 	if metaSchema != nil {
 		return metaSchema.GetDatabaseProvider()
 	}
-	return databaseprovider.NotDefined
+	return databaseprovider.Undefined
 }
 
 func formatSchemaName(name string) string {
@@ -360,7 +360,7 @@ func getSchemaIdList() []int32 {
 
 // load schema from @meta table sort by reference_
 func getSchemaById(schemaId int32, disablePool bool, includeInactive bool) *Schema {
-	var metaList = getMetaList(schemaId, entitytype.NotDefined, includeInactive)
+	var metaList = getMetaList(schemaId, entitytype.Undefined, includeInactive)
 	var metaIdList = getMetaIdList(schemaId)
 	var schema = new(Schema)
 	return schema.getSchema(schemaId, metaList, metaIdList, disablePool)
@@ -377,7 +377,7 @@ func getMetaList(schemaId int32, entityType entitytype.EntityType, includeInacti
 		query.addFilter(metaActive, operatorEqual, true)
 	}
 
-	if entityType != entitytype.NotDefined {
+	if entityType != entitytype.Undefined {
 		query.addFilter(metaObjectType, operatorEqual, int8(entityType))
 	}
 	// improve perf to load schema later

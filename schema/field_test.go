@@ -486,7 +486,7 @@ func Test__Field__GetValue(t *testing.T) {
 
 func Test__Field__IsValueValid(t *testing.T) {
 	elemf0 := new(Field)
-	elemf0.Init(11, "a_name", "AField Test", fieldtype.NotDefined, 10, "test default", true, false, false, true, true)
+	elemf0.Init(11, "a_name", "AField Test", fieldtype.Undefined, 10, "test default", true, false, false, true, true)
 
 	// get default validation should be equal to false
 	if elemf0.IsValueValid("00") != false {
@@ -505,8 +505,8 @@ func Test__Field__getSearchableDdl(t *testing.T) {
 		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl('a_name') must be equal to 's_a_name varchar(10)'")
 	}
 
-	if elemf0.getSearchableDdl(databaseprovider.NotDefined, tableType) != unknownFieldDataType {
-		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl(databaseprovider.NotDefined, 'a_name') must be empty")
+	if elemf0.getSearchableDdl(databaseprovider.Undefined, tableType) != unknownFieldDataType {
+		t.Errorf("Field.getSearchableDdl() ==> getSearchableDdl(databaseprovider.Undefined, 'a_name') must be empty")
 	}
 
 }

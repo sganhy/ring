@@ -15,17 +15,17 @@ func Test__Meta__GetEntityType(t *testing.T) {
 	metaData.refId = 545434
 
 	metaData.objectType = 4
-	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> objectType==4 must return entitytype.NotDefined")
+	if metaData.GetEntityType() != entitytype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> objectType==4 must return entitytype.Undefined")
 	}
 	metaData.objectType = 5
-	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> objectType==5 must return entitytype.NotDefined")
+	if metaData.GetEntityType() != entitytype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> objectType==5 must return entitytype.Undefined")
 	}
 
 	metaData.objectType = 6
-	if metaData.GetEntityType() != entitytype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> objectType==6 must return entitytype.NotDefined")
+	if metaData.GetEntityType() != entitytype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> objectType==6 must return entitytype.Undefined")
 	}
 }
 
@@ -37,17 +37,17 @@ func Test__Meta__GetRelationType(t *testing.T) {
 	metaData.refId = 545434
 
 	metaData.setRelationType(4)
-	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> relationType==4 must return entitytype.NotDefined")
+	if metaData.GetRelationType() != relationtype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> relationType==4 must return entitytype.Undefined")
 	}
 	metaData.setRelationType(5)
-	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> relationType==5 must return entitytype.NotDefined")
+	if metaData.GetRelationType() != relationtype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> relationType==5 must return entitytype.Undefined")
 	}
 
 	metaData.setRelationType(6)
-	if metaData.GetRelationType() != relationtype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> relationType==6 must return entitytype.NotDefined")
+	if metaData.GetRelationType() != relationtype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> relationType==6 must return entitytype.Undefined")
 	}
 }
 
@@ -59,17 +59,17 @@ func Test__Meta__GetFieldType(t *testing.T) {
 	metaData.refId = 545434
 
 	metaData.dataType = 4
-	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> fieldType==4 must return entitytype.NotDefined")
+	if metaData.GetFieldType() != fieldtype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> fieldType==4 must return entitytype.Undefined")
 	}
 	metaData.dataType = 5
-	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("meta.GetEntityType() ==> fieldType==5 must return entitytype.NotDefined")
+	if metaData.GetFieldType() != fieldtype.Undefined {
+		t.Errorf("meta.GetEntityType() ==> fieldType==5 must return entitytype.Undefined")
 	}
 
 	metaData.dataType = 6
-	if metaData.GetFieldType() != fieldtype.NotDefined {
-		t.Errorf("meta.GetFieldType() ==> fieldType==6 must return entitytype.NotDefined")
+	if metaData.GetFieldType() != fieldtype.Undefined {
+		t.Errorf("meta.GetFieldType() ==> fieldType==6 must return entitytype.Undefined")
 	}
 }
 

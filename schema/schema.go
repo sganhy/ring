@@ -590,7 +590,7 @@ func (schema *Schema) getEmptySchema() *Schema {
 
 	var connectionstring string = ""
 	var disablePool = true
-	var provider = databaseprovider.NotDefined
+	var provider = databaseprovider.Undefined
 
 	result.Init(-1, emptySchemaName, "", "", connectionstring, tables,
 		tablespaces, sequences, parameters, provider, minConnection, maxConnection, true, true,
@@ -796,7 +796,7 @@ func (schema *Schema) getSchemaInfo(metaList []meta) (string, string, string, da
 				databaseprovider.GetDatabaseProviderById(int(metaData.flags))
 		}
 	}
-	return "", "", "", databaseprovider.NotDefined
+	return "", "", "", databaseprovider.Undefined
 }
 
 func (schema *Schema) loadMtmTables() {

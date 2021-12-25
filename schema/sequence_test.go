@@ -42,7 +42,7 @@ func Test__Sequence__toMeta(t *testing.T) {
 		t.Errorf("Sequence.Init() ==> s1.GetName() must be equal to s2.GetName()")
 	}
 	if sequence01.GetId() != sequence02.GetId() {
-		t.Errorf("Sequence.toMeta() ==> s1.GetName() must be equal to s2.GetName()")
+		t.Errorf("Sequence.toMeta() ==> s1.GetId() must be equal to s2.GetId()")
 	}
 	if sequence01.GetDescription() != sequence02.GetDescription() {
 		t.Errorf("Sequence.toMeta() ==> s1.GetDescription() must be equal to s2.GetDescription()")
@@ -68,7 +68,7 @@ func Test__Sequence__Clone(t *testing.T) {
 		t.Errorf("Sequence.Clone() ==> s1.GetName() must be equal to s2.GetName()")
 	}
 	if sequence01.GetId() != sequence02.GetId() {
-		t.Errorf("Sequence.Clone() ==> s1.GetName() must be equal to s2.GetName()")
+		t.Errorf("Sequence.Clone() ==> s1.GetId() must be equal to s2.GetId()")
 	}
 	if sequence01.GetDescription() != sequence02.GetDescription() {
 		t.Errorf("Sequence.Clone() ==> s1.GetDescription() must be equal to s2.GetDescription()")

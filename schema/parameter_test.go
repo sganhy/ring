@@ -39,7 +39,7 @@ func Test__Parameter__toMeta(t *testing.T) {
 		t.Errorf("Parameter.toMeta() ==> p0.GetValue() must be equal to p1.GetValue()")
 	}
 
-	elemp0.Init(111778, "test parameter", "test description", 5555, entitytype.Constraint, fieldtype.NotDefined, "value test!!")
+	elemp0.Init(111778, "test parameter", "test description", 5555, entitytype.Constraint, fieldtype.Undefined, "value test!!")
 	if elemp0.GetDataType() != fieldtype.String {
 		t.Errorf("Parameter.toMeta() ==> p0.GetDataType() must be equal to fieldtype.String")
 	}

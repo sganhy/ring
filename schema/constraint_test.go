@@ -66,7 +66,7 @@ func Test__Constraint__getDdlCreatePrimaryKey(t *testing.T) {
 	//==== constraint type not defined
 	metaTable = table.getMetaTable(databaseprovider.MySql, "information_schema")
 	constr = new(constraint)
-	constr.Init(constrainttype.NotDefined, metaTable, nil, nil)
+	constr.Init(constrainttype.Undefined, metaTable, nil, nil)
 	expectedSql = ""
 	if constr.GetDdl(ddlstatement.Create, nil) != expectedSql {
 		t.Errorf("Constraint.GetDdl() ==> query must be empty ")

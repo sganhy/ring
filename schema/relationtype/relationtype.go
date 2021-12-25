@@ -17,12 +17,12 @@ const (
 )
 
 const (
-	Otop       RelationType = 1
-	Otm        RelationType = 2
-	Mtm        RelationType = 3
-	Mto        RelationType = 11
-	Otof       RelationType = 12
-	NotDefined RelationType = 123
+	Otop      RelationType = 1
+	Otm       RelationType = 2
+	Mtm       RelationType = 3
+	Mto       RelationType = 11
+	Otof      RelationType = 12
+	Undefined RelationType = 123
 )
 
 func (relationType RelationType) String() string {
@@ -54,7 +54,7 @@ func (relationType RelationType) InverseRelationType() RelationType {
 	case Otof:
 		return Otop
 	}
-	return NotDefined
+	return Undefined
 }
 
 func GetRelationType(value string) RelationType {
@@ -70,7 +70,7 @@ func GetRelationType(value string) RelationType {
 	case strings.ToLower(strOtof):
 		return Otof
 	}
-	return NotDefined
+	return Undefined
 }
 
 func GetRelationTypeById(entityId int) RelationType {
@@ -80,6 +80,6 @@ func GetRelationTypeById(entityId int) RelationType {
 			return newId
 		}
 	}
-	return NotDefined
+	return Undefined
 
 }

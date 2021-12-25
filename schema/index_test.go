@@ -263,7 +263,7 @@ func Test__Index__GetDdl(t *testing.T) {
 
 	// unknown db provider
 	table.Init(1077, "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, "information_schema", tabletype.Business, databaseprovider.NotDefined,
+		physicaltype.Table, -111, "information_schema", tabletype.Business, databaseprovider.Undefined,
 		"[subject]", true, false, true, false)
 
 	if uk.GetDdl(ddlstatement.Create, table, nil) != "" {

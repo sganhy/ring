@@ -278,7 +278,7 @@ func getMetaImportFile() *Import {
 	var result = new(Import)
 	schema := new(Schema)
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
-	result.provider = databaseprovider.NotDefined
+	result.provider = databaseprovider.Undefined
 	logger := new(log)
 	logger.Init(0, 0, true)
 	result.logger = logger
@@ -323,7 +323,7 @@ func getTestImportFile() *Import {
 	var result = new(Import)
 	schema := new(Schema)
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
-	result.provider = databaseprovider.NotDefined
+	result.provider = databaseprovider.Undefined
 	logger := new(log)
 	logger.Init(0, 0, true)
 	result.logger = logger

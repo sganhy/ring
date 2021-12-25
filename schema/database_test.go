@@ -36,7 +36,7 @@ func Test__Database__GetTableBySchemaName(t *testing.T) {
 
 	elemt := Table{}
 	elemt.Init(22, "zorro", "hellkzae", fields, relations, indexes,
-		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined, "subject test", true, false, true, false)
+		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.Undefined, "subject test", true, false, true, false)
 	tables = append(tables, &elemt)
 	schema.Init(211, "test", "test", "test", "test", tables, tablespaces, sequences, parameters,
 		databaseprovider.Influx, 0, 0, true, true, true)

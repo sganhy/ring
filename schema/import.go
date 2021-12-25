@@ -93,7 +93,7 @@ func (importFile *Import) Init(source sourcetype.SourceType, fileName string) {
 	importFile.initialized = true
 	importFile.source = source
 	importFile.logger = new(log)
-	importFile.logger.Init(schemaNotDefined, 0, false)
+	importFile.logger.Init(schemaUndefined, 0, false)
 	importFile.loaded = false
 }
 

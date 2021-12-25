@@ -65,7 +65,7 @@ func Test__Relation__toMeta(t *testing.T) {
 	//var prim = schema.GetDefaultPrimaryKey()
 	fields = append(fields, elemf)
 	elemt := Table{}
-	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	elemr0 := Relation{}
@@ -118,7 +118,7 @@ func Test__Relation__GetDdl(t *testing.T) {
 	//var prim = schema.GetDefaultPrimaryKey()
 	fields = append(fields, elemf)
 	elemt := Table{}
-	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	elemr0 := Relation{}
@@ -148,7 +148,7 @@ func Test__Relation__Clone(t *testing.T) {
 	//var prim = schema.GetDefaultPrimaryKey()
 	fields = append(fields, elemf)
 	elemt := Table{}
-	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	elemr0 := Relation{}
@@ -195,7 +195,7 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	relations = append(relations, elemr1)
 
 	elemt01 := Table{}
-	elemt01.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt01.Init(22, "rel test", "hellkzae", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	elemr0.setToTable(&elemt01)
@@ -220,7 +220,7 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	elemr3 := Relation{}
 	elemr3.Init(25, "test2", "[description]", nil, relationtype.Mtm, false, false, true, false)
 	relations[0] = elemr3
-	elemt01.Init(22, "rel test", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt01.Init(22, "rel test", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	//TABLE 2
@@ -229,7 +229,7 @@ func Test__Relation__loadMtmName(t *testing.T) {
 	elemr4.Init(24, "test2 inv", "[description]", nil, relationtype.Mtm, false, false, true, false)
 	relations[0] = elemr4
 	elemt02 := Table{}
-	elemt02.Init(23, "rel test33", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.NotDefined, "subject test",
+	elemt02.Init(23, "rel test33", "[description]", fields, relations, indexes, physicaltype.Table, 64, "", tabletype.Business, databaseprovider.Undefined, "subject test",
 		true, false, true, false)
 
 	elemt01.relations[0].setToTable(&elemt02)

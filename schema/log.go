@@ -24,12 +24,12 @@ type log struct {
 }
 
 const (
-	levelError       int8  = 1
-	levelInfo        int8  = 2
-	levelWarning     int8  = 3
-	levelFatal       int8  = 4
-	levelDebug       int8  = 5
-	schemaNotDefined int32 = -2
+	levelError      int8  = 1
+	levelInfo       int8  = 2
+	levelWarning    int8  = 3
+	levelFatal      int8  = 4
+	levelDebug      int8  = 5
+	schemaUndefined int32 = -2
 )
 
 var (
@@ -55,7 +55,7 @@ func (logger *log) Init(schemaId int32, jobId int64, disableDbLogs bool) {
 		return
 	}
 
-	if schemaId != schemaNotDefined {
+	if schemaId != schemaUndefined {
 		// get metas chema to fetch current JobId
 		if schemaId == 0 {
 			logger.initInfo(1, 0, "Baseline logger initialized", "")
@@ -337,7 +337,7 @@ func (logger *log) extractMessage(params []interface{}) string {
 /*TEST ==>
 func LogTest(id int32, jobId int64, messages ...interface{}) {
 	logTest := new(log)
-	logTest.Init(schemaNotDefined, false)
+	logTest.Init(schemaUndefined, false)
 	logTest.writePartialLog(id, levelError, jobId, messages)
 }
 */

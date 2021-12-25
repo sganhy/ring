@@ -37,7 +37,7 @@ func (param *parameter) Init(id int32, name string, description string, schemaId
 	param.description = description
 	param.parameterType = parameterType
 	param.schemaId = schemaId
-	if fieldType == fieldtype.NotDefined {
+	if fieldType == fieldtype.Undefined {
 		param.dataType = fieldtype.String
 	} else {
 		param.dataType = fieldType

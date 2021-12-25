@@ -197,7 +197,7 @@ func (index *Index) loadFields(fields []string) {
 }
 
 func (index *Index) getDdlDrop(table *Table) string {
-	if table == nil || table.GetDatabaseProvider() == databaseprovider.NotDefined {
+	if table == nil || table.GetDatabaseProvider() == databaseprovider.Undefined {
 		return ""
 	}
 	var query strings.Builder
@@ -235,7 +235,7 @@ func (index *Index) getDdlCreate(table *Table, tableSpace *tablespace) string {
 		sqlUnique = " UNIQUE"
 	}
 	if tableSpace != nil {
-		sqlTablespace = tableSpace.GetDdl(ddlstatement.NotDefined, provider)
+		sqlTablespace = tableSpace.GetDdl(ddlstatement.Undefined, provider)
 	}
 
 	fields = index.getFieldList(table)

@@ -186,7 +186,7 @@ func (constr *constraint) getDdlCreatePrimaryKey(tableSpace *tablespace) string 
 	if len(fields) > 0 {
 		if tableSpace != nil && provider == databaseprovider.PostgreSql {
 			// postgresql only ==>
-			sqlTablespace = "USING INDEX " + tableSpace.GetDdl(ddlstatement.NotDefined, constr.table.GetDatabaseProvider())
+			sqlTablespace = "USING INDEX " + tableSpace.GetDdl(ddlstatement.Undefined, constr.table.GetDatabaseProvider())
 		}
 
 		switch provider {

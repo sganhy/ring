@@ -200,11 +200,11 @@ func (metaData *meta) toTable(fields []Field, relations []Relation, indexes []In
 		var table = new(Table)
 		/*
 			t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
-			physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
+			physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.Undefined, "", true, false, true, true)
 		*/
 		table.Init(metaData.id, metaData.name, metaData.description, fields, relations, indexes,
 			physicaltype.Table, 0, metaSchemaName, tabletype.Business,
-			databaseprovider.NotDefined, metaData.value, metaData.IsTableCached(), metaData.IsTableReadonly(), metaData.IsEntityBaseline(),
+			databaseprovider.Undefined, metaData.value, metaData.IsTableCached(), metaData.IsTableReadonly(), metaData.IsEntityBaseline(),
 			metaData.enabled)
 		return table
 	}
@@ -338,7 +338,7 @@ func (metaData *meta) readFlag(bitPosition uint8) bool {
 }
 
 func (metaData *meta) saveMetaList(schemaId int32, metaList []*meta) (int64, error) {
-	prevMetaList := getMetaList(schemaId, entitytype.NotDefined, true)
+	prevMetaList := getMetaList(schemaId, entitytype.Undefined, true)
 	var err error
 	var count int64 = 0
 

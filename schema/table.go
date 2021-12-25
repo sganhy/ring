@@ -136,7 +136,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.readonly = readonly
 	table.baseline = baseline
 	table.active = active
-	if provider != databaseprovider.NotDefined {
+	if provider != databaseprovider.Undefined {
 		table.physicalName = table.getPhysicalName(provider, tableType, table.name, schemaPhysicalName)
 		table.fieldList = table.getFieldList()
 		table.loadSqlCapacity(provider) // !!!load after loadFields
@@ -387,7 +387,7 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 		query.WriteString(table.getOptions())
 		if tableSpace != nil {
 			query.WriteString(ddlSpace)
-			query.WriteString(tableSpace.GetDdl(ddlstatement.NotDefined, table.provider))
+			query.WriteString(tableSpace.GetDdl(ddlstatement.Undefined, table.provider))
 		}
 		break
 	case ddlstatement.Alter:
@@ -1835,7 +1835,7 @@ func (table *Table) getLongTable() *Table {
 	fields = append(fields, value) //1
 
 	result.Init(int32(tabletype.Logical), metaLongTableName, "", fields, relations, indexes, physicaltype.Logical, 0, "",
-		tabletype.Logical, databaseprovider.NotDefined, "", false, false, true, true)
+		tabletype.Logical, databaseprovider.Undefined, "", false, false, true, true)
 	return result
 }
 

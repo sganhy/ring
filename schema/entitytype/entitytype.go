@@ -19,7 +19,7 @@ const (
 	Parameter  EntityType = 23
 	Alias      EntityType = 25
 	Constraint EntityType = 101 // not stored in @meta table
-	NotDefined EntityType = MaxEntityTypeId
+	Undefined  EntityType = MaxEntityTypeId
 )
 
 func (entityType EntityType) String() string {
@@ -58,5 +58,5 @@ func GetEntityTypeById(entityId int) EntityType {
 			return newId
 		}
 	}
-	return NotDefined
+	return Undefined
 }

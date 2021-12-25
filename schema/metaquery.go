@@ -401,7 +401,7 @@ func (query *metaQuery) logDdl(id int32, jobId int64, ent entity, creationTime t
 	}
 
 	//logs
-	if statement == ddlstatement.NotDefined {
+	if statement == ddlstatement.Undefined {
 		message = sqlfmt.ToPascalCase(operation) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
 	} else {
 		message = sqlfmt.ToPascalCase(statement.String()) + " " + sqlfmt.ToCamelCase(ent.GetEntityType().String())
@@ -424,7 +424,7 @@ func (query *metaQuery) getLogDescription(entityName string, ent entity, creatio
 
 	var description string
 	switch statement {
-	case ddlstatement.Create, ddlstatement.Drop, ddlstatement.Truncate, ddlstatement.NotDefined:
+	case ddlstatement.Create, ddlstatement.Drop, ddlstatement.Truncate, ddlstatement.Undefined:
 		description = query.getLogCreateDescription(entityName, ent, creationTime)
 		break
 	case ddlstatement.Alter:
@@ -535,8 +535,8 @@ func (query *metaQuery) vacuum(id int32, jobId int64, ent entity) error {
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatement(ddlstatement.NotDefined) {
-		query.logDdl(id, jobId, ent, createTime, ddlstatement.NotDefined, err, "Vacuum")
+	if ent.logStatement(ddlstatement.Undefined) {
+		query.logDdl(id, jobId, ent, createTime, ddlstatement.Undefined, err, "Vacuum")
 	}
 
 	return err
@@ -548,8 +548,8 @@ func (query *metaQuery) analyze(id int32, jobId int64, ent entity) error {
 	query.dml = false
 	err := query.schema.execute(query)
 
-	if ent.logStatement(ddlstatement.NotDefined) {
-		query.logDdl(id, jobId, ent, eventTime, ddlstatement.NotDefined, err, "Analyze")
+	if ent.logStatement(ddlstatement.Undefined) {
+		query.logDdl(id, jobId, ent, eventTime, ddlstatement.Undefined, err, "Analyze")
 	}
 
 	return err

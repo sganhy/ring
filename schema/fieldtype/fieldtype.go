@@ -23,7 +23,7 @@ const (
 	strLongDateTime2  string = "LongDateTime"
 	strArray          string = "Array"
 	strBoolean        string = "Boolean"
-	strNotDefined     string = "Not Defined"
+	strUndefined      string = "Not Defined"
 )
 
 const (
@@ -40,7 +40,7 @@ const (
 	Array         FieldType = 21
 	Boolean       FieldType = 23
 	LongString    FieldType = 27
-	NotDefined    FieldType = 125
+	Undefined     FieldType = 125
 )
 
 func (fieldType FieldType) String() string {
@@ -69,8 +69,8 @@ func (fieldType FieldType) String() string {
 		return strArray
 	case Boolean:
 		return strBoolean
-	case NotDefined:
-		return strNotDefined
+	case Undefined:
+		return strUndefined
 	}
 	return ""
 }
@@ -100,7 +100,7 @@ func GetFieldType(value string) FieldType {
 	case strings.ToLower(strBoolean):
 		return Boolean
 	}
-	return NotDefined
+	return Undefined
 }
 
 func GetFieldTypeById(entityId int) FieldType {
@@ -112,5 +112,5 @@ func GetFieldTypeById(entityId int) FieldType {
 			return newId
 		}
 	}
-	return NotDefined
+	return Undefined
 }

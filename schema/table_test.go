@@ -175,7 +175,7 @@ func Test__Table__GetFieldByName(t *testing.T) {
 
 	//t.Errorf("fields.Count ==> %d ", len(fields))
 	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, "@meta", tabletype.Business, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, -111, "@meta", tabletype.Business, databaseprovider.Undefined, "", true, false, true, true)
 
 	//t.Errorf("Table.fields.Count ==> %d /%d", len(table.fields), cap(table.fields))
 	//t.Errorf("Table.fieldsById.Count ==> %d /%d", len(table.fieldsById), cap(table.fieldsById))
@@ -260,7 +260,7 @@ func Test__Table__GetRelationByName(t *testing.T) {
 
 	//t.Errorf("fields.Count ==> %d ", len(fields))
 	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, metaSchemaName, tabletype.Mtm, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, -111, metaSchemaName, tabletype.Mtm, databaseprovider.Undefined, "", true, false, true, true)
 
 	for i := 0; i < len(relations); i++ {
 		// test valid field only
@@ -329,7 +329,7 @@ func Test__Table__GetIndexByName(t *testing.T) {
 	}
 
 	table.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.Undefined, "", true, false, true, true)
 
 	//t.Errorf("indexes.Count ==> %d ", len(table.indexes))
 
@@ -377,7 +377,7 @@ func Test__Table__Clone(t *testing.T) {
 	indexes = append(indexes, uk)
 
 	t1.Init(1154, "@meta", "ATable Test", fields, relations, indexes,
-		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.NotDefined, "", true, false, true, true)
+		physicaltype.Table, -111, metaSchemaName, tabletype.Fake, databaseprovider.Undefined, "", true, false, true, true)
 
 	t2 := t1.Clone()
 
@@ -757,7 +757,7 @@ func Test__Table__getVariableInfo(t *testing.T) {
 	//======================
 	//==== testing Others
 	//======================
-	table = table.getMetaTable(databaseprovider.NotDefined, "zorba")
+	table = table.getMetaTable(databaseprovider.Undefined, "zorba")
 	name, initialId = table.getVariableInfo()
 	if initialId != 0 {
 		t.Errorf("Table.getVariableInfo() ==> initial id must be equal to 0")

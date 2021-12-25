@@ -94,7 +94,7 @@ func Test__Schema__GetTableByName(t *testing.T) {
 
 	elemt := Table{}
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined,
+		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.Undefined,
 		"subject test", true, false, true, false)
 	for i := -100; i <= TABLE_COUNT; i++ {
 		table := elemt.Clone()
@@ -253,7 +253,7 @@ func Test__Schema__findTablespace(t *testing.T) {
 
 	elemt := Table{}
 	elemt.Init(22, "rel test", "hellkzae", fields, relations, indexes,
-		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.NotDefined,
+		physicaltype.Table, 64, "", tabletype.Lexicon, databaseprovider.Undefined,
 		"subject test", true, false, true, false)
 	tables = append(tables, &elemt)
 

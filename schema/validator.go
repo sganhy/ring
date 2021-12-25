@@ -347,12 +347,12 @@ func (valid *validator) entityTypeValid(importFile *Import) {
 	for i := 0; i < len(metaList); i++ {
 		metaData := metaList[i]
 		metaType := metaData.GetEntityType()
-		if metaType == entitytype.Relation && metaData.GetRelationType() == relationtype.NotDefined {
+		if metaType == entitytype.Relation && metaData.GetRelationType() == relationtype.Undefined {
 			var description = fmt.Sprintf("wrong relation type (must be OTOP, OTM, MTM, MTO, or OTOF)"+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(852, "Invalid relation type", description)
 		}
 
-		if metaType == entitytype.Field && metaData.GetFieldType() == fieldtype.NotDefined {
+		if metaType == entitytype.Field && metaData.GetFieldType() == fieldtype.Undefined {
 			var description = fmt.Sprintf("wrong field type "+validatorAtLine, metaData.lineNumber)
 			importFile.logErrorStr(853, "Invalid field type", description)
 		}

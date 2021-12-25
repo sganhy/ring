@@ -31,7 +31,7 @@ func init() {
 	// take random table from metaSchema
 	table := new(Table)
 	//TODO create catalogue table
-	catalogTable = table.getMetaTable(databaseprovider.NotDefined, "")
+	catalogTable = table.getMetaTable(databaseprovider.Undefined, "")
 }
 
 //******************************
