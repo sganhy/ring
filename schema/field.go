@@ -351,6 +351,7 @@ func (field *Field) GetDateTimeString(t time.Time) string {
 
 // calculate
 func (field *Field) GetParameterValue(value string) interface{} {
+
 	switch field.fieldType {
 	case fieldtype.Long, fieldtype.Int, fieldtype.Byte, fieldtype.Short:
 		val, _ := strconv.ParseInt(value, 10, 64)

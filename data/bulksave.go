@@ -7,7 +7,8 @@ import (
 )
 
 type BulkSave struct {
-	data map[int32][]schema.Query
+	data        map[int32][]schema.Query
+	insertCount int64
 }
 
 //******************************
@@ -18,6 +19,7 @@ type BulkSave struct {
 // public methods
 //******************************
 func (bulkSave *BulkSave) InsertRecord(record *Record) error {
+	bulkSave.insertCount++
 	return bulkSave.addRecord(record, bulksavetype.InsertRecord)
 }
 
@@ -37,12 +39,13 @@ func (bulkSave *BulkSave) Save() error {
 				sch.Execute(element, true)
 			}
 		}
-
 	}
 	return nil //bulkSave.currentSchema.Execute(bulkSave.data)
 }
 
 func (bulkSave *BulkSave) Clear() {
+	bulkSave.insertCount = 0
+
 	if bulkSave.data != nil {
 		// re-slicing
 		for key, element := range bulkSave.data {

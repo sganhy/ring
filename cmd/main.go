@@ -8,11 +8,8 @@ import (
 	"ring/schema"
 	"ring/schema/databaseprovider"
 	"ring/schema/fieldtype"
-	"ring/schema/relationtype"
-	"ring/schema/searchabletype"
 	"ring/schema/sourcetype"
 	"runtime"
-	"strings"
 	"time"
 
 	_ "github.com/denisenkom/go-mssqldb"
@@ -40,29 +37,17 @@ func main() {
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
 	rcd.SetRecordType("RpgSheet.skill")
-
+	rcd.SetField("id", 3)
+	rcd.SetField("name", "test")
 	var bs = new(data.BulkSave)
 	bs.InsertRecord(rcd)
-	bs.InsertRecord(rcd)
+	//	bs.InsertRecord(rcd)
 	bs.Save()
-
-	var lang = new(schema.Language)
-	var langList = lang.GetList()
-	fmt.Println(len(langList))
-	for i := 0; i < len(langList); i++ {
-		var lang2 = langList[i]
-		fmt.Println(lang2.String())
-	}
-	lang.Init("es-MX")
-	lang.Init("es")
-	fmt.Println(lang.String())
 
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
-
-	_, _ = lang.IsCodeValid("FR")
 
 	var metaSchema = schema.GetSchemaByName("@meta")
 	var meto = metaSchema.ToMeta()
@@ -115,58 +100,5 @@ func main() {
 	br.RetrieveRecords()
 
 	runtime.GC()
-
-	//time.Sleep(time.Second * 10)
-
-	var lstTest = br.GetRecordList(0)
-	fmt.Println("RECORD =======>")
-	fmt.Println(lstTest.Count())
-	fmt.Println(lstTest.ItemByIndex(0).String())
-	//fmt.Println(lstTest.ItemByIndex(0).ToString())
-
-	recordType := ".@meta2"
-	var index = strings.Index(recordType, ".")
-	fmt.Println(recordType[:index])
-	fmt.Println(recordType[index+1:])
-	rcd.SetRecordType("@meta")
-	rcd.SetField("description", "758645454")
-	rcd.SetField("value", 40.4)
-	fmt.Println(rcd.GetField("description"))
-	fmt.Println(rcd.GetField("reference_id"))
-
-	fmt.Println("Successfully connected!")
-
-	// FIELDS **********
-	elemf := schema.Field{}
-	elemf.Init(21, "Field Test", "Field Test", fieldtype.Double, 5, "", true, false, false, true, true)
-
-	fmt.Println(elemf.IsNumeric())
-	var sss = elemf.GetSearchableValue("a", searchabletype.None)
-	var sss2 = "A"
-	fmt.Println(sss)
-	fmt.Println(sss2)
-	fmt.Println(elemf.GetSearchableValue("Français", searchabletype.None))
-	fmt.Println(elemf.GetSearchableValue("", searchabletype.None))
-	fmt.Println(elemf.GetSearchableValue("a", searchabletype.None))
-
-	elemf2 := schema.Field{}
-	elemf2.Init(4, "Zorba", "Zorba", fieldtype.Double, 5, "", true, false, false, true, true)
-
-	elemf3 := schema.Field{}
-	elemf3.Init(7, "Gga", "Gga", fieldtype.Double, 5, "", true, false, false, true, true)
-
-	elemf4 := schema.Field{}
-	elemf4.Init(7, "id", "id", fieldtype.DateTime, 5, "", true, false, false, true, true)
-
-	elemf5 := schema.Field{}
-	elemf5.Init(88, "id", "id", fieldtype.String, 5, "", true, false, false, true, true)
-
-	// RELATIONS **********
-	elemt := new(schema.Table)
-	elemr := schema.Relation{}
-
-	elemr.Init(21, "rel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
-	elemr0 := schema.Relation{}
-	elemr0.Init(-23, "arel test", "hellkzae", elemt, relationtype.Mto, true, false, true, false)
 
 }

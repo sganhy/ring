@@ -501,7 +501,6 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
-
 	// table @meta_id
 	table = tbl.getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.\"@meta_id\" WHERE id=$1 AND schema_id=$2 AND object_type=$3"
@@ -514,6 +513,13 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
+	// table @lexicon
+	table = tbl.getLexiconTable(databaseprovider.PostgreSql, "information_schema")
+	expectedSQl = "INSERT INTO information_schema.\"@lexicon\" (id,schema_id,\"name\",s_name,description,uuid,s_uuid,table_id,source_field_id,target_field_id,relation_id,relation_value,modify_stmp,cached,active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
+	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
+
 	//======================
 	//==== testing Mysql
 	//======================

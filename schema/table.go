@@ -19,26 +19,28 @@ import (
 )
 
 type Table struct {
-	id           int32
-	name         string
-	description  string
-	fields       []*Field    // sorted by name
-	relations    []*Relation // sorted by name
-	indexes      []*Index    // sorted by name
-	mapper       []uint16    // mapping from .fieldsById to .fields ==> max number of column 65535!!
-	physicalName string
-	physicalType physicaltype.PhysicalType
-	schemaId     int32
-	tableType    tabletype.TableType
-	fieldList    string
-	subject      string
-	provider     databaseprovider.DatabaseProvider
-	cacheid      *cacheId
-	sqlCapacity  uint16
-	cached       bool
-	readonly     bool
-	baseline     bool
-	active       bool
+	id              int32
+	name            string
+	description     string
+	fields          []*Field                  // sorted by name
+	relations       []*Relation               // sorted by name
+	indexes         []*Index                  // sorted by name
+	mapper          []uint16                  // mapping from .fieldsById to .fields ==> max number of column 65535!!
+	physicalName    string                    //
+	physicalType    physicaltype.PhysicalType //
+	schemaId        int32                     //
+	tableType       tabletype.TableType       //
+	fieldList       string                    // list of field without searchable fields
+	sqlInsert       string                    // cache insert query
+	subject         string
+	provider        databaseprovider.DatabaseProvider
+	cacheid         *cacheId //
+	searchableCount uint8    //
+	searchable      bool     //has searchable field(s)?
+	cached          bool
+	readonly        bool
+	baseline        bool
+	active          bool
 }
 
 const (
@@ -114,7 +116,6 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	subject string, cached bool, readonly bool, baseline bool, active bool) {
 	table.id = id
 	table.name = name
-	table.sqlCapacity = 16 // min value
 	table.description = description
 	table.loadFields(fields, tableType)
 	table.loadRelations(relations)
@@ -137,10 +138,15 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.readonly = readonly
 	table.baseline = baseline
 	table.active = active
+	table.searchable = false
+	table.searchableCount = table.getSearchableCount()
+
 	if provider != databaseprovider.Undefined {
+
 		table.physicalName = table.getPhysicalName(schemaPhysicalName)
 		table.fieldList = table.getFieldList()
-		table.loadSqlCapacity(provider) // !!!load after loadFields
+		// take longest sql query
+		table.sqlInsert = table.getInsertSql(provider)
 	}
 }
 
@@ -219,6 +225,10 @@ func (table *Table) GetFieldByIndex(index int) *Field {
 	return table.fields[index]
 }
 
+func (table *Table) GetSqlCapacity() int {
+	return len(table.sqlInsert)
+}
+
 func (table *Table) setId(id int32) {
 	table.id = id
 }
@@ -229,10 +239,6 @@ func (table *Table) setName(name string) {
 
 func (table *Table) setDatabaseProvider(provider databaseprovider.DatabaseProvider) {
 	table.provider = provider
-}
-
-func (table *Table) getSqlCapacity() uint16 {
-	return table.sqlCapacity
 }
 
 func (table *Table) setTableType(tableType tabletype.TableType) {
@@ -417,19 +423,9 @@ func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) s
 	var result strings.Builder
 	switch dmlType {
 	case dmlstatement.Insert:
-		result.Grow(int(table.sqlCapacity))
-		result.WriteString(dmlType.String())
-		result.WriteString(dmlSpace)
-		result.WriteString(table.physicalName)
-		result.WriteString(dmlInsertStart)
-		result.WriteString(table.fieldList)
-		result.WriteString(dmlInsertValues)
-		table.addVariables(&result)
-		result.WriteString(dmlInsertEnd)
-		//fmt.Printf("GetDml() len(str)/sql.Cap() %d /%d\n", len(result.String()), result.Cap())
-		break
+		return table.sqlInsert
 	case dmlstatement.Update:
-		result.Grow(int(table.sqlCapacity))
+		result.Grow(len(table.sqlInsert))
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
 		result.WriteString(table.physicalName)
@@ -676,6 +672,29 @@ func (table *Table) String() string {
 	return b.String()
 }
 
+func (table *Table) GetInsertParameters(record []string) []interface{} {
+	result := make([]interface{}, len(table.fields), len(table.fields))
+
+	var index int = 0
+	var value string
+	var field *Field
+
+	for i := 0; i < len(table.fields); i++ {
+
+		index = int(table.mapper[i])
+		value = record[index]
+		field = table.fields[index]
+
+		if len(value) > 0 {
+			result[i] = field.GetParameterValue(value)
+		} else if field.notNull == true {
+			result[i] = field.GetParameterValue(field.GetDefaultValue())
+		}
+	}
+
+	return result
+}
+
 //******************************
 // private methods
 //******************************
@@ -734,13 +753,14 @@ func (table *Table) getDdlAlter(field *Field) string {
 func (table *Table) addVariables(query *strings.Builder) {
 
 	variableName, index := table.getVariableInfo()
-	for i := 0; i < len(table.fields); i++ {
+	count := len(table.fields) + int(table.searchableCount)
+	for i := 0; i < count; i++ {
 		query.WriteString(variableName)
 		if table.provider == databaseprovider.PostgreSql {
 			query.WriteString(strconv.Itoa(index))
 		}
 		// check last element
-		if i < len(table.fields)-1 {
+		if i < count-1 {
 			query.WriteString(",")
 		}
 		index++
@@ -776,8 +796,10 @@ func (table *Table) getFieldList() string {
 	// reduce memory usage
 	// capacity
 	var b strings.Builder
+	var field *Field
 	for i := 0; i < len(table.fields); i++ {
-		b.WriteString(table.fields[table.mapper[i]].GetPhysicalName(table.provider))
+		field = table.fields[table.mapper[i]]
+		b.WriteString(field.GetPhysicalName(table.provider))
 		if i < len(table.fields)-1 {
 			b.WriteString(fieldListSeparator)
 		}
@@ -990,26 +1012,6 @@ func (table *Table) loadMapper() {
 	for i := 0; i < len(table.fields); i++ {
 		table.mapper[i] = uint16(table.GetFieldIndexByName(fieldsById[i].name))
 	}
-}
-
-func (table *Table) loadSqlCapacity(provider databaseprovider.DatabaseProvider) {
-	table.sqlCapacity = 0
-	table.sqlCapacity = uint16(len(dmlstatement.Insert.String()) + 1 + len(table.physicalName) + len(dmlInsertStart) + len(table.fieldList))
-	table.sqlCapacity += uint16(len(dmlInsertValues) + len(dmlInsertEnd))
-	var capacity uint16 = 0
-	for i := 0; i < len(table.fields); i++ {
-		switch provider {
-		case databaseprovider.PostgreSql:
-			capacity += uint16(len(postGreParameterName))
-			capacity += uint16(len(strconv.Itoa(i + 1)))
-			break
-		}
-		// check last element
-		if i < len(table.fields)-1 {
-			capacity++
-		}
-	}
-	table.sqlCapacity += capacity
 }
 
 // used by metaquery/ catalogue to generate variable value
@@ -1366,6 +1368,32 @@ func (table *Table) createIndexes(jobId int64, schema *Schema) {
 		}
 	}
 
+}
+
+func (table *Table) getInsertSql(provider databaseprovider.DatabaseProvider) string {
+	var result strings.Builder
+
+	result.WriteString(dmlstatement.Insert.String())
+	result.WriteString(dmlSpace)
+	result.WriteString(table.physicalName)
+	result.WriteString(dmlInsertStart)
+	// compute field list
+	for i := 0; i < len(table.fields); i++ {
+		var field = table.fields[table.mapper[i]]
+		result.WriteString(field.GetPhysicalName(provider))
+		if field.fieldType == fieldtype.String && field.caseSensitive == false {
+			result.WriteString(fieldListSeparator)
+			result.WriteString(field.getSearchableFieldName())
+		}
+		if i < len(table.fields)-1 {
+			result.WriteString(fieldListSeparator)
+		}
+	}
+	result.WriteString(dmlInsertValues)
+	table.addVariables(&result)
+	result.WriteString(dmlInsertEnd)
+
+	return result.String()
 }
 
 func (table *Table) createConstraints(jobId int64, schema *Schema) {
@@ -1820,6 +1848,17 @@ func (table *Table) getLexiconItemTable(provider databaseprovider.DatabaseProvid
 	result.Init(int32(tabletype.LexiconItem), metaLexItmTableName, "", fields, relations, indexes, physicaltype.Table,
 		0, schemaPhysicalName, tabletype.LexiconItem, provider, "", false, false, true, true)
 
+	return result
+}
+
+func (table *Table) getSearchableCount() uint8 {
+	var result uint8 = 0
+	for i := 0; i < len(table.fields); i++ {
+		var field = table.fields[i]
+		if field.fieldType == fieldtype.String && field.caseSensitive == false {
+			result++
+		}
+	}
 	return result
 }
 

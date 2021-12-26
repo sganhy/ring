@@ -86,7 +86,7 @@ func (cacheid *cacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) 
 	if dmlType == dmlstatement.Update {
 		//TODO manage query for Mysql
 		var field = table.GetFieldByName(metaValue)
-		result.Grow(int(table.getSqlCapacity()))
+		result.Grow(int(table.GetSqlCapacity()))
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
 		result.WriteString(table.GetPhysicalName())

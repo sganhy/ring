@@ -10,10 +10,10 @@ import (
 )
 
 type bulkSaveQuery struct {
-	currentRecord *Record
-	targetObject  *schema.Table
-	bulkSaveType  bulksavetype.BulkSaveType
-	cancelled     bool
+	record       *Record
+	targetObject *schema.Table
+	bulkSaveType bulksavetype.BulkSaveType
+	parameters   []interface{}
 }
 
 var (
@@ -25,10 +25,12 @@ func init() {
 }
 
 func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.BulkSaveType) {
-	bulkSQ.currentRecord = record
+	bulkSQ.record = record
 	bulkSQ.targetObject = record.recordType
 	bulkSQ.bulkSaveType = bulkSaveType
-	bulkSQ.cancelled = false
+	if bulkSaveType == bulksavetype.InsertRecord {
+		bulkSQ.parameters = record.recordType.GetInsertParameters(bulkSQ.record.data)
+	}
 }
 
 //******************************
@@ -36,14 +38,14 @@ func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.Bulk
 //******************************
 func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	// execute without transaction!
-	//var provider = query.targetObject.GetDatabaseProvider()
+	var provider = query.targetObject.GetDatabaseProvider()
 	var dmlStatement = query.getDmlStatement()
-	//var parameters = query.getParameters(provider)
+	var parameters = query.getParameters(provider, dmlStatement)
 	var sqlQuery = query.targetObject.GetDml(dmlStatement, nil)
 
-	//_, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
+	_, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
 	fmt.Println(sqlQuery)
-	return nil
+	return err
 }
 
 //******************************
@@ -62,7 +64,8 @@ func (query *bulkSaveQuery) getDmlStatement() dmlstatement.DmlStatement {
 	return dmlstatement.Undefined
 }
 
-func (query *bulkSaveQuery) getParameters(provider databaseprovider.DatabaseProvider) []interface{} {
-	var parameters []interface{}
-	return parameters
+func (query *bulkSaveQuery) getParameters(provider databaseprovider.DatabaseProvider,
+	statement dmlstatement.DmlStatement) []interface{} {
+
+	return query.parameters
 }
