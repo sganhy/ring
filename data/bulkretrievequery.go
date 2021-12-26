@@ -78,7 +78,6 @@ func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx
 //******************************
 // private methods
 //******************************
-
 func (query *bulkRetrieveQuery) getWhereClause(provider databaseprovider.DatabaseProvider) (string, []interface{}) {
 	var result strings.Builder
 	var operator string

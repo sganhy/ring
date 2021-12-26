@@ -579,6 +579,7 @@ func Test__Table__GetDdl(t *testing.T) {
 	createScript = strings.ReplaceAll(createScript, "\n", " ")
 	expectedSQl = "CREATE TABLE information_schema.\"t_@test\" ( id int8, entry_time timestamp without time zone, level_id int2, schema_id int4, thread_id int2, call_site varchar(255) COLLATE \"C\", s_call_site varchar(255) COLLATE \"C\", test2test int8 ) "
 	expectedSQl += "WITH (autovacuum_enabled=false)  TABLESPACE Test"
+
 	if createScript != expectedSQl {
 		t.Errorf("Table.GetDdl(Create) ==> query must be equal to " + expectedSQl)
 	}
@@ -801,6 +802,25 @@ func Test__Table__getTable(t *testing.T) {
 
 }
 
+func Test__Table__getPhysicalName(t *testing.T) {
+	table := new(Table)
+
+	table.setName("hello")
+	table.setTableType(tabletype.Business)
+	table.setDatabaseProvider(databaseprovider.PostgreSql)
+
+	if table.getPhysicalName("test") != "test.t_hello" {
+		t.Errorf("Table.getPhysicalName() ==> getPhysicalName() is diferent than 'test.t_hello'")
+	}
+
+	table.setName("@meta_id")
+	table.setTableType(tabletype.MetaId)
+
+	if table.getPhysicalName("test") != "test.\"@meta_id\"" {
+		t.Errorf("Table.getPhysicalName() ==> getPhysicalName() is diferent than 'test.\"meta_id\"'")
+	}
+}
+
 func Test__Table__equal(t *testing.T) {
 	schema := new(Schema)
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
@@ -841,7 +861,6 @@ func Test__Table__equal(t *testing.T) {
 	if table1.equal(table2) == true {
 		t.Errorf("Table.equal() ==> {4} table1 == table2")
 	}
-
 }
 
 func abs(value int) int {

@@ -1,6 +1,8 @@
 package schema
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/ddlstatement"
@@ -276,19 +278,42 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 
 	connection.lastGet = time.Now()
 
-	for i := 0; i < len(queries); i++ {
-		err = queries[i].Execute(connection.dbConnection, nil)
+	if transaction {
+		var trans *sql.Tx
+
+		ctx := context.Background()
+		trans, err = connection.dbConnection.BeginTx(ctx, nil)
 		if err != nil {
-			schema.connections.put(connection)
 			return err
 		}
+		for j := 0; j < len(queries); j++ {
+			err = queries[j].Execute(connection.dbConnection, trans)
+			if err != nil {
+				schema.connections.put(connection)
+				trans.Rollback()
+				return err
+			}
+		}
+		err = trans.Commit()
+
+	} else {
+
+		for i := 0; i < len(queries); i++ {
+			err = queries[i].Execute(connection.dbConnection, nil)
+			if err != nil {
+				schema.connections.put(connection)
+				return err
+			}
+		}
+
 	}
 
 	schema.connections.put(connection)
 	duration := time.Now().Sub(connection.lastGet)
 	fmt.Println("Execution Time:")
 	fmt.Println(duration.Milliseconds())
-	return nil
+
+	return err
 }
 
 func (schema *Schema) ExecuteTransaction(queries []Query) error {

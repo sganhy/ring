@@ -103,6 +103,7 @@ const (
 	postGreCascade       string = "CASCADE"
 	postGreAnalyze       string = "ANALYZE %s"
 	relationSeparator    string = "|"
+	physicalTablePrefix  string = "t_"
 	mysqlParameterName   string = "?"
 	relationNotFound     int    = -1
 	crlf                 string = "\n"
@@ -137,7 +138,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.baseline = baseline
 	table.active = active
 	if provider != databaseprovider.Undefined {
-		table.physicalName = table.getPhysicalName(provider, tableType, table.name, schemaPhysicalName)
+		table.physicalName = table.getPhysicalName(schemaPhysicalName)
 		table.fieldList = table.getFieldList()
 		table.loadSqlCapacity(provider) // !!!load after loadFields
 	}
@@ -606,12 +607,12 @@ func (table *Table) GetPrimaryKeyIndex() int {
 	return -1
 }
 
-func (table *Table) Vacuum(jobId int64) error {
+func (table *Table) Vacuum(jobId int64, full bool) error {
 	var sql string
 
 	switch table.provider {
 	case databaseprovider.PostgreSql:
-		if table.tableType == tabletype.Meta {
+		if full == true {
 			sql = fmt.Sprintf(postGreVacuum, postGreFullVacuum)
 			sql += table.physicalName
 		} else {
@@ -754,20 +755,21 @@ func (table *Table) getVariableInfo() (string, int) {
 	}
 	return "", 0
 }
-func (table *Table) getPhysicalName(provider databaseprovider.DatabaseProvider, tableType tabletype.TableType, tableName string,
-	physicalSchemaName string) string {
-	var physicalName = physicalSchemaName
+func (table *Table) getPhysicalName(physicalSchemaName string) string {
+	var physicalName strings.Builder
 
-	if len(physicalName) > 0 {
-		physicalName += "."
+	physicalName.Grow(len(table.name) + len(physicalSchemaName) + len(schemaSeparator) + len(physicalTablePrefix) + 2)
+	physicalName.WriteString(physicalSchemaName)
+
+	if len(physicalSchemaName) > 0 {
+		physicalName.WriteString(schemaSeparator)
 	}
-	if tableType == tabletype.Business {
-		// add prefix
-		tableName = "t_" + tableName
+	if table.tableType == tabletype.Business {
+		physicalName.WriteString(sqlfmt.FormatEntityName(table.provider, physicalTablePrefix+table.name))
+	} else {
+		physicalName.WriteString(sqlfmt.FormatEntityName(table.provider, table.name))
 	}
-	physicalName += sqlfmt.FormatEntityName(provider, tableName)
-	//.getPhysicalName(provider)
-	return physicalName
+	return physicalName.String()
 }
 
 func (table *Table) getFieldList() string {

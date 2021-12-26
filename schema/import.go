@@ -829,12 +829,12 @@ func (importFile *Import) analyzeMetaTables() {
 
 	if importFile.metaIdChangeCount > 0 {
 		table = metaSchema.GetTableByName(metaIdTableName)
-		table.Vacuum(importFile.jobId)
+		table.Vacuum(importFile.jobId, false)
 		table.Analyze(importFile.jobId)
 	}
 	if importFile.metaChangeCount > 10 {
 		table = metaSchema.GetTableByName(metaTableName)
-		table.Vacuum(importFile.jobId)
+		table.Vacuum(importFile.jobId, true)
 		table.Analyze(importFile.jobId)
 	}
 }
