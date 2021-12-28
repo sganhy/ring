@@ -31,6 +31,7 @@ func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Reco
 }
 
 func (bulkSave *BulkSave) Save() error {
+	bulkSave.loadObjectId()
 	if bulkSave.data != nil {
 		// without transaction
 		for key, element := range bulkSave.data {
@@ -93,4 +94,18 @@ func (bulkSave *BulkSave) addRecord(record *Record, bulkSaveType bulksavetype.Bu
 
 func (bulkSave *BulkSave) initializeData() {
 	bulkSave.data = make(map[int32][]schema.Query, schema.GetSchemaCount()*2)
+}
+
+func (bulkSave *BulkSave) loadObjectId() error {
+	if bulkSave.insertCount > 0 {
+		if bulkSave.insertCount > 10 {
+			// use temp map for perf
+		} else {
+			// O(n²)
+			for i := 0; i < len(bulkSave.data); i++ {
+
+			}
+		}
+	}
+	return nil
 }

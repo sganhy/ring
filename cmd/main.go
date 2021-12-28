@@ -37,8 +37,8 @@ func main() {
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
 	rcd.SetRecordType("RpgSheet.skill")
-	rcd.SetField("id", 3)
-	rcd.SetField("name", "test")
+	rcd.SetField("id", 16)
+	rcd.SetField("name", "tété")
 	var bs = new(data.BulkSave)
 	bs.InsertRecord(rcd)
 	//	bs.InsertRecord(rcd)
@@ -50,6 +50,7 @@ func main() {
 	importFile.Upgrade()
 
 	var metaSchema = schema.GetSchemaByName("@meta")
+	fmt.Println(metaSchema.GetName())
 	var meto = metaSchema.ToMeta()
 	var lexicon = metaSchema.GetTableByName("@lexicon")
 	fmt.Println(lexicon.GetName())

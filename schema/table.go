@@ -10,6 +10,7 @@ import (
 	"ring/schema/fieldtype"
 	"ring/schema/physicaltype"
 	"ring/schema/relationtype"
+	"ring/schema/searchabletype"
 	"ring/schema/sqlfmt"
 	"ring/schema/tabletype"
 	"sort"
@@ -36,7 +37,6 @@ type Table struct {
 	provider        databaseprovider.DatabaseProvider
 	cacheid         *cacheId //
 	searchableCount uint8    //
-	searchable      bool     //has searchable field(s)?
 	cached          bool
 	readonly        bool
 	baseline        bool
@@ -138,7 +138,6 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.readonly = readonly
 	table.baseline = baseline
 	table.active = active
-	table.searchable = false
 	table.searchableCount = table.getSearchableCount()
 
 	if provider != databaseprovider.Undefined {
@@ -673,9 +672,12 @@ func (table *Table) String() string {
 }
 
 func (table *Table) GetInsertParameters(record []string) []interface{} {
-	result := make([]interface{}, len(table.fields), len(table.fields))
+	count := len(table.fields) + int(table.searchableCount)
+	result := make([]interface{}, count, count)
 
-	var index int = 0
+	index := 0
+	searchableCount := 0
+
 	var value string
 	var field *Field
 
@@ -686,10 +688,15 @@ func (table *Table) GetInsertParameters(record []string) []interface{} {
 		field = table.fields[index]
 
 		if len(value) > 0 {
-			result[i] = field.GetParameterValue(value)
+			result[i+searchableCount] = field.GetParameterValue(value)
 		} else if field.notNull == true {
-			result[i] = field.GetParameterValue(field.GetDefaultValue())
+			result[i+searchableCount] = field.GetParameterValue(field.GetDefaultValue())
 		}
+		if field.caseSensitive == false && field.fieldType == fieldtype.String {
+			searchableCount++
+			result[i+searchableCount] = field.GetSearchableValue(value, searchabletype.None)
+		}
+
 	}
 
 	return result
