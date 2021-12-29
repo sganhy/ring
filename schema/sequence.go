@@ -2,6 +2,7 @@ package schema
 
 import (
 	"fmt"
+	"ring/schema/ddlstatement"
 	"ring/schema/entitytype"
 	"strconv"
 )
@@ -38,7 +39,7 @@ func (sequence *Sequence) Init(id int32, name string, description string, schema
 	sequence.schemaId = schemaId
 	sequence.maxValue = maxValue
 	sequence.value = new(cacheId)
-	sequence.value.Init(id, schemaId, 0, sequence.GetEntityType())
+	sequence.value.Init(id, schemaId, 0)
 	sequence.baseline = baseline
 	sequence.active = active
 }
@@ -69,8 +70,14 @@ func (sequence *Sequence) GetMaxValue() int64 {
 func (sequence *Sequence) GetEntityType() entitytype.EntityType {
 	return entitytype.Sequence
 }
+func (sequence *Sequence) GetPhysicalName() string {
+	return sequence.GetName()
+}
 func (sequence *Sequence) getCacheId() *cacheId {
 	return sequence.value
+}
+func (sequence *Sequence) logStatement(statment ddlstatement.DdlStatement) bool {
+	return true
 }
 
 //******************************
@@ -125,7 +132,7 @@ func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue,
 		true, true)
-	result.value.Init(0, schemaId, 0, entitytype.Sequence)
+	result.value.Init(0, schemaId, 0)
 	result.value.SetCurrentId(initialJobId) // assign min value
 	return result
 }

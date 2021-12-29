@@ -71,9 +71,9 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 		// load sequences ==> before log init
 		logger.Init(id, 0, true)
 		// instanciate connectionPool without database connections
-		schema.connections.connectionString = connectionString
-		schema.connections.provider = provider
-		schema.connections.poolId = -1 // disable connection pool
+		schema.connections.setConnectionString(connectionString)
+		schema.connections.setDatabaseProvider(provider)
+		schema.connections.setDisabled() // disable connection pool
 	}
 	schema.poolInitialized = true
 	schema.loadTables(tables)
@@ -85,6 +85,8 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.loadSequences(sequences)
 	schema.loadParameters(parameters)
 	schema.loadMtmTables()
+	// after connection pool initialization
+	schema.loadCacheid()
 
 	schema.language = Language{}
 	var paramLanguage = schema.getParameterByName(parameterDefaultLanguage)
@@ -111,7 +113,7 @@ func (schema *Schema) GetDescription() string {
 }
 
 func (schema *Schema) GetConnectionString() string {
-	return schema.connections.connectionString
+	return schema.connections.GetConnectionString()
 }
 
 func (schema *Schema) IsBaseline() bool {
@@ -131,7 +133,7 @@ func (schema *Schema) GetLanguage() *Language {
 }
 
 func (schema *Schema) GetDatabaseProvider() databaseprovider.DatabaseProvider {
-	return schema.connections.provider
+	return schema.connections.GetDatabaseProvider()
 }
 
 func (schema *Schema) GetEntityType() entitytype.EntityType {
@@ -209,7 +211,6 @@ func (schema *Schema) Clone() *Schema {
 	var tableSpaces []tablespace
 	var sequences []Sequence
 	var parameters []parameter
-	var disabledPool = false
 
 	for _, v := range schema.tables {
 		var table = (*v).Clone()
@@ -227,13 +228,11 @@ func (schema *Schema) Clone() *Schema {
 		var parameter = *schema.parameters[i]
 		parameters = append(parameters, *parameter.Clone())
 	}
-	if schema.connections.poolId == -1 {
-		disabledPool = true
-	}
 	newSchema.Init(schema.id, schema.name, schema.physicalName, schema.description, schema.GetConnectionString(), tables,
 		tableSpaces, sequences, parameters,
-		schema.connections.provider, uint16(schema.connections.minConnection), uint16(schema.connections.maxConnection),
-		schema.baseline, schema.active, disabledPool)
+		schema.connections.GetDatabaseProvider(), schema.connections.GetMinConnection(),
+		schema.connections.GetMaxConnection(), schema.baseline, schema.active, schema.connections.IsDisabled())
+
 	return newSchema
 }
 
@@ -347,6 +346,33 @@ func (schema *Schema) getParameterByName(name string) *parameter {
 		}
 	}
 	return nil
+}
+
+func (schema *Schema) loadCacheid() {
+	if schema.connections.IsDisabled() {
+		return
+	}
+	var metaSchema *Schema
+	if schema.name == metaSchemaName {
+		metaSchema = schema
+	} else {
+		metaSchema = GetSchemaByName(metaSchemaName)
+	}
+	metaIdTable := metaSchema.GetTableByName(metaIdTableName)
+
+	// sequences
+	for i := 0; i < len(schema.sequences); i++ {
+		sequence := schema.sequences[i]
+		cacheId := sequence.getCacheId()
+		cacheId.InitQuery(metaSchema, metaIdTable, schema.id, sequence)
+	}
+	// tables
+	if schema.name != metaSchemaName {
+		for _, table := range schema.tables {
+			cacheId := table.getCacheId()
+			cacheId.InitQuery(metaSchema, metaIdTable, schema.id, table)
+		}
+	}
 }
 
 // copy of Execute() method (used only by metaQuery)
@@ -553,7 +579,7 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 	if schema.name == metaSchemaName {
 		// initialize cache id before instance sequences
 		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
-		initCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
+		//initCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))
 		schema.sequences = append(schema.sequences, seq.getLexiconId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getUserId(schema.id))
 		schema.sequences = append(schema.sequences, seq.getIndexId(schema.id))

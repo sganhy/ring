@@ -16,7 +16,6 @@ type connectionPool struct {
 	lastIndex        int
 	putRequestCount  uint16
 	poolId           int32
-	schemaId         int32
 	provider         databaseprovider.DatabaseProvider
 	pool             []*connection
 	syncRoot         sync.Mutex
@@ -67,6 +66,30 @@ func (connPool *connectionPool) Init(schemaId int32, connectionString string, pr
 //******************************
 // getters and setters
 //******************************
+func (connPool *connectionPool) IsDisabled() bool {
+	return connPool.poolId == -1
+}
+func (connPool *connectionPool) GetMaxConnection() uint16 {
+	return uint16(connPool.maxConnection)
+}
+func (connPool *connectionPool) GetMinConnection() uint16 {
+	return uint16(connPool.minConnection)
+}
+func (connPool *connectionPool) GetConnectionString() string {
+	return connPool.connectionString
+}
+func (connPool *connectionPool) GetDatabaseProvider() databaseprovider.DatabaseProvider {
+	return connPool.provider
+}
+func (connPool *connectionPool) setConnectionString(connectionString string) {
+	connPool.connectionString = connectionString
+}
+func (connPool *connectionPool) setDatabaseProvider(provider databaseprovider.DatabaseProvider) {
+	connPool.provider = provider
+}
+func (connPool *connectionPool) setDisabled() {
+	connPool.poolId = -1
+}
 
 //******************************
 // public methods

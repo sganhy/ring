@@ -126,7 +126,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	if tableType == tabletype.Business {
 		table.cacheid = new(cacheId)
 		//TODO reservedRange 1 by default should be a parameter
-		table.cacheid.Init(id, schemaId, 1, table.GetEntityType())
+		table.cacheid.Init(id, schemaId, 1)
 	}
 
 	table.tableType = tableType

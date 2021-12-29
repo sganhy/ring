@@ -13,8 +13,8 @@ func Test__CacheId__GetDdl(t *testing.T) {
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
 	table := schema.GetTableByName(metaIdTableName)
 
-	initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
-	cacheid.Init(1, 0, 0, entitytype.Table)
+	//initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
+	cacheid.Init(1, 0, 0)
 	//======================
 	//==== testing PostgreSql
 	//======================
@@ -30,8 +30,8 @@ func Test__CacheId__setters(t *testing.T) {
 	schema := new(Schema)
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
 
-	initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
-	cacheid.Init(1, 0, 0, entitytype.Table)
+	//initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
+	cacheid.Init(1, 0, 0)
 
 	cacheid.SetCache(true)
 	if cacheid.reservedRange != 1 {
@@ -54,8 +54,8 @@ func Test__CacheId__toMetaId(t *testing.T) {
 	schema := new(Schema)
 	schema = schema.getMetaSchema(databaseprovider.PostgreSql, "", 0, 0, true)
 
-	initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
-	cacheid.Init(1, 0, 0, entitytype.Table)
+	//initCacheId(schema, schema.GetTableByName("@meta_id"), schema.GetTableByName("@long"))
+	cacheid.Init(1, 0, 0)
 	metaId := cacheid.toMetaId(entitytype.Sequence, 11, 111)
 
 	if metaId.schemaId != 111 {

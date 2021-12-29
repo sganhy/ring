@@ -21,36 +21,28 @@ const (
 	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
-var (
-	cacheIdSchema *Schema
-	cacheIdTable  *Table
-	cacheIdQuery  string
-)
-
-func initCacheId(schema *Schema, table *Table, resultTable *Table) {
-	cacheIdSchema = schema
-	cacheIdTable = resultTable
-	cacheid := new(cacheId)
-	cacheIdQuery = cacheid.GetDml(dmlstatement.Update, table)
-}
-
-func (cacheid *cacheId) Init(objid int32, schemaId int32, reservedRange int32, entityType entitytype.EntityType) {
-	cacheid.metaquery = new(metaQuery)
-	cacheid.metaquery.Init(cacheIdSchema, cacheIdTable)
-
-	// added cacheIdSchema check to avoid unitesting crash!
-	if cacheIdSchema != nil {
-		cacheid.metaquery.query = cacheIdQuery
-		cacheid.metaquery.addParam(int32(1))
-		cacheid.metaquery.addParam(objid)
-		cacheid.metaquery.addParam(schemaId)
-		cacheid.metaquery.addParam(int8(entityType))
-	}
+func (cacheid *cacheId) Init(objid int32, schemaId int32, reservedRange int32) {
 
 	// max should be equal to int64 min value - forcing to initialize
 	cacheid.maxId = initialMaxId
 	cacheid.currentId = 0
 	cacheid.reservedRange = reservedRange
+}
+
+func (cacheid *cacheId) InitQuery(metaSchema *Schema, metaIdTable *Table, targetSchemaId int32,
+	targetEntity entity) {
+
+	cacheid.metaquery = new(metaQuery)
+	cacheid.metaquery.Init(metaSchema, metaIdTable)
+
+	// added cacheIdSchema check to avoid unitesting crash!
+	cacheid.metaquery.query = cacheid.GetDml(dmlstatement.Update, metaIdTable)
+
+	cacheid.metaquery.addParam(int32(1)) // default reserve range
+	cacheid.metaquery.addParam(targetEntity.GetId())
+	cacheid.metaquery.addParam(targetSchemaId)
+	cacheid.metaquery.addParam(int8(targetEntity.GetEntityType()))
+
 }
 
 //******************************
@@ -114,7 +106,9 @@ func (cacheid *cacheId) GetNewId() int64 {
 
 	//TODO manage cycles and overflows !!
 	result = cacheid.currentId + 1
+
 	if result > cacheid.maxId {
+
 		// compute reserve range
 		if cacheid.reservedRange > 1 {
 			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
@@ -159,16 +153,13 @@ func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
 		// take max reserve range
 		if cacheid.reservedRange > int32(reservedRange) {
 			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
-			resultRange = int64(reservedRange) - int64(cacheid.reservedRange)
 		} else {
 			cacheid.metaquery.setParamValue(int32(reservedRange), 0)
-			resultRange = 0
 		}
 
 		// never loaded
 		cacheid.metaquery.run(1)
 		cacheid.maxId = cacheid.metaquery.getInt64Value()
-		resultRange += cacheid.maxId
 
 		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
 		if cacheid.reservedRange < maxReservedRange {
