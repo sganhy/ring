@@ -125,7 +125,8 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	// initialize cacheId
 	if tableType == tabletype.Business {
 		table.cacheid = new(cacheId)
-		table.cacheid.Init(id, schemaId, table.GetEntityType())
+		//TODO reservedRange 1 by default should be a parameter
+		table.cacheid.Init(id, schemaId, 1, table.GetEntityType())
 	}
 
 	table.tableType = tableType
@@ -322,6 +323,10 @@ func (table *Table) GetRelationByNameI(name string) *Relation {
 		}
 	}
 	return nil
+}
+
+func (table *Table) GetNewObjid(reservedRange int64) int64 {
+	return table.cacheid.GetNewRangeId(uint32(reservedRange))
 }
 
 func (table *Table) GetIndexByName(name string) *Index {

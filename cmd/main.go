@@ -41,6 +41,18 @@ func main() {
 	rcd.SetField("name", "tété")
 	var bs = new(data.BulkSave)
 	bs.InsertRecord(rcd)
+	bs.InsertRecord(rcd)
+	//	bs.InsertRecord(rcd)
+	bs.Save()
+
+	bs.Clear()
+	bs.InsertRecord(rcd)
+	//	bs.InsertRecord(rcd)
+	bs.Save()
+	bs.Clear()
+	bs.InsertRecord(rcd)
+	bs.InsertRecord(rcd)
+	bs.InsertRecord(rcd)
 	//	bs.InsertRecord(rcd)
 	bs.Save()
 
@@ -48,18 +60,28 @@ func main() {
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
-
 	var metaSchema = schema.GetSchemaByName("@meta")
-	fmt.Println(metaSchema.GetName())
-	var meto = metaSchema.ToMeta()
-	var lexicon = metaSchema.GetTableByName("@lexicon")
-	fmt.Println(lexicon.GetName())
-	for i := 0; i < len(meto); i++ {
-		if meto[i].GetEntityType() == 0 {
-			fmt.Println(meto[i].String())
-		}
-	}
+	var seq1 = metaSchema.GetSequenceByName("@job_id")
+	fmt.Println(seq1.NextValue())
+	fmt.Println(seq1.NextValue())
+	fmt.Println(seq1.NextValue())
+	fmt.Println(seq1.NextValue())
+	fmt.Println(seq1.NextValue())
+
 	/*
+
+		fmt.Println(seq1.NextValue())
+		fmt.Println(seq1.NextValue())
+		fmt.Println(metaSchema.GetName())
+		var meto = metaSchema.ToMeta()
+		var lexicon = metaSchema.GetTableByName("@lexicon")
+		fmt.Println(lexicon.GetName())
+		for i := 0; i < len(meto); i++ {
+			if meto[i].GetEntityType() == 0 {
+				fmt.Println(meto[i].String())
+			}
+		}
+
 		if metaSchema != nil {
 			fmt.Println(metaSchema.GetId())
 			var tableBook = metaSchema.GetTableByName("feat14")

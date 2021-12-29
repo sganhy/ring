@@ -18,7 +18,6 @@ type cacheId struct {
 const (
 	sqlPosgreSqlReturning string = "RETURNING"
 	maxReservedRange      int32  = 1073741824           // 2^30
-	maxExtReservedRange   uint32 = 2147483647           // 2^32 - max external defined Reserve value
 	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
@@ -35,7 +34,7 @@ func initCacheId(schema *Schema, table *Table, resultTable *Table) {
 	cacheIdQuery = cacheid.GetDml(dmlstatement.Update, table)
 }
 
-func (cacheid *cacheId) Init(objid int32, schemaId int32, entityType entitytype.EntityType) {
+func (cacheid *cacheId) Init(objid int32, schemaId int32, reservedRange int32, entityType entitytype.EntityType) {
 	cacheid.metaquery = new(metaQuery)
 	cacheid.metaquery.Init(cacheIdSchema, cacheIdTable)
 
@@ -51,7 +50,7 @@ func (cacheid *cacheId) Init(objid int32, schemaId int32, entityType entitytype.
 	// max should be equal to int64 min value - forcing to initialize
 	cacheid.maxId = initialMaxId
 	cacheid.currentId = 0
-	cacheid.reservedRange = 0
+	cacheid.reservedRange = reservedRange
 }
 
 //******************************
@@ -142,9 +141,10 @@ func (cacheid *cacheId) GetNewId() int64 {
 }
 
 // Generate id with cache management for BulKsave (Hi/Lo algorithm)
+// return last value generated
 func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
 	// duplicate ==> GetNewId()
-	if reservedRange > maxExtReservedRange || reservedRange < 1 {
+	if reservedRange < 1 {
 		// invalid range value
 		// add logging here
 		return 0
@@ -156,13 +156,13 @@ func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
 	//TODO manage cycles and overflows !!
 	resultRange = cacheid.currentId + int64(reservedRange)
 	if resultRange > cacheid.maxId {
-		// compute reserve range
+		// take max reserve range
 		if cacheid.reservedRange > int32(reservedRange) {
 			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
-			resultRange = 1 - int64(cacheid.reservedRange)
+			resultRange = int64(reservedRange) - int64(cacheid.reservedRange)
 		} else {
 			cacheid.metaquery.setParamValue(int32(reservedRange), 0)
-			resultRange = 1 - int64(reservedRange)
+			resultRange = 0
 		}
 
 		// never loaded
@@ -175,8 +175,10 @@ func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
 			cacheid.reservedRange <<= 1
 		}
 	}
+
 	cacheid.currentId = resultRange
 	cacheid.syncRoot.Unlock()
+
 	return resultRange
 }
 

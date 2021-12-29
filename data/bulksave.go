@@ -8,7 +8,7 @@ import (
 
 type BulkSave struct {
 	data        map[int32][]schema.Query
-	insertCount int64
+	insertCount int
 }
 
 //******************************
@@ -31,8 +31,11 @@ func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Reco
 }
 
 func (bulkSave *BulkSave) Save() error {
-	bulkSave.loadObjectId()
 	if bulkSave.data != nil {
+		// generate Ids
+		if bulkSave.insertCount > 0 {
+			bulkSave.loadObjectId()
+		}
 		// without transaction
 		for key, element := range bulkSave.data {
 			if element != nil && len(element) > 0 {
@@ -97,15 +100,41 @@ func (bulkSave *BulkSave) initializeData() {
 }
 
 func (bulkSave *BulkSave) loadObjectId() error {
-	if bulkSave.insertCount > 0 {
-		if bulkSave.insertCount > 10 {
-			// use temp map for perf
-		} else {
-			// O(n²)
-			for i := 0; i < len(bulkSave.data); i++ {
+	var dico map[int32]int64
+	var bsQuery bulkSaveQuery
+	var currentId int32 = 0
+	var schem *schema.Schema
+	var table *schema.Table
 
+	// [schemaId, number of insert]
+	dico = make(map[int32]int64, bulkSave.insertCount)
+
+	// build dictionary
+	for schemaId, operations := range bulkSave.data {
+		schem = schema.GetSchemaById(schemaId)
+		// generate dico
+		for i := 0; i < len(operations); i++ {
+			bsQuery = operations[i].(bulkSaveQuery)
+			if bsQuery.bulkSaveType == bulksavetype.InsertRecord {
+				currentId = bsQuery.targetObject.GetId()
+				dico[currentId] = dico[currentId] + 1
+			}
+		}
+		// generate id
+		for tableId, count := range dico {
+			table = schem.GetTableById(tableId)
+			dico[tableId] = table.GetNewObjid(count)
+		}
+		// set bulksave queries
+		for i := len(operations) - 1; i >= 0; i-- {
+			bsQuery = operations[i].(bulkSaveQuery)
+			if bsQuery.bulkSaveType == bulksavetype.InsertRecord {
+				currentId = bsQuery.targetObject.GetId()
+				bsQuery.parameters[0] = dico[currentId]
+				dico[currentId] = dico[currentId] - 1
 			}
 		}
 	}
+
 	return nil
 }
