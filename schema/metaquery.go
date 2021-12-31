@@ -46,14 +46,14 @@ func init() {
 
 	table := new(Table)
 	metaTable := table.getMetaTable(databaseprovider.PostgreSql, "")
+	// @meta table cache
 	metaQueryUpdateSet = make([]*Field, 0, 6)
 	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaName))        // name
 	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaDescription)) // description
 	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaValue))       // value
 	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaActive))      // active
-	//
-	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaDataType)) // data_type
-	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaFlags))    // flags
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaDataType))    // data_type
+	metaQueryUpdateSet = append(metaQueryUpdateSet, metaTable.GetFieldByName(metaFlags))       // flags
 
 }
 
@@ -106,7 +106,6 @@ func (query *metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error
 	} else if query.dml == true {
 		fmt.Println(query.query)
 		rows, err = query.executeQuery(dbConnection, query.query)
-
 		// avoid==> panic: pq: sorry, too many clients already
 		rows.Close() //WARN: don't forget rows.Close()
 		return err
@@ -131,8 +130,8 @@ func (query *metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error
 				fmt.Println(err)
 				rows.Close()
 				return err
-				query.result = append(query.result, query.table.GetQueryResult(query.columnsPointer))
 			}
+			query.result = append(query.result, query.table.GetQueryResult(query.columnsPointer))
 		}
 		query.resultCount = len(query.result)
 	} else {
