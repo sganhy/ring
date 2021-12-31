@@ -15,17 +15,18 @@ import (
 )
 
 type metaQuery struct {
-	schema           *Schema
-	table            *Table
-	result           *[]interface{}
-	params           *[]interface{}
-	filters          []string
-	sort             string
-	query            string
-	resultCount      *int
-	returnResultList bool
-	ddl              bool
-	dml              bool
+	schema         *Schema
+	table          *Table
+	result         []interface{}
+	params         []interface{}
+	columns        []interface{}
+	columnsPointer []interface{}
+	filters        []string
+	sort           string
+	query          string
+	resultCount    int
+	ddl            bool
+	dml            bool
 }
 
 const (
@@ -59,10 +60,7 @@ func init() {
 func (query *metaQuery) Init(schema *Schema, table *Table) {
 	query.table = table
 	query.schema = schema
-	if query.resultCount == nil {
-		query.resultCount = new(int)
-	}
-
+	query.resultCount = -1
 }
 
 //******************************
@@ -70,12 +68,10 @@ func (query *metaQuery) Init(schema *Schema, table *Table) {
 //******************************
 func (query *metaQuery) setSchema(schemaName string) {
 	query.schema = GetSchemaByName(schemaName)
-	if query.resultCount == nil {
-		query.resultCount = new(int)
-	}
 	if query.schema == nil {
 		query.schema = getUpgradingSchema()
 	}
+	query.resultCount = -1
 }
 
 func (query *metaQuery) setTable(tableName string) {
@@ -84,48 +80,39 @@ func (query *metaQuery) setTable(tableName string) {
 		query.schema = GetSchemaByName(metaSchemaName)
 	}
 	query.table = query.schema.GetTableByName(tableName)
-	if query.resultCount == nil {
-		query.resultCount = new(int)
-	}
 	if query.table == nil {
 		panic(fmt.Errorf("Unknown table %s for schema %s", tableName, query.schema.GetName()))
 	}
+	query.resultCount = -1
 }
 
 func (query *metaQuery) setParamValue(param interface{}, index int) {
-	(*query.params)[index] = param
-}
-
-func (query *metaQuery) getTable() *Table {
-	return query.table
+	query.params[index] = param
 }
 
 //******************************
 // public methods
 //******************************
-func (query metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
-	var sqlQuery = query.query
-	var columns []interface{}
-	var columnPointers []interface{}
+func (query *metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	var rows *sql.Rows
 	var err error
 
 	if query.ddl == true {
 		ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancelfunc()
-		_, err = dbConnection.ExecContext(ctx, sqlQuery)
-		fmt.Println(sqlQuery)
+		_, err = dbConnection.ExecContext(ctx, query.query)
+		fmt.Println(query.query)
 		return err
 	} else if query.dml == true {
-		fmt.Println(sqlQuery)
-		rows, err = query.executeQuery(dbConnection, sqlQuery)
+		fmt.Println(query.query)
+		rows, err = query.executeQuery(dbConnection, query.query)
 
 		// avoid==> panic: pq: sorry, too many clients already
 		rows.Close() //WARN: don't forget rows.Close()
 		return err
 	} else {
-		fmt.Println(sqlQuery)
-		rows, err = query.executeQuery(dbConnection, sqlQuery)
+		fmt.Println(query.query)
+		rows, err = query.executeQuery(dbConnection, query.query)
 	}
 
 	if err != nil {
@@ -133,27 +120,25 @@ func (query metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error 
 		fmt.Println(err.Error())
 		return err
 	}
-	*query.resultCount = 0
+	query.resultCount = 0
 	//fmt.Println(sqlQuery)
-
-	count := len(query.table.fields)
-	if query.returnResultList == true {
-		columns = make([]interface{}, count)
-		columnPointers = make([]interface{}, count)
-	}
-	for rows.Next() {
-		if query.returnResultList == true {
-			for i := range columns {
-				columnPointers[i] = &columns[i]
+	if query.columns != nil {
+		for rows.Next() {
+			for i := range query.columns {
+				query.columnsPointer[i] = &query.columns[i]
 			}
-			if err := rows.Scan(columnPointers...); err != nil {
+			if err := rows.Scan(query.columnsPointer...); err != nil {
 				fmt.Println(err)
 				rows.Close()
 				return err
+				query.result = append(query.result, query.table.GetQueryResult(query.columnsPointer))
 			}
-			*query.result = append(*query.result, query.table.GetQueryResult(columnPointers))
 		}
-		*query.resultCount++
+		query.resultCount = len(query.result)
+	} else {
+		for rows.Next() {
+			query.resultCount++
+		}
 	}
 	rows.Close()
 	return nil
@@ -163,8 +148,8 @@ func (query metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error 
 // private methods
 //******************************
 func (query *metaQuery) getResult(index int, fieldName string) string {
-	if query.result != nil && index >= 0 && index < len(*query.result) {
-		var record = (*query.result)[index].([]string)
+	if query.result != nil && index >= 0 && index < len(query.result) {
+		var record = query.result[index].([]string)
 		var index = query.table.GetFieldIndexByName(fieldName)
 		return record[index]
 	}
@@ -180,10 +165,9 @@ func (query *metaQuery) getField(fieldName string) *Field {
 
 func (query *metaQuery) addParam(param interface{}) {
 	if query.params == nil {
-		params := make([]interface{}, 0, 2)
-		query.params = &params
+		query.params = make([]interface{}, 0, 2)
 	}
-	*query.params = append(*query.params, param)
+	query.params = append(query.params, param)
 }
 
 func (query *metaQuery) addFilter(fieldName string, operator string, operand interface{}) {
@@ -193,10 +177,9 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 			query.filters = make([]string, 0, 2)
 		}
 		if query.params == nil {
-			params := make([]interface{}, 0, 2)
-			query.params = &params
+			query.params = make([]interface{}, 0, 2)
 		}
-		var variable = query.table.getVariableName(len(*query.params))
+		var variable = query.table.getVariableName(len(query.params))
 		var queryFilter strings.Builder
 		var fieldPhysicalName = field.GetPhysicalName(query.table.GetDatabaseProvider())
 		// add single cote for varchar values
@@ -204,7 +187,7 @@ func (query *metaQuery) addFilter(fieldName string, operator string, operand int
 		queryFilter.WriteString(fieldPhysicalName)
 		queryFilter.WriteString(operator)
 		queryFilter.WriteString(variable)
-		*query.params = append(*query.params, operand)
+		query.params = append(query.params, operand)
 		query.filters = append(query.filters, queryFilter.String())
 	}
 }
@@ -247,16 +230,15 @@ func (query *metaQuery) getQuery() string {
 func (query *metaQuery) getMetaList() []meta {
 	if query.table != nil && query.table.GetName() == metaTableName {
 
-		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
-		var result = make([]meta, resultCount, resultCount)
+		var result = make([]meta, query.resultCount, query.resultCount)
 		var tempMeta int64 = 0
 		var field *Field
 		var j = 0
 		var record []string
 
-		for i := 0; i < resultCount; i++ {
-			record = (*query.result)[i].([]string)
+		for i := 0; i < query.resultCount; i++ {
+			record = query.result[i].([]string)
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
 				switch field.GetName() {
@@ -300,8 +282,8 @@ func (query *metaQuery) getMetaList() []meta {
 }
 
 func (query *metaQuery) getInt64Value() int64 {
-	if *query.resultCount > 0 {
-		val, _ := strconv.ParseInt(((*query.result)[0].([]string))[0], 10, 64)
+	if query.resultCount > 0 {
+		val, _ := strconv.ParseInt((query.result[0].([]string))[0], 10, 64)
 		return val
 	} else {
 		return 0
@@ -311,16 +293,15 @@ func (query *metaQuery) getInt64Value() int64 {
 func (query *metaQuery) getMetaIdList() []metaId {
 	if query.table != nil && query.table.GetName() == metaIdTableName {
 
-		var resultCount = *query.resultCount
 		var fieldCount = len(query.table.fields)
-		var result = make([]metaId, resultCount, resultCount)
+		var result = make([]metaId, query.resultCount, query.resultCount)
 		var tempMetaId int64 = 0
 		var field *Field
 		var j = 0
 		var record []string
 
-		for i := 0; i < resultCount; i++ {
-			record = (*query.result)[i].([]string)
+		for i := 0; i < query.resultCount; i++ {
+			record = query.result[i].([]string)
 			for j = 0; j < fieldCount; j++ {
 				field = query.table.fields[j]
 				switch field.GetName() {
@@ -353,21 +334,23 @@ func (query *metaQuery) getMetaIdList() []metaId {
 func (query *metaQuery) run(resultCount int) error {
 	if query.result == nil {
 		if resultCount == 0 {
-			result := make([]interface{}, 0, 4)
-			query.result = &result
+			query.result = make([]interface{}, 0, 4)
 		} else {
-			result := make([]interface{}, 0, resultCount)
-			query.result = &result
+			query.result = make([]interface{}, 0, resultCount)
 		}
 		if len(query.query) <= 0 {
 			query.query = query.getQuery()
 		}
 	} else {
-		*query.result = (*query.result)[:0]
+		query.result = query.result[:0]
 	}
 	query.ddl = false
 	query.dml = false
-	query.returnResultList = true
+	if query.columns == nil {
+		count := len(query.table.fields)
+		query.columns = make([]interface{}, count)
+		query.columnsPointer = make([]interface{}, count)
+	}
 	return query.schema.execute(query)
 }
 
@@ -377,14 +360,14 @@ func (query *metaQuery) exists() (bool, error) {
 	if len(query.query) <= 0 {
 		query.query = query.getQuery()
 	}
-	query.returnResultList = false
+
+	query.columns = nil
+	query.columnsPointer = nil
 	query.ddl = false
 	query.dml = false
-	if query.resultCount == nil {
-		query.resultCount = new(int)
-	}
 	query.schema.execute(query)
-	return *query.resultCount > 0, nil
+
+	return query.resultCount > 0, nil
 }
 
 // get
@@ -557,27 +540,30 @@ func (query *metaQuery) analyze(id int32, jobId int64, ent entity) error {
 
 // insert log
 func (query *metaQuery) insert(params []interface{}) error {
-	query.returnResultList = false
+	query.columns = nil
+	query.columnsPointer = nil
 	query.query = query.table.GetDml(dmlstatement.Insert, nil)
-	query.params = &params
+	query.params = params
 	query.dml = true
 	query.ddl = false
 	return query.schema.execute(query)
 }
 
 func (query *metaQuery) update(params []interface{}) error {
-	query.returnResultList = false
+	query.columns = nil
+	query.columnsPointer = nil
 	query.query = query.table.GetDml(dmlstatement.Update, metaQueryUpdateSet)
-	query.params = &params
+	query.params = params
 	query.dml = true
 	query.ddl = false
 	return query.schema.execute(query)
 }
 
 func (query *metaQuery) delete(params []interface{}) error {
-	query.returnResultList = false
+	query.columns = nil
+	query.columnsPointer = nil
 	query.query = query.table.GetDml(dmlstatement.Delete, nil)
-	query.params = &params
+	query.params = params
 	query.dml = true
 	query.ddl = false
 	return query.schema.execute(query)
@@ -587,7 +573,7 @@ func (query *metaQuery) executeQuery(dbConn *sql.DB, sql string) (*sql.Rows, err
 	if query.params == nil {
 		return dbConn.Query(sql)
 	}
-	var params = *query.params
+	var params = query.params
 	switch len(params) {
 	case 0:
 		return dbConn.Query(sql)

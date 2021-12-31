@@ -38,10 +38,9 @@ func (sequence *Sequence) Init(id int32, name string, description string, schema
 	sequence.description = description
 	sequence.schemaId = schemaId
 	sequence.maxValue = maxValue
-	sequence.value = new(cacheId)
-	sequence.value.Init(id, schemaId, 0)
 	sequence.baseline = baseline
 	sequence.active = active
+	sequence.value = new(cacheId)
 }
 
 //******************************
@@ -132,36 +131,36 @@ func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue,
 		true, true)
-	result.value.Init(0, schemaId, 0)
-	result.value.SetCurrentId(initialJobId) // assign min value
+	result.value.setReservedRange(0)
+	result.value.setCurrentId(initialJobId) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getLexiconId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(1, sequenceLexId, "Unique lexicon number assigned based on auto-numbering definition", schemaId, maxLexIdValue, true, true)
-	result.value.SetCurrentId(103) // assign min value
+	result.value.setCurrentId(103) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getUserId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(3, sequenceUserId, "Unique user number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.SetCurrentId(1003) // assign min value
+	result.value.setCurrentId(1003) // assign min value
 	return result
 }
 
 func (sequence *Sequence) getIndexId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(4, sequenceIndexId, "Unique index number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.SetCurrentId(1105)
+	result.value.setCurrentId(1105)
 	return result
 }
 
 func (sequence *Sequence) getEventId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(5, sequenceEventId, "Unique event number assigned based on auto-numbering definition", schemaId, maxUserIdValue, true, true)
-	result.value.SetCurrentId(198)
+	result.value.setCurrentId(198)
 	return result
 }
 

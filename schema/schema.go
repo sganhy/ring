@@ -75,6 +75,7 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 		schema.connections.setDatabaseProvider(provider)
 		schema.connections.setDisabled() // disable connection pool
 	}
+
 	schema.poolInitialized = true
 	schema.loadTables(tables)
 	schema.loadTablespaces(tableSpaces)
@@ -85,8 +86,12 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 	schema.loadSequences(sequences)
 	schema.loadParameters(parameters)
 	schema.loadMtmTables()
+
 	// after connection pool initialization
-	schema.loadCacheid()
+	// postpone the cacheId for @meta schema, @meta_id may be doesn't exist yet
+	if id != metaSchemaID {
+		schema.loadCacheid()
+	}
 
 	schema.language = Language{}
 	var paramLanguage = schema.getParameterByName(parameterDefaultLanguage)
@@ -103,63 +108,48 @@ func (schema *Schema) Init(id int32, name string, physicalName string, descripti
 func (schema *Schema) GetId() int32 {
 	return schema.id
 }
-
 func (schema *Schema) GetName() string {
 	return schema.name
 }
-
 func (schema *Schema) GetDescription() string {
 	return schema.description
 }
-
 func (schema *Schema) GetConnectionString() string {
 	return schema.connections.GetConnectionString()
 }
-
 func (schema *Schema) IsBaseline() bool {
 	return schema.baseline
 }
-
 func (schema *Schema) IsActive() bool {
 	return schema.active
 }
-
 func (schema *Schema) GetPhysicalName() string {
 	return schema.physicalName
 }
-
 func (schema *Schema) GetLanguage() *Language {
 	return &schema.language
 }
-
 func (schema *Schema) GetDatabaseProvider() databaseprovider.DatabaseProvider {
 	return schema.connections.GetDatabaseProvider()
 }
-
 func (schema *Schema) GetEntityType() entitytype.EntityType {
 	return entitytype.Schema
 }
-
 func (schema *Schema) setId(id int32) {
 	schema.id = id
 }
-
 func (schema *Schema) setName(name string) {
 	schema.name = name
 }
-
 func (schema *Schema) IsEmpty() bool {
 	return schema.name == emptySchemaName
 }
-
 func (schema *Schema) getLogger() *log {
 	return schema.logger
 }
-
 func (schema *Schema) logStatement(statment ddlstatement.DdlStatement) bool {
-	return schema.id != 0
+	return schema.id != metaSchemaID
 }
-
 func (schema *Schema) ToMeta() []*meta {
 	return schema.toMeta()
 }
@@ -353,30 +343,28 @@ func (schema *Schema) loadCacheid() {
 		return
 	}
 	var metaSchema *Schema
-	if schema.name == metaSchemaName {
+	if schema.id == metaSchemaID {
 		metaSchema = schema
 	} else {
 		metaSchema = GetSchemaByName(metaSchemaName)
 	}
-	metaIdTable := metaSchema.GetTableByName(metaIdTableName)
-
 	// sequences
 	for i := 0; i < len(schema.sequences); i++ {
 		sequence := schema.sequences[i]
 		cacheId := sequence.getCacheId()
-		cacheId.InitQuery(metaSchema, metaIdTable, schema.id, sequence)
+		cacheId.Init(metaSchema, schema.id, sequence)
 	}
 	// tables
-	if schema.name != metaSchemaName {
+	if schema.id != metaSchemaID {
 		for _, table := range schema.tables {
 			cacheId := table.getCacheId()
-			cacheId.InitQuery(metaSchema, metaIdTable, schema.id, table)
+			cacheId.Init(metaSchema, schema.id, table)
 		}
 	}
 }
 
 // copy of Execute() method (used only by metaQuery)
-func (schema *Schema) execute(query Query) error {
+func (schema *Schema) execute(query *metaQuery) error {
 	var conn = schema.connections.get()
 	var err error
 
@@ -576,7 +564,7 @@ func (schema *Schema) loadSequences(sequences []Sequence) {
 	schema.sequences = make([]*Sequence, 0, len(sequences))
 	var seq = Sequence{}
 
-	if schema.name == metaSchemaName {
+	if schema.id == metaSchemaID {
 		// initialize cache id before instance sequences
 		// meta is ready finally, we need to initialize InitCacheId before sequence instanciation
 		//initCacheId(schema, schema.GetTableByName(metaIdTableName), schema.GetTableByName(metaLongTableName))

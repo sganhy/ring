@@ -23,20 +23,20 @@ type Table struct {
 	id              int32
 	name            string
 	description     string
-	fields          []*Field                  // sorted by name
-	relations       []*Relation               // sorted by name
-	indexes         []*Index                  // sorted by name
-	mapper          []uint16                  // mapping from .fieldsById to .fields ==> max number of column 65535!!
-	physicalName    string                    //
-	physicalType    physicaltype.PhysicalType //
-	schemaId        int32                     //
-	tableType       tabletype.TableType       //
-	fieldList       string                    // list of field without searchable fields
-	sqlInsert       string                    // cache insert query
-	subject         string
-	provider        databaseprovider.DatabaseProvider
-	cacheid         *cacheId //
-	searchableCount uint8    //
+	fields          []*Field                          // sorted by name
+	relations       []*Relation                       // sorted by name
+	indexes         []*Index                          // sorted by name
+	mapper          []uint16                          // mapping from .fieldsById to .fields ==> max number of column 65535!!
+	physicalName    string                            //
+	physicalType    physicaltype.PhysicalType         //
+	schemaId        int32                             //
+	tableType       tabletype.TableType               //
+	fieldList       string                            // list of field without searchable fields
+	sqlInsert       string                            // cache insert query
+	subject         string                            //
+	provider        databaseprovider.DatabaseProvider //
+	cacheid         *cacheId                          // store id primary key information
+	searchableCount uint8                             //
 	cached          bool
 	readonly        bool
 	baseline        bool
@@ -114,6 +114,7 @@ const (
 func (table *Table) Init(id int32, name string, description string, fields []Field, relations []Relation, indexes []Index,
 	physicalType physicaltype.PhysicalType, schemaId int32, schemaPhysicalName string, tableType tabletype.TableType, provider databaseprovider.DatabaseProvider,
 	subject string, cached bool, readonly bool, baseline bool, active bool) {
+
 	table.id = id
 	table.name = name
 	table.description = description
@@ -121,14 +122,6 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.loadRelations(relations)
 	table.loadMapper()         // !!! load after loadFields()
 	table.loadIndexes(indexes) // !!! run at the end only
-
-	// initialize cacheId
-	if tableType == tabletype.Business {
-		table.cacheid = new(cacheId)
-		//TODO reservedRange 1 by default should be a parameter
-		table.cacheid.Init(id, schemaId, 1)
-	}
-
 	table.tableType = tableType
 	table.schemaId = schemaId
 	table.tableType = tableType
@@ -140,14 +133,15 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	table.baseline = baseline
 	table.active = active
 	table.searchableCount = table.getSearchableCount()
-
+	if tableType == tabletype.Business {
+		table.cacheid = new(cacheId)
+	}
 	if provider != databaseprovider.Undefined {
-
 		table.physicalName = table.getPhysicalName(schemaPhysicalName)
 		table.fieldList = table.getFieldList()
-		// take longest sql query
 		table.sqlInsert = table.getInsertSql(provider)
 	}
+
 }
 
 //******************************

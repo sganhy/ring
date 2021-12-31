@@ -113,7 +113,7 @@ func Test__Table__Init(t *testing.T) {
 		t.Errorf("Table.Init() ==> GetDatabaseProvider() <> databaseprovider.Oracle")
 	}
 	if table.getCacheId() != nil {
-		t.Errorf("Table.Init() ==> GetCacheId() cannot be null")
+		t.Errorf("Table.Init() ==> GetCacheId() should be null")
 	}
 	if table.IsCached() != true {
 		t.Errorf("Table.Init() ==> IsCached() <> true")

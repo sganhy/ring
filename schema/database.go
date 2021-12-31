@@ -37,7 +37,7 @@ func init() {
 	lstByName := make([]*database, 0, initialSliceCount)
 	schemaIndexByName = &lstByName
 	schemaCacheId = new(cacheId)
-	schemaCacheId.currentId = 0
+	schemaCacheId.setCurrentId(0)
 	schemaReservedId = make(map[string]int32)
 	setUpgradingSchema(nil)
 }
@@ -88,6 +88,9 @@ func Init(provider databaseprovider.DatabaseProvider, connectionString string, m
 
 		// generate meta tables first before getSchemaIdList()
 		createMetaTables(metaSchema)
+
+		// load @meta cacheId
+		metaSchema.loadCacheid()
 
 		// generate meta sequences
 		createMetaSequences(metaSchema)
@@ -209,8 +212,8 @@ func getSchemaId(schemaName string) (int32, bool) {
 		if val, ok := schemaReservedId[name]; ok {
 			result = val
 		} else {
-			schemaCacheId.currentId++
-			result = int32(schemaCacheId.currentId)
+			schemaCacheId.setCurrentId(schemaCacheId.GetCurrentId() + 1)
+			result = int32(schemaCacheId.GetCurrentId())
 			schemaReservedId[name] = result
 			newSchema = true
 		}
@@ -262,8 +265,8 @@ func createPhysicalSchema(schema *Schema) {
 
 func createMetaTables(schema *Schema) {
 
-	createMetaLogTable(schema)
-	createMetaTable(schema)
+	createMetaLogTable(schema) // 1> @log table
+	createMetaTable(schema)    // 2> @meta table
 
 	// second: create other meta tables
 	for _, table := range schema.tables {

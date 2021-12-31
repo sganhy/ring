@@ -21,28 +21,24 @@ const (
 	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
-func (cacheid *cacheId) Init(objid int32, schemaId int32, reservedRange int32) {
+func (cacheid *cacheId) Init(metaSchema *Schema, targetSchemaId int32, targetEntity entity) {
+
+	metaIdTable := metaSchema.GetTableByName(metaIdTableName)
+	metaLongTable := metaSchema.GetTableByName(metaLongTableName)
 
 	// max should be equal to int64 min value - forcing to initialize
 	cacheid.maxId = initialMaxId
-	cacheid.currentId = 0
-	cacheid.reservedRange = reservedRange
-}
 
-func (cacheid *cacheId) InitQuery(metaSchema *Schema, metaIdTable *Table, targetSchemaId int32,
-	targetEntity entity) {
-
+	// initialize query
 	cacheid.metaquery = new(metaQuery)
-	cacheid.metaquery.Init(metaSchema, metaIdTable)
+	cacheid.metaquery.Init(metaSchema, metaLongTable)
 
 	// added cacheIdSchema check to avoid unitesting crash!
-	cacheid.metaquery.query = cacheid.GetDml(dmlstatement.Update, metaIdTable)
-
+	cacheid.metaquery.query = cacheid.getDml(dmlstatement.Update, metaIdTable)
 	cacheid.metaquery.addParam(int32(1)) // default reserve range
 	cacheid.metaquery.addParam(targetEntity.GetId())
 	cacheid.metaquery.addParam(targetSchemaId)
 	cacheid.metaquery.addParam(int8(targetEntity.GetEntityType()))
-
 }
 
 //******************************
@@ -54,51 +50,17 @@ func (cacheid *cacheId) GetCurrentId() int64 {
 func (cacheid *cacheId) IsInitialized() bool {
 	return cacheid.maxId != initialMaxId
 }
-func (cacheid *cacheId) SetCurrentId(value int64) {
+func (cacheid *cacheId) setCurrentId(value int64) {
 	cacheid.currentId = value
 }
-
-//dynamic range (Cache I)
-func (cacheid *cacheId) SetCache(value bool) {
-	if value == true {
-		cacheid.reservedRange = 1
-	} else {
-		cacheid.reservedRange = 0
-	}
+func (cacheid *cacheId) setReservedRange(value int32) {
+	cacheid.reservedRange = value
 }
 
 //******************************
 // public methods
 //******************************
-func (cacheid *cacheId) GetDml(dmlType dmlstatement.DmlStatement, table *Table) string {
-	var result strings.Builder
-	var provider = table.GetDatabaseProvider()
-
-	if dmlType == dmlstatement.Update {
-		//TODO manage query for Mysql
-		var field = table.GetFieldByName(metaValue)
-		result.Grow(int(table.GetSqlCapacity()))
-		result.WriteString(dmlType.String())
-		result.WriteString(dmlSpace)
-		result.WriteString(table.GetPhysicalName())
-		result.WriteString(dmlUpdateSet)
-		result.WriteString(field.GetPhysicalName(provider))
-		result.WriteString(operatorEqual)
-		result.WriteString(field.GetPhysicalName(provider))
-		result.WriteString(operatorPlus)
-		result.WriteString(table.getVariableName(0))
-		result.WriteString(dqlWhere)
-		table.addPrimaryKeyFilter(&result, 1)
-		// returning for postgresql ==> RETURNING value
-		result.WriteString(dmlSpace)
-		result.WriteString(sqlPosgreSqlReturning)
-		result.WriteString(dmlSpace)
-		result.WriteString(field.GetPhysicalName(provider))
-	}
-
-	return result.String()
-}
-
+// used for Sequence ==>
 // Generate id with cache management for BulKsave (Hi/Lo algorithm)
 func (cacheid *cacheId) GetNewId() int64 {
 	var result int64
@@ -129,6 +91,7 @@ func (cacheid *cacheId) GetNewId() int64 {
 			cacheid.reservedRange <<= 1
 		}
 	}
+
 	cacheid.currentId = result
 	cacheid.syncRoot.Unlock()
 	return result
@@ -204,4 +167,33 @@ func (cacheid *cacheId) exists(objectType entitytype.EntityType, objectId int32,
 
 	result, _ := query.exists()
 	return result
+}
+
+func (cacheid *cacheId) getDml(dmlType dmlstatement.DmlStatement, table *Table) string {
+	var result strings.Builder
+	var provider = table.GetDatabaseProvider()
+
+	if dmlType == dmlstatement.Update {
+		//TODO manage query for Mysql
+		var field = table.GetFieldByName(metaValue)
+		result.Grow(int(table.GetSqlCapacity()))
+		result.WriteString(dmlType.String())
+		result.WriteString(dmlSpace)
+		result.WriteString(table.GetPhysicalName())
+		result.WriteString(dmlUpdateSet)
+		result.WriteString(field.GetPhysicalName(provider))
+		result.WriteString(operatorEqual)
+		result.WriteString(field.GetPhysicalName(provider))
+		result.WriteString(operatorPlus)
+		result.WriteString(table.getVariableName(0))
+		result.WriteString(dqlWhere)
+		table.addPrimaryKeyFilter(&result, 1)
+		// returning for postgresql ==> RETURNING value
+		result.WriteString(dmlSpace)
+		result.WriteString(sqlPosgreSqlReturning)
+		result.WriteString(dmlSpace)
+		result.WriteString(field.GetPhysicalName(provider))
+	}
+
+	return result.String()
 }
