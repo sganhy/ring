@@ -319,8 +319,8 @@ func (table *Table) GetRelationByNameI(name string) *Relation {
 	return nil
 }
 
-func (table *Table) GetNewObjid(reservedRange int64) int64 {
-	return table.cacheid.GetNewRangeId(uint32(reservedRange))
+func (table *Table) GetNewObjid(reservedRange uint32) int64 {
+	return table.cacheid.getNewRangeId(reservedRange)
 }
 
 func (table *Table) GetIndexByName(name string) *Index {

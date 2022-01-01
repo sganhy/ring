@@ -109,10 +109,10 @@ func (query *metaQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error
 		// avoid==> panic: pq: sorry, too many clients already
 		rows.Close() //WARN: don't forget rows.Close()
 		return err
-	} else {
-		fmt.Println(query.query)
-		rows, err = query.executeQuery(dbConnection, query.query)
 	}
+
+	fmt.Println(query.query)
+	rows, err = query.executeQuery(dbConnection, query.query)
 
 	if err != nil {
 		fmt.Println("ERROR ==>")

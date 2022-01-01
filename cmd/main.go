@@ -39,12 +39,12 @@ func main() {
 	rcd.SetRecordType("RpgSheet.skill")
 	rcd.SetField("id", 16)
 	rcd.SetField("name", "tété")
+
 	var bs = new(data.BulkSave)
 	bs.InsertRecord(rcd)
 	bs.InsertRecord(rcd)
 	//	bs.InsertRecord(rcd)
 	bs.Save()
-
 	bs.Clear()
 	bs.InsertRecord(rcd)
 	//	bs.InsertRecord(rcd)
@@ -54,6 +54,9 @@ func main() {
 	bs.InsertRecord(rcd)
 	bs.InsertRecord(rcd)
 	//	bs.InsertRecord(rcd)
+	bs.Save()
+	bs.Clear()
+	bs.InsertRecord(rcd)
 	bs.Save()
 
 	var importFile = schema.Import{}

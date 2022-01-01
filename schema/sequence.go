@@ -83,7 +83,7 @@ func (sequence *Sequence) logStatement(statment ddlstatement.DdlStatement) bool 
 // public methods
 //******************************
 func (sequence *Sequence) NextValue() int64 {
-	return sequence.value.GetNewId()
+	return sequence.value.getNewId()
 }
 
 func (sequence *Sequence) Clone() *Sequence {
@@ -131,7 +131,6 @@ func (sequence *Sequence) getJobId(schemaId int32) *Sequence {
 	result := new(Sequence)
 	result.Init(0, sequenceJobIdName, "Unique job number assigned based on auto-numbering definition", schemaId, maxJobIdValue,
 		true, true)
-	result.value.setReservedRange(0)
 	result.value.setCurrentId(initialJobId) // assign min value
 	return result
 }

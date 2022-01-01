@@ -123,7 +123,7 @@ func (bulkSave *BulkSave) loadObjectId() error {
 		// generate id
 		for tableId, count := range dico {
 			table = schem.GetTableById(tableId)
-			dico[tableId] = table.GetNewObjid(count)
+			dico[tableId] = table.GetNewObjid(uint32(count))
 		}
 		// set bulksave queries
 		for i := len(operations) - 1; i >= 0; i-- {

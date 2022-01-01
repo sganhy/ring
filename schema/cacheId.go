@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"ring/schema/databaseprovider"
 	"ring/schema/dmlstatement"
 	"ring/schema/entitytype"
 	"strings"
@@ -10,14 +11,14 @@ import (
 type cacheId struct {
 	currentId     int64
 	maxId         int64
-	reservedRange int32
+	reservedRange uint32
 	syncRoot      sync.Mutex
 	metaquery     *metaQuery
 }
 
 const (
 	sqlPosgreSqlReturning string = "RETURNING"
-	maxReservedRange      int32  = 1073741824           // 2^30
+	maxReservedRange      uint32 = 1073741824           // 2^30
 	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
@@ -53,17 +54,71 @@ func (cacheid *cacheId) IsInitialized() bool {
 func (cacheid *cacheId) setCurrentId(value int64) {
 	cacheid.currentId = value
 }
-func (cacheid *cacheId) setReservedRange(value int32) {
+func (cacheid *cacheId) setReservedRange(value uint32) {
 	cacheid.reservedRange = value
 }
 
 //******************************
 // public methods
 //******************************
-// used for Sequence ==>
+
+//******************************
+// private methods
+//******************************
+// used for Tables ==>
 // Generate id with cache management for BulKsave (Hi/Lo algorithm)
-func (cacheid *cacheId) GetNewId() int64 {
+// return last value generated
+// id range can be lost multi slot of id should be managed
+func (cacheid *cacheId) getNewRangeId(idRange uint32) int64 {
+	// duplicate ==> GetNewId()
+	/* ==> no check
+	if reservedRange < 1 {
+		// invalid range value
+		// add logging here
+		return 0
+	}
+	*/
 	var result int64
+	cacheid.syncRoot.Lock()
+
+	//TODO manage cycles and overflows !!
+	result = cacheid.currentId + int64(idRange)
+
+	if result > cacheid.maxId {
+		// take max reserve range
+		if cacheid.reservedRange > idRange {
+			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
+			result = int64(idRange) - int64(cacheid.reservedRange)
+		} else {
+			// here we loosing id due to multiple interval ==>
+			// 	]currentId,maxId]U[newId-reservedRange,newId]
+			cacheid.metaquery.setParamValue(int32(idRange), 0)
+			result = 0
+		}
+
+		// never loaded
+		cacheid.metaquery.run(1)
+		cacheid.maxId = cacheid.metaquery.getInt64Value()
+		result += cacheid.maxId
+
+		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
+		if cacheid.reservedRange < maxReservedRange {
+			cacheid.reservedRange <<= 1
+		}
+	}
+
+	cacheid.currentId = result
+	cacheid.syncRoot.Unlock()
+
+	return result
+}
+
+// used for Sequences ==>
+// Generate id with cache management for BulKsave (Hi/Lo algorithm)
+// !! here we cannot loose id on the same session
+func (cacheid *cacheId) getNewId() int64 {
+	var result int64
+
 	cacheid.syncRoot.Lock()
 
 	//TODO manage cycles and overflows !!
@@ -77,7 +132,7 @@ func (cacheid *cacheId) GetNewId() int64 {
 			result = 1 - int64(cacheid.reservedRange)
 		} else {
 			// set default parameter for returning value
-			cacheid.metaquery.setParamValue(int32(1), 0)
+			cacheid.metaquery.setParamValue(1, 0)
 			result = 0
 		}
 
@@ -97,48 +152,6 @@ func (cacheid *cacheId) GetNewId() int64 {
 	return result
 }
 
-// Generate id with cache management for BulKsave (Hi/Lo algorithm)
-// return last value generated
-func (cacheid *cacheId) GetNewRangeId(reservedRange uint32) int64 {
-	// duplicate ==> GetNewId()
-	if reservedRange < 1 {
-		// invalid range value
-		// add logging here
-		return 0
-	}
-
-	var resultRange int64
-	cacheid.syncRoot.Lock()
-
-	//TODO manage cycles and overflows !!
-	resultRange = cacheid.currentId + int64(reservedRange)
-	if resultRange > cacheid.maxId {
-		// take max reserve range
-		if cacheid.reservedRange > int32(reservedRange) {
-			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
-		} else {
-			cacheid.metaquery.setParamValue(int32(reservedRange), 0)
-		}
-
-		// never loaded
-		cacheid.metaquery.run(1)
-		cacheid.maxId = cacheid.metaquery.getInt64Value()
-
-		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
-		if cacheid.reservedRange < maxReservedRange {
-			cacheid.reservedRange <<= 1
-		}
-	}
-
-	cacheid.currentId = resultRange
-	cacheid.syncRoot.Unlock()
-
-	return resultRange
-}
-
-//******************************
-// private methods
-//******************************
 func (cacheid *cacheId) toMetaId(objectType entitytype.EntityType, objectId int32, schemaId int32) *metaId {
 	metaid := new(metaId)
 	metaid.id = objectId
@@ -173,8 +186,9 @@ func (cacheid *cacheId) getDml(dmlType dmlstatement.DmlStatement, table *Table) 
 	var result strings.Builder
 	var provider = table.GetDatabaseProvider()
 
-	if dmlType == dmlstatement.Update {
-		//TODO manage query for Mysql
+	if dmlType == dmlstatement.Update && provider == databaseprovider.PostgreSql {
+		//UPDATE rpg_sheet_test."@meta_id" SET "value"="value"+$1
+		// WHERE id=$2 AND schema_id=$3 AND object_type=$4 RETURNING "value"
 		var field = table.GetFieldByName(metaValue)
 		result.Grow(int(table.GetSqlCapacity()))
 		result.WriteString(dmlType.String())

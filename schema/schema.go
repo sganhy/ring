@@ -353,12 +353,15 @@ func (schema *Schema) loadCacheid() {
 		sequence := schema.sequences[i]
 		cacheId := sequence.getCacheId()
 		cacheId.Init(metaSchema, schema.id, sequence)
+		cacheId.setReservedRange(0)
 	}
 	// tables
 	if schema.id != metaSchemaID {
 		for _, table := range schema.tables {
 			cacheId := table.getCacheId()
 			cacheId.Init(metaSchema, schema.id, table)
+			// by default cache id - add parameter
+			cacheId.setReservedRange(1)
 		}
 	}
 }
