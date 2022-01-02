@@ -2,6 +2,7 @@ package data
 
 import (
 	"errors"
+	"fmt"
 	"ring/data/bulksavetype"
 	"ring/schema"
 )
@@ -131,6 +132,7 @@ func (bulkSave *BulkSave) loadObjectId() error {
 			if bsQuery.bulkSaveType == bulksavetype.InsertRecord {
 				currentId = bsQuery.targetObject.GetId()
 				bsQuery.parameters[0] = dico[currentId]
+				fmt.Printf("==> objid=%d \n", dico[currentId])
 				dico[currentId] = dico[currentId] - 1
 			}
 		}

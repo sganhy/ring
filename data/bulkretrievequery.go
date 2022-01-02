@@ -47,7 +47,11 @@ func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx
 	rows, err := dqlQuery.Execute(dbConnection, sqlQuery, parameters)
 
 	if err != nil {
-		//fmt.Println(err)
+		fmt.Println("ERROR!")
+		fmt.Println(err)
+		if rows != nil {
+			rows.Close()
+		}
 		return err
 	}
 	var rowIndex = 0

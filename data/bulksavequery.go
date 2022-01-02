@@ -43,8 +43,13 @@ func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) er
 	var parameters = query.getParameters(provider, dmlStatement)
 	var sqlQuery = query.targetObject.GetDml(dmlStatement, nil)
 
-	_, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
+	rows, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
+	if rows != nil {
+		rows.Close() //WARN: don't forget rows.Close()
+	}
+
 	fmt.Println(sqlQuery)
+	fmt.Println(err)
 	return err
 }
 
