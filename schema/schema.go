@@ -284,7 +284,6 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 			}
 		}
 		err = trans.Commit()
-
 	} else {
 
 		for i := 0; i < len(queries); i++ {

@@ -27,14 +27,6 @@ type bulkRetrieveQuery struct {
 	result       *List // pointer is mandatory
 }
 
-var (
-	dqlQuery *bulkQuery
-)
-
-func init() {
-	dqlQuery = new(bulkQuery)
-}
-
 //******************************
 // public methods (Interface schema.Query implementations)
 //******************************
@@ -44,7 +36,7 @@ func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx
 	var orderClause = query.getOrderClause(provider)
 	var sqlQuery = query.targetObject.GetDql(whereClause, orderClause)
 
-	rows, err := dqlQuery.Execute(dbConnection, sqlQuery, parameters)
+	rows, err := dbConnection.Query(sqlQuery, parameters...)
 
 	if err != nil {
 		fmt.Println("ERROR!")

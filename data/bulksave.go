@@ -2,7 +2,6 @@ package data
 
 import (
 	"errors"
-	"fmt"
 	"ring/data/bulksavetype"
 	"ring/schema"
 )
@@ -106,6 +105,7 @@ func (bulkSave *BulkSave) loadObjectId() error {
 	var currentId int32 = 0
 	var schem *schema.Schema
 	var table *schema.Table
+	var schemaIndex = 0
 
 	// [schemaId, number of insert]
 	dico = make(map[int32]int64, bulkSave.insertCount)
@@ -132,11 +132,24 @@ func (bulkSave *BulkSave) loadObjectId() error {
 			if bsQuery.bulkSaveType == bulksavetype.InsertRecord {
 				currentId = bsQuery.targetObject.GetId()
 				bsQuery.parameters[0] = dico[currentId]
-				fmt.Printf("==> objid=%d \n", dico[currentId])
+				//fmt.Printf("==> objid=%d \n", dico[currentId])
 				dico[currentId] = dico[currentId] - 1
 			}
 		}
+		schemaIndex++
+		/*
+			// clear dictionary
+			if schemaIndex < len(bulkSave.data) {
+				for key, _ := range dico {
+					delete(dico, key)
+				}
+			}
+		*/
 	}
 
 	return nil
+}
+
+func (bulkSave *BulkSave) clearData() {
+
 }

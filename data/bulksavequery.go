@@ -16,14 +16,6 @@ type bulkSaveQuery struct {
 	parameters   []interface{}
 }
 
-var (
-	dmlQuery *bulkQuery
-)
-
-func init() {
-	dmlQuery = new(bulkQuery)
-}
-
 func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.BulkSaveType) {
 	bulkSQ.record = record
 	bulkSQ.targetObject = record.recordType
@@ -42,14 +34,22 @@ func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) er
 	var dmlStatement = query.getDmlStatement()
 	var parameters = query.getParameters(provider, dmlStatement)
 	var sqlQuery = query.targetObject.GetDml(dmlStatement, nil)
+	var err error
 
-	rows, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
-	if rows != nil {
-		rows.Close() //WARN: don't forget rows.Close()
+	if transaction != nil {
+		_, err = transaction.Exec(sqlQuery, parameters...)
+
+	} else {
+		var rows *sql.Rows
+		rows, err = dbConnection.Query(sqlQuery, parameters...)
+		//rows, err := dmlQuery.Execute(dbConnection, sqlQuery, parameters)
+		if rows != nil {
+			rows.Close() //WARN: don't forget rows.Close()
+		}
 	}
 
 	fmt.Println(sqlQuery)
-	fmt.Println(err)
+	//fmt.Println(err)
 	return err
 }
 
