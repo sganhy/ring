@@ -63,72 +63,7 @@ func (record *Record) SetField(name string, value interface{}) error {
 	if record.recordType != nil {
 		var fieldId = record.recordType.GetFieldIndexByName(name)
 		if fieldId >= 0 {
-			var field = record.recordType.GetFieldByIndex(fieldId)
-			var val string
-			switch value.(type) {
-			case string:
-				val = value.(string)
-				break
-			case float32:
-				// conversion issues
-				val = fmt.Sprintf("%g", value.(float32))
-				break
-			case float64:
-				val = strconv.FormatFloat(value.(float64), 'f', -1, 64)
-				break
-			case int:
-				val = strconv.Itoa(value.(int))
-				break
-			case uint:
-				val = strconv.FormatUint(uint64(value.(uint)), 10)
-				break
-			case bool:
-				val = strconv.FormatBool(value.(bool))
-				break
-			case int8:
-				val = strconv.Itoa(int(value.(int8)))
-				break
-			case int16:
-				val = strconv.Itoa(int(value.(int16)))
-				break
-			case int32:
-				val = strconv.Itoa(int(value.(int32)))
-				break
-			case int64:
-				val = strconv.FormatInt(value.(int64), 10)
-				break
-			case uint8:
-				val = strconv.FormatUint(uint64(value.(uint8)), 10)
-				break
-			case uint16:
-				val = strconv.FormatUint(uint64(value.(uint16)), 10)
-				break
-			case uint32:
-				val = strconv.FormatUint(uint64(value.(uint32)), 10)
-				break
-			case uint64:
-				val = strconv.FormatUint(value.(uint64), 10)
-				break
-			case time.Time:
-				val = field.GetDateTimeString(value.(time.Time))
-				if field.IsDateTime() {
-					// avoid dateTime revalidation
-					record.data[fieldId] = val
-					return nil
-				}
-				break
-			default:
-				return errors.New("Unsupported type.")
-			}
-			var err error
-			val, err = field.GetValue(val)
-			if err == nil {
-				record.data[fieldId] = val
-			} else {
-				var fieldType = field.GetType()
-				return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), val))
-			}
-			return nil
+			return record.setFieldByIndex(fieldId, value)
 		}
 		return errors.New(fmt.Sprintf(errorUnknownFieldName, name, record.recordType.GetName()))
 	}
@@ -184,6 +119,88 @@ func (record *Record) setField(id int64) {
 			record.data[index] = strconv.FormatInt(id, 10)
 		}
 	}
+}
+
+func (record *Record) getField() int64 {
+	if record.recordType != nil {
+		var index = record.recordType.GetPrimaryKeyIndex()
+		if index >= 0 {
+			id, err := strconv.ParseInt(record.data[index], 10, 64)
+			if err == nil {
+				return id
+			}
+		}
+	}
+	return -1
+}
+
+func (record *Record) setFieldByIndex(index int, value interface{}) error {
+	var field = record.recordType.GetFieldByIndex(index)
+	var val string
+	switch value.(type) {
+	case string:
+		val = value.(string)
+		break
+	case float32:
+		// conversion issues
+		val = fmt.Sprintf("%g", value.(float32))
+		break
+	case float64:
+		val = strconv.FormatFloat(value.(float64), 'f', -1, 64)
+		break
+	case int:
+		val = strconv.Itoa(value.(int))
+		break
+	case uint:
+		val = strconv.FormatUint(uint64(value.(uint)), 10)
+		break
+	case bool:
+		val = strconv.FormatBool(value.(bool))
+		break
+	case int8:
+		val = strconv.Itoa(int(value.(int8)))
+		break
+	case int16:
+		val = strconv.Itoa(int(value.(int16)))
+		break
+	case int32:
+		val = strconv.Itoa(int(value.(int32)))
+		break
+	case int64:
+		val = strconv.FormatInt(value.(int64), 10)
+		break
+	case uint8:
+		val = strconv.FormatUint(uint64(value.(uint8)), 10)
+		break
+	case uint16:
+		val = strconv.FormatUint(uint64(value.(uint16)), 10)
+		break
+	case uint32:
+		val = strconv.FormatUint(uint64(value.(uint32)), 10)
+		break
+	case uint64:
+		val = strconv.FormatUint(value.(uint64), 10)
+		break
+	case time.Time:
+		val = field.GetDateTimeString(value.(time.Time))
+		if field.IsDateTime() {
+			// avoid dateTime revalidation
+			record.data[index] = val
+			return nil
+		}
+		break
+	default:
+		return errors.New("Unsupported type.")
+	}
+	var err error
+	val, err = field.GetValue(val)
+	if err == nil {
+		record.data[index] = val
+	} else {
+		var fieldType = field.GetType()
+		return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), val))
+	}
+	return nil
 }
 
 func (record *Record) setRecordType(recordType *schema.Table) {

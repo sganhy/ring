@@ -36,29 +36,32 @@ func main() {
 	//server=SAKHALOO-PC;user id=sakhaloo;password=hoollehayerazi;database=webApp
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
+	var br = new(data.BulkRetrieve)
+	br.SimpleQuery(0, "RpgSheet.skill")
+
 	rcd.SetRecordType("RpgSheet.skill")
-	rcd.SetField("id", 16)
-	rcd.SetField("name", "tété")
+	rcd.SetField("name", "test")
 
 	var bs = new(data.BulkSave)
-	bs.InsertRecord(rcd)
-	bs.InsertRecord(rcd)
+	bs.DeleteRecordById("RpgSheet.skill", 4370)
 	//	bs.InsertRecord(rcd)
 	bs.Save()
-	bs.Clear()
-	bs.InsertRecord(rcd)
-	//	bs.InsertRecord(rcd)
-	bs.Save()
-	bs.Clear()
-	bs.InsertRecord(rcd)
-	bs.InsertRecord(rcd)
-	bs.InsertRecord(rcd)
-	//	bs.InsertRecord(rcd)
-	bs.Save()
-	bs.Clear()
-	bs.InsertRecord(rcd)
-	bs.Save()
-
+	/*
+		bs.Clear()
+		bs.Clear()
+		bs.InsertRecord(rcd)
+		//	bs.InsertRecord(rcd)
+		bs.Save()
+		bs.Clear()
+		bs.InsertRecord(rcd)
+		bs.InsertRecord(rcd)
+		bs.InsertRecord(rcd)
+		//	bs.InsertRecord(rcd)
+		bs.Save()
+		bs.Clear()
+		bs.InsertRecord(rcd)
+		bs.Save()
+	*/
 	var importFile = schema.Import{}
 	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
 	importFile.Load()
@@ -108,7 +111,7 @@ func main() {
 	fmt.Println(rcd.GetField("entry_time"))
 
 	// Create an empty user and make the sql query (using $1 for the parameter)
-	var br = new(data.BulkRetrieve)
+	br = new(data.BulkRetrieve)
 	br.SimpleQuery(0, "@meta")
 	br.AppendFilter(0, "schema_id", operationtype.Equal, 0)
 	br.AppendFilter(0, "object_type", operationtype.Equal, 15)
@@ -126,5 +129,6 @@ func main() {
 	br.RetrieveRecords()
 
 	runtime.GC()
+	time.Sleep(3 * time.Second)
 
 }

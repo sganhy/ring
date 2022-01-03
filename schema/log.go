@@ -3,6 +3,7 @@ package schema
 import (
 	"fmt"
 	"os"
+	"ring/schema/databaseprovider"
 	"runtime"
 	"strings"
 	"time"
@@ -33,11 +34,13 @@ const (
 )
 
 var (
-	logSchema       *Schema
-	logTable        *Table
-	metaTableExist  bool
-	initialCreation bool
-	initialLogJobId int64
+	logSchema        *Schema
+	logTable         *Table
+	metaTableExist   bool
+	initialCreation  bool
+	initialLogJobId  int64
+	parameterComment string = "--"
+	newLine          string = "\n"
 )
 
 func init() {
@@ -184,6 +187,24 @@ func (logger *log) Debug(id int32, jobId int64, messages ...interface{}) {
 //go:noinline
 func (logger *log) Info(id int32, jobId int64, messages ...interface{}) {
 	logger.writePartialLog(id, levelInfo, jobId, messages...)
+}
+
+func (logger *log) QueryError(provider databaseprovider.DatabaseProvider, err error, query string,
+	parameters []string) string {
+	var sb strings.Builder
+	if len(query) > 0 {
+		sb.WriteString(query)
+	}
+	if parameters != nil {
+		sb.WriteString(newLine)
+		sb.WriteString(parameterComment)
+	}
+	if err != nil {
+		sb.WriteString(newLine)
+		sb.WriteString(logger.getStackTrace())
+	}
+	return sb.String()
+
 }
 
 //******************************

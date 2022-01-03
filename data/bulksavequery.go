@@ -2,7 +2,6 @@ package data
 
 import (
 	"database/sql"
-	"fmt"
 	"ring/data/bulksavetype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
@@ -20,8 +19,12 @@ func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.Bulk
 	bulkSQ.record = record
 	bulkSQ.targetObject = record.recordType
 	bulkSQ.bulkSaveType = bulkSaveType
-	if bulkSaveType == bulksavetype.InsertRecord {
+	switch bulkSaveType {
+	case bulksavetype.InsertRecord:
 		bulkSQ.parameters = record.recordType.GetInsertParameters(bulkSQ.record.data)
+		break
+	case bulksavetype.DeleteRecord:
+		bulkSQ.parameters = record.recordType.GetDeleteParameters(record.getField())
 	}
 }
 
@@ -38,7 +41,6 @@ func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) er
 
 	if transaction != nil {
 		_, err = transaction.Exec(sqlQuery, parameters...)
-
 	} else {
 		var rows *sql.Rows
 		rows, err = dbConnection.Query(sqlQuery, parameters...)
@@ -48,7 +50,12 @@ func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) er
 		}
 	}
 
-	fmt.Println(sqlQuery)
+	if err != nil {
+		var sch = schema.GetSchemaById(query.targetObject.GetSchemaId())
+		//TODO transform paramters to string[]
+		sch.LogQueryError(102, err, sqlQuery, nil)
+	}
+
 	//fmt.Println(err)
 	return err
 }

@@ -219,10 +219,6 @@ func (table *Table) GetFieldByIndex(index int) *Field {
 	return table.fields[index]
 }
 
-func (table *Table) GetSqlCapacity() int {
-	return len(table.sqlInsert)
-}
-
 func (table *Table) setId(id int32) {
 	table.id = id
 }
@@ -701,6 +697,12 @@ func (table *Table) GetInsertParameters(record []string) []interface{} {
 	return result
 }
 
+func (table *Table) GetDeleteParameters(id int64) []interface{} {
+	result := make([]interface{}, 1, 1)
+	result[0] = id
+	return result
+}
+
 //******************************
 // private methods
 //******************************
@@ -1076,6 +1078,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 	case tabletype.Business:
 		query.WriteString(defaultPrimaryKeyInt64.GetName())
 		query.WriteString(operatorEqual)
+		query.WriteString(variableName)
 		if table.provider != databaseprovider.MySql {
 			query.WriteString(strconv.Itoa(addedIndex))
 		}

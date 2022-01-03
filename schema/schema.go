@@ -248,6 +248,14 @@ func (schema *Schema) LogError(id int32, messages ...interface{}) {
 }
 
 //go:noinline
+func (schema *Schema) LogQueryError(id int32, err error, query string, parameters []string) {
+	if schema.logger != nil {
+		var description = schema.logger.QueryError(schema.GetDatabaseProvider(), err, query, parameters)
+		schema.logger.writePartialLog(id, levelError, 0, err.Error(), description)
+	}
+}
+
+//go:noinline
 func (schema *Schema) LogDebug(id int32, messages ...interface{}) {
 	if schema.logger != nil {
 		schema.logger.writePartialLog(id, levelDebug, 0, messages...)
@@ -273,6 +281,7 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 		ctx := context.Background()
 		trans, err = connection.dbConnection.BeginTx(ctx, nil)
 		if err != nil {
+			schema.LogError(101, err)
 			return err
 		}
 		for j := 0; j < len(queries); j++ {

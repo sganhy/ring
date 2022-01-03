@@ -519,6 +519,11 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
+	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
+	expectedSQl = "DELETE FROM information_schema.\"t_@test\" WHERE id=$1"
+	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
 
 	//======================
 	//==== testing Mysql

@@ -20,14 +20,28 @@ type BulkSave struct {
 //******************************
 func (bulkSave *BulkSave) InsertRecord(record *Record) error {
 	bulkSave.insertCount++
-	return bulkSave.addRecord(record, bulksavetype.InsertRecord)
+	return bulkSave.addQuery(record, bulksavetype.InsertRecord)
 }
 
 func (bulkSave *BulkSave) UpdatRecord(record *Record) error {
-	return bulkSave.addRecord(record, bulksavetype.UpdateRecord)
+	return bulkSave.addQuery(record, bulksavetype.UpdateRecord)
 }
 
 func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Record, relationName string) {
+}
+
+func (bulkSave *BulkSave) DeleteRecord(record *Record, targetRecord *Record, relationName string) error {
+	return bulkSave.addQuery(record, bulksavetype.DeleteRecord)
+}
+
+func (bulkSave *BulkSave) DeleteRecordById(recordType string, id int64) error {
+	record := new(Record)
+	err := record.SetRecordType(recordType)
+	if err != nil {
+		return err
+	}
+	record.setField(id)
+	return bulkSave.addQuery(record, bulksavetype.DeleteRecord)
 }
 
 func (bulkSave *BulkSave) Save() error {
@@ -67,20 +81,13 @@ func (bulkSave *BulkSave) Clear() {
 //******************************
 // private methods
 //******************************
-func (bulkSave *BulkSave) getQuery(record *Record, bulkSaveType bulksavetype.BulkSaveType) schema.Query {
-	var query = bulkSaveQuery{}
-	query.Init(record, bulkSaveType)
-	var result schema.Query = query
-	return result
-}
-
-func (bulkSave *BulkSave) addRecord(record *Record, bulkSaveType bulksavetype.BulkSaveType) error {
+func (bulkSave *BulkSave) addQuery(record *Record, bulkSaveType bulksavetype.BulkSaveType) error {
 	if record == nil || record.recordType == nil {
 		return errors.New(errorUnknownRecordType)
 	}
 	// allow object
 	if bulkSave.data == nil {
-		bulkSave.initializeData()
+		bulkSave.data = make(map[int32][]schema.Query, schema.GetSchemaCount()*2)
 	}
 	var schemaId = record.recordType.GetSchemaId()
 	var data []schema.Query
@@ -90,13 +97,12 @@ func (bulkSave *BulkSave) addRecord(record *Record, bulkSaveType bulksavetype.Bu
 	if data == nil {
 		data = make([]schema.Query, 0, initialSliceCount)
 	}
-	data = append(data, bulkSave.getQuery(record, bulkSaveType))
-	bulkSave.data[schemaId] = data
-	return nil
-}
 
-func (bulkSave *BulkSave) initializeData() {
-	bulkSave.data = make(map[int32][]schema.Query, schema.GetSchemaCount()*2)
+	var query = bulkSaveQuery{}
+	query.Init(record, bulkSaveType)
+	bulkSave.data[schemaId] = append(data, query)
+
+	return nil
 }
 
 func (bulkSave *BulkSave) loadObjectId() error {
@@ -137,12 +143,13 @@ func (bulkSave *BulkSave) loadObjectId() error {
 			}
 		}
 		schemaIndex++
+		for key, _ := range dico {
+			delete(dico, key)
+		}
 		/*
 			// clear dictionary
 			if schemaIndex < len(bulkSave.data) {
-				for key, _ := range dico {
-					delete(dico, key)
-				}
+
 			}
 		*/
 	}

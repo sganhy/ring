@@ -190,7 +190,6 @@ func (cacheid *cacheId) getDml(dmlType dmlstatement.DmlStatement, table *Table) 
 		//UPDATE rpg_sheet_test."@meta_id" SET "value"="value"+$1
 		// WHERE id=$2 AND schema_id=$3 AND object_type=$4 RETURNING "value"
 		var field = table.GetFieldByName(metaValue)
-		result.Grow(int(table.GetSqlCapacity()))
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
 		result.WriteString(table.GetPhysicalName())
