@@ -30,7 +30,7 @@ func (bulkSave *BulkSave) UpdatRecord(record *Record) error {
 func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Record, relationName string) {
 }
 
-func (bulkSave *BulkSave) DeleteRecord(record *Record, targetRecord *Record, relationName string) error {
+func (bulkSave *BulkSave) DeleteRecord(record *Record) error {
 	return bulkSave.addQuery(record, bulksavetype.DeleteRecord)
 }
 

@@ -34,9 +34,8 @@ func (bulkSQ *bulkSaveQuery) Init(record *Record, bulkSaveType bulksavetype.Bulk
 func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	// execute without transaction!
 	var provider = query.targetObject.GetDatabaseProvider()
-	var dmlStatement = query.getDmlStatement()
-	var parameters = query.getParameters(provider, dmlStatement)
-	var sqlQuery = query.targetObject.GetDml(dmlStatement, nil)
+	var parameters = query.getParameters(provider, query.bulkSaveType)
+	var sqlQuery = query.targetObject.GetDml(query.getDmlStatement(), nil)
 	var err error
 
 	if transaction != nil {
@@ -52,7 +51,7 @@ func (query bulkSaveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) er
 
 	if err != nil {
 		var sch = schema.GetSchemaById(query.targetObject.GetSchemaId())
-		//TODO transform paramters to string[]
+		//TODO cast query.parameters to string[]
 		sch.LogQueryError(102, err, sqlQuery, nil)
 	}
 
@@ -77,7 +76,7 @@ func (query *bulkSaveQuery) getDmlStatement() dmlstatement.DmlStatement {
 }
 
 func (query *bulkSaveQuery) getParameters(provider databaseprovider.DatabaseProvider,
-	statement dmlstatement.DmlStatement) []interface{} {
+	bulksaveType bulksavetype.BulkSaveType) []interface{} {
 
 	return query.parameters
 }

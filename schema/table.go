@@ -591,7 +591,7 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 }
 
 func (table *Table) GetPrimaryKeyIndex() int {
-	if table.tableType == tabletype.Business {
+	if table.tableType == tabletype.Business || table.tableType == tabletype.Lexicon {
 		return int(table.mapper[0])
 	}
 	return -1
@@ -1075,7 +1075,7 @@ func (table *Table) addPrimaryKeyFilter(query *strings.Builder, index int) {
 			}
 		}
 		break
-	case tabletype.Business:
+	case tabletype.Business, tabletype.Lexicon:
 		query.WriteString(defaultPrimaryKeyInt64.GetName())
 		query.WriteString(operatorEqual)
 		query.WriteString(variableName)

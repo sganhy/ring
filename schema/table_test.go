@@ -519,12 +519,16 @@ func Test__Table__GetDml(t *testing.T) {
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
+	expectedSQl = "DELETE FROM information_schema.\"@lexicon\" WHERE id=$1"
+	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
+		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+	}
+	// table @test with tabletype == Business
 	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.\"t_@test\" WHERE id=$1"
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
 		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
 	}
-
 	//======================
 	//==== testing Mysql
 	//======================

@@ -294,7 +294,6 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 		}
 		err = trans.Commit()
 	} else {
-
 		for i := 0; i < len(queries); i++ {
 			err = queries[i].Execute(connection.dbConnection, nil)
 			if err != nil {
@@ -302,7 +301,6 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 				return err
 			}
 		}
-
 	}
 
 	schema.connections.put(connection)

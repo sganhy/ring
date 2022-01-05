@@ -30,20 +30,24 @@ func main() {
 	fmt.Println(value)
 	fmt.Println("2020-04-29Tr22:00:00.000")
 	rcd := new(data.Record)
-
+	var testte int = 64
+	testte = testte >> 6
+	fmt.Println(testte)
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	//schema.Init(databaseprovider.SqlServer, "server=localhost;User id=NA_USER;Password=NA_USER_PWD;database=CQL_CIV;port=1434", 10, 20)
 	//server=SAKHALOO-PC;user id=sakhaloo;password=hoollehayerazi;database=webApp
 	//schema.Init(databaseprovider.MySql, "root:root@tcp(127.0.0.1:3306)/mysql", 10, 20)
 
 	var br = new(data.BulkRetrieve)
-	br.SimpleQuery(0, "RpgSheet.skill")
+	br.SimpleQuery(0, "@meta.@lexicon")
 
-	rcd.SetRecordType("RpgSheet.skill")
-	rcd.SetField("name", "test")
+	rcd.SetRecordType("@meta.@lexicon")
+	rcd.SetField("id", 1)
+	rcd.Copy()
+	rcd.SetData(70)
 
 	var bs = new(data.BulkSave)
-	bs.DeleteRecordById("RpgSheet.skill", 4370)
+	bs.DeleteRecord(rcd)
 	//	bs.InsertRecord(rcd)
 	bs.Save()
 	/*

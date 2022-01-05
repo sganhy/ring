@@ -17,8 +17,9 @@ const errorUnknownFieldName = "Field name '%s' does not exist for object type '%
 const errorInvalidNumber = "Invalid '%s' value %s."
 
 type Record struct {
-	data       []string
-	recordType *schema.Table
+	data         []string      // values from rows
+	recordType   *schema.Table // table definition
+	stateChanged *node         // store information value changes
 }
 
 //******************************
@@ -29,6 +30,10 @@ func (record *Record) setTable(table *schema.Table) {
 }
 func (record *Record) getTable() *schema.Table {
 	return record.recordType
+}
+func (record *Record) SetData(bitposition uint8) {
+	record.stateChanged = new(node)
+	record.stateChanged.setValue(bitposition, true)
 }
 
 //******************************
