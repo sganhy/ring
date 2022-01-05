@@ -362,6 +362,10 @@ func (table *Table) GetPrimaryKey() *Field {
 	return nil
 }
 
+func (table *Table) GetPrimaryKeyIndex() int {
+	return int(table.mapper[0])
+}
+
 func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace, field *Field) string {
 	var query strings.Builder
 
@@ -588,13 +592,6 @@ func (table *Table) GetQueryResult(columnPointer []interface{}) []string {
 		result[index] = strValue
 	}
 	return result
-}
-
-func (table *Table) GetPrimaryKeyIndex() int {
-	if table.tableType == tabletype.Business || table.tableType == tabletype.Lexicon {
-		return int(table.mapper[0])
-	}
-	return -1
 }
 
 func (table *Table) Vacuum(jobId int64, full bool) error {

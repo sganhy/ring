@@ -321,9 +321,8 @@ func (metaData *meta) setRelationType(relationType relationtype.RelationType) {
 
 // bit position: ]1,64[
 func (metaData *meta) writeFlag(bitPosition uint8, value bool) {
-	var mask uint64 = 0
+	var mask uint64 = 1
 	if bitPosition < 64 {
-		mask = 1
 		mask <<= bitPosition - 1
 		if value == true {
 			metaData.flags |= mask

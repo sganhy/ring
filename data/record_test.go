@@ -107,6 +107,11 @@ func Test__Record__SetField(t *testing.T) {
 	if rcd.GetField("value") != "35300" {
 		t.Errorf("Record.SetField() ==> 'value' is not equal to 35300")
 	}
+	var p uint = 124000220
+	rcd.SetField("value", p)
+	if rcd.GetField("value") != "124000220" {
+		t.Errorf("Record.SetField() ==> 'value' is not equal to 124000220")
+	}
 
 	rcd.SetRecordType("@log")
 	dt := time.Now()
@@ -153,4 +158,68 @@ func Test__Record__SetField(t *testing.T) {
 		t.Errorf("Record.SetField() ==> 'test3' is not equal to %s", dt.UTC().Format(defaultTimeFormat))
 	}
 
+}
+
+func Test__Record__getField(t *testing.T) {
+	var rcd = new(Record)
+	const testId = 171717
+
+	schema.Init(databaseprovider.MySql, "", 0, 0)
+	rcd.SetRecordType("@lexicon")
+	if rcd.getField() != recordIdNotDefined {
+		t.Errorf("Record.getField() ==> is not equal to recordIdNotDefined")
+	}
+	rcd.setField(testId)
+	if rcd.getField() != testId {
+		t.Errorf("Record.getField() ==> is not equal to %d", testId)
+	}
+}
+
+func Test__Record__getUpdatedFields(t *testing.T) {
+	var rcd = new(Record)
+	const testId = 181818
+
+	// disable connection pool empty connection, string min & max == 0
+	schema.Init(databaseprovider.MySql, "", 0, 0)
+	rcd.SetRecordType("@lexicon")
+
+	// set id
+	rcd.setField(testId)
+	// detect no changes
+	lst := rcd.getUpdatedFields()
+	if lst != nil {
+		t.Errorf("Record.getUpdatedFields() ==> is not equal to null")
+	}
+
+	rcd.SetField("description", "758645454")
+	rcd.SetField("uuid", "554554")
+	rcd.SetField("name", "1234567890123456789012345678901")
+	rcd.SetField("table_id", 4)
+
+	lst = rcd.getUpdatedFields()
+	if len(lst) != 4 {
+		t.Errorf("Record.getUpdatedFields() ==> len()is not equal to %d", 4)
+	}
+	// is there nil value
+	dict := make(map[string]bool, 12)
+	for i := 0; i < len(lst); i++ {
+		field := lst[i]
+		if field == nil {
+			t.Errorf("Record.getUpdatedFields() ==> field cannot be null")
+		} else {
+			dict[field.GetName()] = true
+		}
+	}
+	if ok := dict["description"]; !ok {
+		t.Errorf("Record.getUpdatedFields() ==> field 'description' missing")
+	}
+	if ok := dict["uuid"]; !ok {
+		t.Errorf("Record.getUpdatedFields() ==> field 'uuid' missing")
+	}
+	if ok := dict["name"]; !ok {
+		t.Errorf("Record.getUpdatedFields() ==> field 'name' missing")
+	}
+	if ok := dict["table_id"]; !ok {
+		t.Errorf("Record.getUpdatedFields() ==> field 'table_id' missing")
+	}
 }

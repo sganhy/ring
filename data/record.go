@@ -10,11 +10,14 @@ import (
 	"time"
 )
 
-const emptyField string = ""
-const errorInvalidObjectType = "Object type '%s' is not valid."
-const errorUnknownRecordType = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
-const errorUnknownFieldName = "Field name '%s' does not exist for object type '%s'."
-const errorInvalidNumber = "Invalid '%s' value %s."
+const (
+	emptyField             string = ""
+	errorInvalidObjectType string = "Object type '%s' is not valid."
+	errorUnknownRecordType string = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
+	errorUnknownFieldName  string = "Field name '%s' does not exist for object type '%s'."
+	errorInvalidNumber     string = "Invalid '%s' value %s."
+	recordIdNotDefined     int64  = -1
+)
 
 type Record struct {
 	data         []string      // values from rows
@@ -31,9 +34,19 @@ func (record *Record) setTable(table *schema.Table) {
 func (record *Record) getTable() *schema.Table {
 	return record.recordType
 }
-func (record *Record) SetData(bitposition uint8) {
+
+// tests
+func (record *Record) SetNode() {
 	record.stateChanged = new(node)
-	record.stateChanged.setValue(bitposition, true)
+	record.stateChanged.ResetAll(255, true)
+	fmt.Println(record.stateChanged.CountSetBits())
+}
+func (record *Record) SetValue() {
+	record.stateChanged = new(node)
+	record.stateChanged.SetValue(64, true)
+}
+func (record *Record) GetFields() []*schema.Field {
+	return record.getUpdatedFields()
 }
 
 //******************************
@@ -136,7 +149,7 @@ func (record *Record) getField() int64 {
 			}
 		}
 	}
-	return -1
+	return recordIdNotDefined
 }
 
 func (record *Record) setFieldByIndex(index int, value interface{}) error {
@@ -200,7 +213,10 @@ func (record *Record) setFieldByIndex(index int, value interface{}) error {
 	var err error
 	val, err = field.GetValue(val)
 	if err == nil {
-		record.data[index] = val
+		if val != record.data[index] {
+			record.data[index] = val
+			record.changeState(index)
+		}
 	} else {
 		var fieldType = field.GetType()
 		return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), val))
@@ -228,4 +244,34 @@ func (record *Record) setRecordType(recordType *schema.Table) {
 		}
 	}
 	record.recordType = recordType
+}
+
+func (record *Record) getUpdatedFields() []*schema.Field {
+	if record.stateChanged != nil {
+		count := record.stateChanged.CountSetBits()
+		if count > 0 {
+			result := make([]*schema.Field, count, count)
+			for i := 0; i < record.recordType.GetFieldCount() && count >= 0; i++ {
+				if record.stateChanged.GetValue(uint8(i)) == true {
+					count--
+					result[count] = record.recordType.GetFieldByIndex(i)
+				}
+			}
+			return result
+		}
+	}
+	return nil
+}
+
+func (record *Record) changeState(index int) {
+	if record.stateChanged == nil {
+		record.stateChanged = new(node)
+	}
+	if index == record.recordType.GetPrimaryKeyIndex() {
+		//record.stateChanged.ResetAll(uint8(record.recordType.GetFieldCount()), true)
+		//do nothing
+	} else {
+		// change state
+		record.stateChanged.SetValue(uint8(index), true)
+	}
 }

@@ -11,6 +11,14 @@ type node struct {
 	next *node
 }
 
+const (
+	nodeAllDataTo1 uint64 = 0xFFFFFFFFFFFFFFFF
+	m1                    = 0x5555555555555555 //binary: 0101...
+	m2                    = 0x3333333333333333 //binary: 00110011..
+	m4                    = 0x0f0f0f0f0f0f0f0f //binary:  4 zeros,  4 ones ...
+	h01                   = 0x0101010101010101 //the sum of 256 to the power of 0,1,2,3...
+)
+
 var (
 	displayNodeSeparator = "{%d} - "
 	displayNodeNewLine   = "\n"
@@ -52,6 +60,7 @@ func (nodeInfo *node) Count() int {
 }
 func (nodeInfo *node) NodeByIndex(index int) *node {
 	var currentNode = nodeInfo
+
 	for ok := true; ok; ok = currentNode.next != nil {
 		if index == 0 {
 			return currentNode
@@ -59,58 +68,95 @@ func (nodeInfo *node) NodeByIndex(index int) *node {
 		currentNode = currentNode.next
 		index--
 	}
+
 	return nil
 }
+func (nodeInfo *node) SetValue(bitPosition uint8, value bool) {
+	currentNode := nodeInfo
+	for position := int(bitPosition); position >= 0; position -= 64 {
+		if position < 64 {
+			var mask uint64 = 1
+			mask <<= position
+			if value == true {
+				currentNode.data |= mask
+			} else {
+				currentNode.data &= ^mask
+			}
+			break
+		} else {
+			if currentNode.next == nil {
+				// no need to allow here (by default == false)
+				if value == false {
+					return
+				}
+				currentNode.next = new(node)
+			}
+			currentNode = currentNode.next
+		}
+	}
+}
+func (nodeInfo *node) GetValue(bitPosition uint8) bool {
+	currentNode := nodeInfo
+	for position := int(bitPosition); position >= 0; position -= 64 {
+		if position < 64 {
+			return ((currentNode.data >> position) & 1) > 0
+		}
+		if currentNode.next == nil {
+			break
+		}
+		currentNode = currentNode.next
+	}
+	return false
+}
+func (nodeInfo *node) ResetAll(bitPosition uint8, value bool) {
+	if value {
+		currentNode := nodeInfo
+		position := int(bitPosition)
+		for {
+			currentNode.data = nodeAllDataTo1
+			position -= 64
+			if position < 0 {
+				break
+			}
+			if currentNode.next == nil {
+				currentNode.next = new(node)
+			}
+			currentNode = currentNode.next
+		}
+	} else {
+		nodeInfo.clearAll(bitPosition)
+	}
+}
 
-func (nodeInfo *node) Dispose() *node {
-
+//Hamming weight approach: complexity O(1)
+func (nodeInfo *node) CountSetBits() int {
+	currentNode := nodeInfo
+	result := 0
+	var x uint64 = 0
+	for currentNode != nil {
+		x = currentNode.data
+		x -= (x >> 1) & m1
+		x = (x & m2) + ((x >> 2) & m2)
+		x = (x + (x >> 4)) & m4
+		result += int((x * h01) >> 56)
+		currentNode = currentNode.next
+	}
+	return result
 }
 
 //******************************
 // private methods
 //******************************
 // bitPosition [0, 63]
-func (nodeInfo *node) setValue(bitPosition uint8, value bool) {
-	if bitPosition < 64 {
-		nodeInfo.writeData(bitPosition, value)
-	} else {
-		if nodeInfo.next == nil {
-			// no need to allow here (by default == false)
-			if value == false {
-				return
-			}
-			nodeInfo.next = new(node)
+func (nodeInfo *node) clearAll(bitPosition uint8) {
+	currentNode := nodeInfo
+	position := int(bitPosition)
+	for {
+		currentNode.data = 0
+		position -= 64
+		if position < 0 || currentNode.next == nil {
+			break
 		}
-		// recursive call!!
-		nodeInfo.next.setValue(bitPosition-64, value)
+		currentNode = currentNode.next
 	}
-}
-func (nodeInfo *node) getValue(bitPosition uint8) bool {
-	if bitPosition < 64 {
-		return nodeInfo.readData(bitPosition)
-	} else {
-		if nodeInfo.next == nil {
-			return false
-		} else {
-			// recursive call!!
-			return nodeInfo.next.getValue(bitPosition - 64)
-		}
-	}
-}
-
-func (nodeInfo *node) writeData(bitPosition uint8, value bool) {
-	var mask uint64 = 0
-	if bitPosition < 64 {
-		mask = 1
-		mask <<= bitPosition
-		if value == true {
-			nodeInfo.data |= mask
-		} else {
-			nodeInfo.data &= ^mask
-		}
-	}
-}
-
-func (nodeInfo *node) readData(bitPosition uint8) bool {
-	return ((nodeInfo.data >> bitPosition) & 1) > 0
 }

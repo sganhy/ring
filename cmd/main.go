@@ -44,7 +44,8 @@ func main() {
 	rcd.SetRecordType("@meta.@lexicon")
 	rcd.SetField("id", 1)
 	rcd.Copy()
-	rcd.SetData(70)
+	rcd.SetValue()
+	rcd.SetNode()
 
 	var bs = new(data.BulkSave)
 	bs.DeleteRecord(rcd)
