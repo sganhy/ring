@@ -39,8 +39,6 @@ func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx
 	rows, err := dbConnection.Query(sqlQuery, parameters...)
 
 	if err != nil {
-		fmt.Println("ERROR!")
-		fmt.Println(err)
 		if rows != nil {
 			rows.Close()
 		}
@@ -176,52 +174,3 @@ func (query *bulkRetrieveQuery) addFilter(item *bulkRetrieveQueryItem) {
 func (query *bulkRetrieveQuery) addSort(item *bulkRetrieveQueryItem) {
 	*query.items = append(*query.items, item)
 }
-
-/* C# source code to generate ==> executeQuery() body
-   const int maxCount = 257;
-        static void Main(string[] args)
-        {
-            for (var i = 27; i < maxCount; ++i)
-            {
-                Console.WriteLine(i.ToString() + " : executeQuery{0}".Replace("{0}", i.ToString().PadLeft(4, '0'))+",");
-            }
-            for (var i = 255; i < maxCount; ++i)
-             {
-                string method = string.Empty;
-                method+="func executeQuery{0}(con *sql.DB, sql string, params []interface{}) (*sql.Rows, error) {".Replace("{0}", i.ToString().PadLeft(4, '0'))+"\n";
-                method+= "		return con.Query(sql, params[0], params[1], params[2], params[3], params[4], params[5], params[6], params[7]," + "\n";
-                method+= "			params[8], params[9], params[10], params[11], params[12], params[13], params[14], params[15], params[16], params[17]," + "\n";
-
-                var j = 18;
-                    string str=string.Empty;
-                    for (; j < i - 9; j+=10)
-                    {
-                        var template = "			params[{0}], params[{1}], params[{2}], params[{3}], params[{4}], params[{5}], params[{6}], params[{7}], params[{8}], params[{9}],\n";
-                        str += string.Format(template, j , j + 1, j+2 , j + 3, j+4, j + 5,  j + 6,  j + 7,  j + 8,  j + 9);
-                    }
-                    if (j >= i)
-                    {
-                        str = str.Substring(0, str.Length - 2);
-                        method += str;
-                    }
-                    else
-                    {
-
-                        method += str;
-                        method +=  "			";
-                        str = string.Empty;
-                        while (j < i)
-                        {
-                            str+="params[" + j + "], ";
-                            ++j;
-                        }
-                        str = str.Substring(0, str.Length - 2);
-                    method += str;
-                    }
-                    method += ")\n";
-                    method += "}\n";
-                    Console.Write(method.Replace("params", "p" + i.ToString()));
-                }
-
-            }
-*/

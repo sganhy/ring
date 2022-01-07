@@ -39,7 +39,17 @@ func (record *Record) getTable() *schema.Table {
 func (record *Record) SetNode() {
 	record.stateChanged = new(node)
 	record.stateChanged.ResetAll(255, true)
+	node := record.stateChanged.NodeByIndex(0)
+	node.data = 0
+	node = record.stateChanged.NodeByIndex(1)
+	node.data = 1
+	node = record.stateChanged.NodeByIndex(2)
+	node.data = 2
+	node = record.stateChanged.NodeByIndex(3)
+	node.data = 3
 	fmt.Println(record.stateChanged.CountSetBits())
+	fmt.Println(record.stateChanged.Count())
+	fmt.Println(record.stateChanged.String())
 }
 func (record *Record) SetValue() {
 	record.stateChanged = new(node)
@@ -219,7 +229,7 @@ func (record *Record) setFieldByIndex(index int, value interface{}) error {
 		}
 	} else {
 		var fieldType = field.GetType()
-		return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), val))
+		return errors.New(fmt.Sprintf(errorInvalidNumber, fieldType.String(), value))
 	}
 	return nil
 }
@@ -239,7 +249,6 @@ func (record *Record) setRecordType(recordType *schema.Table) {
 				for i := 0; i < len(record.data); i++ {
 					record.data[i] = emptyField
 				}
-				//}
 			}
 		}
 	}

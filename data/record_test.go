@@ -124,6 +124,25 @@ func Test__Record__SetField(t *testing.T) {
 	if rcd.GetField("method") != dt.UTC().Format(defaultTimeFormat) {
 		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
 	}
+	// return errors.New("Unsupported type.")
+	if rcd.SetField("method", new(node)) == nil {
+		t.Errorf("Record.SetField() ==> 'method' does not return an error")
+	}
+	// return errors.New("Unsupported type.")
+	levelIdError := rcd.SetField("level_id", "hello")
+	if levelIdError == nil {
+		t.Errorf("Record.SetField() ==> 'level_id' does not return an error")
+	}
+	if rcd.SetField("222222222222", 12) == nil {
+		t.Errorf("Record.SetField() ==> '222222222222' does not return an error")
+	}
+	rcd = new(Record)
+	if rcd.SetField("222222222222", 12) == nil {
+		t.Errorf("Record.SetField() ==> '222222222222' does not return an error")
+	}
+	if rcd.SetField("222222222222", 12) == nil {
+		t.Errorf("Record.SetField() ==> '222222222222' does not return an error")
+	}
 
 	// TEST dateTime
 	var fields = []schema.Field{}

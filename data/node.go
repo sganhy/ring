@@ -59,16 +59,15 @@ func (nodeInfo *node) Count() int {
 	return result
 }
 func (nodeInfo *node) NodeByIndex(index int) *node {
-	var currentNode = nodeInfo
-
-	for ok := true; ok; ok = currentNode.next != nil {
-		if index == 0 {
-			return currentNode
+	nodeTemp := nodeInfo
+	i := 0
+	for ok := true; ok; ok = nodeTemp != nil {
+		if i == index {
+			return nodeTemp
 		}
-		currentNode = currentNode.next
-		index--
+		nodeTemp = nodeTemp.next
+		i++
 	}
-
 	return nil
 }
 func (nodeInfo *node) SetValue(bitPosition uint8, value bool) {

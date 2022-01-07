@@ -48,7 +48,6 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if err != nil {
 		t.Errorf("ERROR: '%s'", err)
 	}
-
 	//======================
 	//==== 1 argument
 	//======================
@@ -71,7 +70,6 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
-
 	//======================
 	//==== 2 arguments
 	//======================
@@ -93,7 +91,6 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
-
 	//======================
 	//==== 17 arguments
 	//======================
@@ -140,7 +137,6 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
-
 	//======================
 	//==== 255 arguments
 	//======================
@@ -167,34 +163,14 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if bulkQuery.result.Count() <= 0 {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 	}
-
-	//======================
-	//==== loop 1 TO 254 arguments
-	//======================
-	bulkQuery.clearItems()
-	queryItem2.operand = "444"
-	var expectedQuery = "SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM " +
-		"information_schema.\"@meta\" WHERE schema_id=\\$1"
-	for i := 0; i < 254; i++ {
-		rs = mock.NewRows(columns)
-		rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
-		mock.ExpectQuery(expectedQuery).
-			WithArgs().
-			WillReturnRows(rs)
-		bulkQuery.addFilter(queryItem2)
-		bulkQuery.Execute(db, nil)
-		if bulkQuery.result.Count() <= 0 {
-			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
-		}
-		expectedQuery = expectedQuery + " AND schema_id=\\$" + strconv.Itoa(i+2)
-	}
-
 	//======================
 	//==== out of range
 	//======================
-	bulkQuery.addFilter(queryItem2)
-	bulkQuery.addFilter(queryItem2)
+	bulkQuery.result = new(List)
+	db, mock, err = sqlmock.New()
+	rs = mock.NewRows(columns)
 	rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
+	bulkQuery.clearItems()
 	mock.ExpectQuery("SELECT id,schema_id,object_type,reference_id,data_type,flags,name,description,value,active FROM").
 		WithArgs().
 		WillReturnRows(rs)
@@ -202,5 +178,4 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	if err == nil {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> must return an error")
 	}
-
 }

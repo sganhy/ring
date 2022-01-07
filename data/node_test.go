@@ -74,3 +74,26 @@ func Test__Node__CountSetBits(t *testing.T) {
 		}
 	}
 }
+
+func Test__Node__NodeByIndex(t *testing.T) {
+	nodeData := new(node)
+	nodeData.ResetAll(255, true)
+
+	//t.Errorf("nodeData.Count()  %d", nodeData.Count())
+
+	if nodeData.NodeByIndex(0) == nil {
+		t.Errorf("Node.NodeByIndex() ==> NodeByIndex(%d) should be different than null", 0)
+	}
+	if nodeData.NodeByIndex(1) == nil {
+		t.Errorf("Node.NodeByIndex() ==> NodeByIndex(%d) should be different than null", 1)
+	}
+	if nodeData.NodeByIndex(2) == nil {
+		t.Errorf("Node.NodeByIndex() ==> NodeByIndex(%d) should be different than null", 2)
+	}
+	if nodeData.NodeByIndex(3) == nil {
+		t.Errorf("Node.NodeByIndex() ==> NodeByIndex(%d) should be different than null", 3)
+	}
+	if nodeData.NodeByIndex(4) != nil {
+		t.Errorf("Node.NodeByIndex() ==> NodeByIndex(%d) should be equal to null", 4)
+	}
+}
