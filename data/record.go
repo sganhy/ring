@@ -87,8 +87,16 @@ func (record *Record) Copy() *Record {
 	return result
 }
 
-func (record Record) IsDirty() bool {
+func (record *Record) IsDirty() bool {
 	return record.stateChanged != nil
+}
+func (record *Record) IsNew() bool {
+	if record.recordType == nil {
+		if record.recordType.GetPrimaryKey() != nil {
+
+		}
+	}
+	return true // always New if there is no keys
 }
 
 func (record *Record) String() string {
@@ -257,7 +265,8 @@ func (record *Record) updateState(index int) {
 	if record.stateChanged == nil {
 		record.stateChanged = new(node)
 	}
-	if index == record.recordType.GetPrimaryKeyIndex() {
+	var pkIndex = record.recordType.GetPrimaryKeyIndex()
+	if pkIndex == index {
 		//record.stateChanged.ResetAll(uint8(record.recordType.GetFieldCount()), true)
 		//do nothing
 	} else {

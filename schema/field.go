@@ -149,6 +149,10 @@ func (field *Field) GetType() fieldtype.FieldType {
 	return field.fieldType
 }
 
+func (field *Field) GetColumnType() fieldtype.FieldType {
+	return field.fieldType
+}
+
 func (field *Field) GetSize() uint32 {
 	return uint32(field.size)
 }

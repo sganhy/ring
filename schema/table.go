@@ -140,7 +140,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 	if provider != databaseprovider.Undefined {
 		table.physicalName = table.getPhysicalName(schemaPhysicalName)
 		table.fieldList = table.getFieldList()
-		table.sqlInsert = table.getInsertSql(provider)
+		table.sqlInsert = table.getInsertSql(provider, nil)
 		table.sqlDelete = table.getDeleteSql(provider)
 	}
 
@@ -365,7 +365,10 @@ func (table *Table) GetPrimaryKey() *Field {
 }
 
 func (table *Table) GetPrimaryKeyIndex() int {
-	return int(table.mapper[0])
+	if table.tableType == tabletype.Business || table.tableType == tabletype.Lexicon {
+		return int(table.mapper[0])
+	}
+	return -1
 }
 
 func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tablespace, field *Field) string {
@@ -1412,7 +1415,7 @@ func (table *Table) createIndexes(jobId int64, schema *Schema) {
 
 }
 
-func (table *Table) getInsertSql(provider databaseprovider.DatabaseProvider) string {
+func (table *Table) getInsertSql(provider databaseprovider.DatabaseProvider, relations *Relation) string {
 	var result strings.Builder
 
 	result.WriteString(dmlstatement.Insert.String())

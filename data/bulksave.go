@@ -33,19 +33,10 @@ func (bulkSave *BulkSave) UpdateRecord(record *Record) error {
 	InsertRecord or UpdateRecord methods.
 */
 func (bulkSave *BulkSave) ChangeRecord(record *Record) {
-	if bulkSave.data != nil && record.recordType != nil {
-		if queries, ok := bulkSave.data[record.recordType.GetSchemaId()]; ok {
-			var query bulkSaveQuery
-			for i := 0; i < len(queries); i++ {
-				query = queries[i].(bulkSaveQuery)
-				if query.record == record && (query.bulkSaveType == bulksavetype.UpdateRecord ||
-					query.bulkSaveType == bulksavetype.InsertRecord) {
-					var newQuery = bulkSaveQuery{}
-					newQuery.Init(record, query.bulkSaveType)
-					queries[i] = newQuery
-				}
-			}
-		}
+	query := bulkSave.findQueryByRecord(record)
+	if query != nil {
+		var bsType = query.bulkSaveType
+		query.Init(record, bsType)
 	}
 }
 func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Record, relationName string) error {
@@ -61,9 +52,9 @@ func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Reco
 	case relationtype.Mtm:
 		break
 	case relationtype.Mto, relationtype.Otop:
-		break
+		return bulkSave.relateMtoRecord(sourceRecord, relation)
 	case relationtype.Otm, relationtype.Otof:
-		break
+		return bulkSave.relateMtoRecord(targetRecord, relation.GetInverseRelation())
 	}
 	return nil
 }
@@ -144,7 +135,7 @@ func (bulkSave *BulkSave) addQuery(record *Record, bulkSaveType bulksavetype.Bul
 
 	var query = bulkSaveQuery{}
 	query.Init(record, bulkSaveType)
-	bulkSave.data[schemaId] = append(data, query)
+	bulkSave.data[schemaId] = append(data, &query)
 
 	return nil
 }
@@ -201,6 +192,32 @@ func (bulkSave *BulkSave) loadObjectId() error {
 	return nil
 }
 
-func (bulkSave *BulkSave) clearData() {
+func (bulkSave *BulkSave) findQueryByRecord(record *Record) *bulkSaveQuery {
+	if bulkSave.data != nil && record.recordType != nil {
+		if queries, ok := bulkSave.data[record.recordType.GetSchemaId()]; ok {
+			var query *bulkSaveQuery
+			for i := 0; i < len(queries); i++ {
+				query = queries[i].(*bulkSaveQuery)
+				return query
+			}
+		}
+	}
+	return nil
+}
 
+func (bulkSave *BulkSave) relateMtoRecord(sourceRecord *Record, relation *schema.Relation) error {
+	if sourceRecord == nil || relation == nil {
+		return nil
+	}
+	var query = bulkSave.findQueryByRecord(sourceRecord) // source
+	if query != nil {
+		if sourceRecord.IsNew() == false {
+			/*
+				sourceRecord.SetRelation(relation.Name, 0L);
+				_data?.Add(new BulkSaveQuery(null, BulkSaveType.UpdateRecord, sourceRecord,
+					sourceRecord.Copy(), null));
+			*/
+		}
+	}
+	return nil
 }

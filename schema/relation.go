@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ring/schema/databaseprovider"
 	"ring/schema/entitytype"
+	"ring/schema/fieldtype"
 	"ring/schema/relationtype"
 	"ring/schema/sqlfmt"
 	"strconv"
@@ -69,6 +70,10 @@ func (relation *Relation) GetToTable() *Table {
 
 func (relation *Relation) GetType() relationtype.RelationType {
 	return relation.relationType
+}
+
+func (relation *Relation) GetColumnType() fieldtype.FieldType {
+	return fieldtype.Long
 }
 
 func (relation *Relation) IsNotNull() bool {

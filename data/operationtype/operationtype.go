@@ -7,19 +7,6 @@ import (
 type OperationType int8
 
 //!!! reserved value for unit testing {4, 5, 6} !!!
-
-var strEqual = "="
-var strNotEqual = "<>"
-var isNotNull = " IS NOT NULL"
-var isNull = " IS NULL"
-var strGreater = ">"
-var strGreaterOrEqual = ">="
-var strLess = "<"
-var strLessOrEqual = "<="
-var strLike = " LIKE "
-var strNotLike = " NOT LIKE "
-var strIn = " IN "
-
 const (
 	Equal          OperationType = 1
 	NotEqual       OperationType = 2
@@ -37,6 +24,20 @@ const (
 	//TODO unitesting !!
 	ascendingSort  OperationType = 101
 	descendingSort OperationType = 102
+)
+
+var (
+	strEqual          = "="
+	strNotEqual       = "<>"
+	isNotNull         = " IS NOT NULL"
+	isNull            = " IS NULL"
+	strGreater        = ">"
+	strGreaterOrEqual = ">="
+	strLess           = "<"
+	strLessOrEqual    = "<="
+	strLike           = " LIKE "
+	strNotLike        = " NOT LIKE "
+	strIn             = " IN "
 )
 
 //return operator string, has bind variable yes/no
