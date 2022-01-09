@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"ring/data/documenttype"
 	"strings"
@@ -82,19 +81,11 @@ func (doc *document) loadXslx() error {
 		if f.FileInfo().IsDir() {
 			continue
 		}
-		dstFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			panic(err)
-		}
-
 		fileInArchive, err := f.Open()
 		if err != nil {
 			panic(err)
 		}
 
-		if _, err := io.Copy(dstFile, fileInArchive); err != nil {
-			panic(err)
-		}
 		fileInArchive.Close()
 	}
 	return nil

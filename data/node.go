@@ -127,7 +127,7 @@ func (nodeInfo *node) ResetAll(bitPosition uint8, value bool) {
 	}
 }
 
-//Hamming weight approach: complexity O(1)
+// CountSetBits Hamming weight approach: complexity O(1)
 func (nodeInfo *node) CountSetBits() int {
 	currentNode := nodeInfo
 	result := 0

@@ -18,6 +18,7 @@ const (
 	errorUnknownRelName    string = "Relation name %s does not exist for object type %s."
 	errorInvalidNumber     string = "Invalid '%s' value %s."
 	recordIdNotDefined     int64  = -1
+	defaultPrimaryKeyValue string = "0"
 )
 
 type Record struct {
@@ -91,9 +92,10 @@ func (record *Record) IsDirty() bool {
 	return record.stateChanged != nil
 }
 func (record *Record) IsNew() bool {
-	if record.recordType == nil {
-		if record.recordType.GetPrimaryKey() != nil {
-
+	if record.recordType == nil && record.data != nil {
+		var index = record.recordType.GetPrimaryKeyIndex()
+		if index >= 0 {
+			return len(record.data[index]) == 0 || record.data[index] == defaultPrimaryKeyValue
 		}
 	}
 	return true // always New if there is no keys

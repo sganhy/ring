@@ -13,13 +13,13 @@ type cacheId struct {
 	maxId         int64
 	reservedRange uint32
 	syncRoot      sync.Mutex
-	metaquery     *metaQuery
+	query         *metaQuery
 }
 
 const (
-	sqlPosgreSqlReturning string = "RETURNING"
-	maxReservedRange      uint32 = 1073741824           // 2^30
-	initialMaxId          int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
+	sqlPostgresReturning string = "RETURNING"
+	maxReservedRange     uint32 = 1073741824           // 2^30
+	initialMaxId         int64  = -9223372036854775808 // -1*((2^64)+1) - min int64 value
 )
 
 func (cacheid *cacheId) Init(metaSchema *Schema, targetSchemaId int32, targetEntity entity) {
@@ -31,15 +31,15 @@ func (cacheid *cacheId) Init(metaSchema *Schema, targetSchemaId int32, targetEnt
 	cacheid.maxId = initialMaxId
 
 	// initialize query
-	cacheid.metaquery = new(metaQuery)
-	cacheid.metaquery.Init(metaSchema, metaLongTable)
+	cacheid.query = new(metaQuery)
+	cacheid.query.Init(metaSchema, metaLongTable)
 
 	// added cacheIdSchema check to avoid unitesting crash!
-	cacheid.metaquery.query = cacheid.getDml(dmlstatement.Update, metaIdTable)
-	cacheid.metaquery.addParam(int32(1)) // default reserve range
-	cacheid.metaquery.addParam(targetEntity.GetId())
-	cacheid.metaquery.addParam(targetSchemaId)
-	cacheid.metaquery.addParam(int8(targetEntity.GetEntityType()))
+	cacheid.query.query = cacheid.getDml(dmlstatement.Update, metaIdTable)
+	cacheid.query.addParam(int32(1)) // default reserve range
+	cacheid.query.addParam(targetEntity.GetId())
+	cacheid.query.addParam(targetSchemaId)
+	cacheid.query.addParam(int8(targetEntity.GetEntityType()))
 }
 
 //******************************
@@ -87,18 +87,18 @@ func (cacheid *cacheId) getNewRangeId(idRange uint32) int64 {
 	if result > cacheid.maxId {
 		// take max reserve range
 		if cacheid.reservedRange > idRange {
-			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
+			cacheid.query.setParamValue(cacheid.reservedRange, 0)
 			result = int64(idRange) - int64(cacheid.reservedRange)
 		} else {
 			// here we loosing id due to multiple interval ==>
 			// 	]currentId,maxId]U[newId-reservedRange,newId]
-			cacheid.metaquery.setParamValue(int32(idRange), 0)
+			cacheid.query.setParamValue(int32(idRange), 0)
 			result = 0
 		}
 
 		// never loaded
-		cacheid.metaquery.run(1)
-		cacheid.maxId = cacheid.metaquery.getInt64Value()
+		cacheid.query.run(1)
+		cacheid.maxId = cacheid.query.getInt64Value()
 		result += cacheid.maxId
 
 		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
@@ -128,17 +128,17 @@ func (cacheid *cacheId) getNewId() int64 {
 
 		// compute reserve range
 		if cacheid.reservedRange > 1 {
-			cacheid.metaquery.setParamValue(cacheid.reservedRange, 0)
+			cacheid.query.setParamValue(cacheid.reservedRange, 0)
 			result = 1 - int64(cacheid.reservedRange)
 		} else {
 			// set default parameter for returning value
-			cacheid.metaquery.setParamValue(1, 0)
+			cacheid.query.setParamValue(1, 0)
 			result = 0
 		}
 
 		// never loaded
-		cacheid.metaquery.run(1)
-		cacheid.maxId = cacheid.metaquery.getInt64Value()
+		cacheid.query.run(1)
+		cacheid.maxId = cacheid.query.getInt64Value()
 		result += cacheid.maxId
 
 		// multiply by 2 next reserved range if cacheId.reservedRange is less than 2^30
@@ -203,7 +203,7 @@ func (cacheid *cacheId) getDml(dmlType dmlstatement.DmlStatement, table *Table) 
 		table.addPrimaryKeyFilter(&result, 1)
 		// returning for postgresql ==> RETURNING value
 		result.WriteString(dmlSpace)
-		result.WriteString(sqlPosgreSqlReturning)
+		result.WriteString(sqlPostgresReturning)
 		result.WriteString(dmlSpace)
 		result.WriteString(field.GetPhysicalName(provider))
 	}
