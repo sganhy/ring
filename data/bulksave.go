@@ -2,12 +2,14 @@ package data
 
 import (
 	"errors"
+	"fmt"
 	"ring/data/bulksavetype"
 	"ring/schema"
+	"ring/schema/relationtype"
 )
 
 type BulkSave struct {
-	data        map[int32][]schema.Query
+	data        map[int32][]schema.Query // schema_id, []Query
 	insertCount int
 }
 
@@ -22,14 +24,53 @@ func (bulkSave *BulkSave) InsertRecord(record *Record) error {
 	bulkSave.insertCount++
 	return bulkSave.addQuery(record, bulksavetype.InsertRecord)
 }
-
-func (bulkSave *BulkSave) UpdatRecord(record *Record) error {
+func (bulkSave *BulkSave) UpdateRecord(record *Record) error {
 	return bulkSave.addQuery(record, bulksavetype.UpdateRecord)
 }
 
-func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Record, relationName string) {
+/*
+	The ChangeRecord method updates a record that was previously placed in the BulkSave object by the
+	InsertRecord or UpdateRecord methods.
+*/
+func (bulkSave *BulkSave) ChangeRecord(record *Record) {
+	if bulkSave.data != nil && record.recordType != nil {
+		if queries, ok := bulkSave.data[record.recordType.GetSchemaId()]; ok {
+			var query bulkSaveQuery
+			for i := 0; i < len(queries); i++ {
+				query = queries[i].(bulkSaveQuery)
+				if query.record == record && (query.bulkSaveType == bulksavetype.UpdateRecord ||
+					query.bulkSaveType == bulksavetype.InsertRecord) {
+					var newQuery = bulkSaveQuery{}
+					newQuery.Init(record, query.bulkSaveType)
+					queries[i] = newQuery
+				}
+			}
+		}
+	}
+}
+func (bulkSave *BulkSave) RelateRecords(sourceRecord *Record, targetRecord *Record, relationName string) error {
+	if sourceRecord == nil || sourceRecord.recordType == nil || targetRecord == nil ||
+		targetRecord.recordType == nil {
+		return errors.New(errorUnknownRecordType)
+	}
+	var relation = sourceRecord.recordType.GetRelationByName(relationName)
+	if relation == nil {
+		return errors.New(fmt.Sprintf(errorUnknownRelName, relationName, sourceRecord.recordType.GetName()))
+	}
+	switch relation.GetType() {
+	case relationtype.Mtm:
+		break
+	case relationtype.Mto, relationtype.Otop:
+		break
+	case relationtype.Otm, relationtype.Otof:
+		break
+	}
+	return nil
 }
 
+/*
+	The DeleteRecord  method is used to delete a record in the database.
+*/
 func (bulkSave *BulkSave) DeleteRecord(record *Record) error {
 	return bulkSave.addQuery(record, bulksavetype.DeleteRecord)
 }
@@ -44,6 +85,9 @@ func (bulkSave *BulkSave) DeleteRecordById(recordType string, id int64) error {
 	return bulkSave.addQuery(record, bulksavetype.DeleteRecord)
 }
 
+/*
+	Commits the records and relations contained in the BulkSave object to database
+*/
 func (bulkSave *BulkSave) Save() error {
 	if bulkSave.data != nil {
 		// generate Ids

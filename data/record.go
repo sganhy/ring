@@ -15,6 +15,7 @@ const (
 	errorInvalidObjectType string = "Object type '%s' is not valid."
 	errorUnknownRecordType string = "This Record object has an unknown RecordType.  The RecordType property must be set before performing this operation."
 	errorUnknownFieldName  string = "Field name '%s' does not exist for object type '%s'."
+	errorUnknownRelName    string = "Relation name %s does not exist for object type %s."
 	errorInvalidNumber     string = "Invalid '%s' value %s."
 	recordIdNotDefined     int64  = -1
 )
@@ -33,30 +34,6 @@ func (record *Record) setTable(table *schema.Table) {
 }
 func (record *Record) getTable() *schema.Table {
 	return record.recordType
-}
-
-// tests
-func (record *Record) SetNode() {
-	record.stateChanged = new(node)
-	record.stateChanged.ResetAll(255, true)
-	node := record.stateChanged.NodeByIndex(0)
-	node.data = 0
-	node = record.stateChanged.NodeByIndex(1)
-	node.data = 1
-	node = record.stateChanged.NodeByIndex(2)
-	node.data = 2
-	node = record.stateChanged.NodeByIndex(3)
-	node.data = 3
-	fmt.Println(record.stateChanged.CountSetBits())
-	fmt.Println(record.stateChanged.Count())
-	fmt.Println(record.stateChanged.String())
-}
-func (record *Record) SetValue() {
-	record.stateChanged = new(node)
-	record.stateChanged.SetValue(64, true)
-}
-func (record *Record) GetFields() []*schema.Field {
-	return record.getUpdatedFields()
 }
 
 //******************************
@@ -110,7 +87,11 @@ func (record *Record) Copy() *Record {
 	return result
 }
 
-func (record Record) String() string {
+func (record Record) IsDirty() bool {
+	return record.stateChanged != nil
+}
+
+func (record *Record) String() string {
 	if record.recordType == nil {
 		return ""
 	}
@@ -225,7 +206,7 @@ func (record *Record) setFieldByIndex(index int, value interface{}) error {
 	if err == nil {
 		if val != record.data[index] {
 			record.data[index] = val
-			record.changeState(index)
+			record.updateState(index)
 		}
 	} else {
 		var fieldType = field.GetType()
@@ -272,7 +253,7 @@ func (record *Record) getUpdatedFields() []*schema.Field {
 	return nil
 }
 
-func (record *Record) changeState(index int) {
+func (record *Record) updateState(index int) {
 	if record.stateChanged == nil {
 		record.stateChanged = new(node)
 	}

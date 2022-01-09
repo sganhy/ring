@@ -13,4 +13,5 @@ const (
 	BindRelation        BulkSaveType = 8
 	InsertMtm           BulkSaveType = 9
 	InsertMtmIfNotExist BulkSaveType = 10
+	Cancelled           BulkSaveType = 17
 )

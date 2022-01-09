@@ -63,7 +63,7 @@ func Test__Table__Init(t *testing.T) {
 	// elemi.Init(21, "rel test", "hellkzae", aarr, 52, false, true, true, true)
 	// unique key (1)      id; schema_id; reference_id; object_type
 	var indexedFields = []string{id.GetName(), schemaId.GetName(), objectType.GetName(), referenceId.GetName()}
-	uk.Init(1, "pk_@meta", "ATable Test", indexedFields, false, true, true, true)
+	uk.Init(1, metaIdTableName, "ATable Test", indexedFields, false, true, true, true)
 
 	fields = append(fields, id)          //1
 	fields = append(fields, schemaId)    //2
@@ -499,35 +499,40 @@ func Test__Table__GetDml(t *testing.T) {
 	field10 := table.GetFieldByName("active")
 	fields := []*Field{field, field1, field2, field3, field4, field5, field6, field7, field8, field9, field10}
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Update) ==> query must be equal to " + expectedSQl)
 	}
 	// table @meta_id
 	table = tbl.getMetaIdTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.\"@meta_id\" WHERE id=$1 AND schema_id=$2 AND object_type=$3"
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Delete) ==> query must be equal to " + expectedSQl)
 	}
 	expectedSQl = "UPDATE information_schema.\"@meta_id\" SET \"value\"=$1 WHERE id=$2 AND schema_id=$3 AND object_type=$4"
 	field = table.GetFieldByName("value")
 	fields = []*Field{field}
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Update) ==> query must be equal to " + expectedSQl)
 	}
 	// table @lexicon
 	table = tbl.getLexiconTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "INSERT INTO information_schema.\"@lexicon\" (id,schema_id,\"name\",s_name,description,uuid,s_uuid,table_id,source_field_id,target_field_id,relation_id,relation_value,modify_stmp,cached,active) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)"
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Insert) ==> query must be equal to " + expectedSQl)
 	}
 	expectedSQl = "DELETE FROM information_schema.\"@lexicon\" WHERE id=$1"
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Delete) ==> query must be equal to " + expectedSQl)
+	}
+	fields = []*Field{table.GetFieldByName("name"), table.GetFieldByName("uuid"), table.GetFieldByName("description")}
+	expectedSQl = "UPDATE information_schema.\"@lexicon\" SET \"name\"=$1,s_name=$2,uuid=$3,s_uuid=$4,description=$5 WHERE id=$6"
+	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
+		t.Errorf("Table.GetDml(Update) ==> query must be equal to " + expectedSQl)
 	}
 	// table @test with tabletype == Business
 	table = getTestTable(databaseprovider.PostgreSql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.\"t_@test\" WHERE id=$1"
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Delete) ==> query must be equal to " + expectedSQl)
 	}
 	//======================
 	//==== testing Mysql
@@ -536,7 +541,7 @@ func Test__Table__GetDml(t *testing.T) {
 	table = tbl.getLogTable(databaseprovider.MySql, "information_schema")
 	expectedSQl = "INSERT INTO information_schema.`@log` (id,entry_time,level_id,schema_id,thread_id,call_site,job_id,`method`,line_number,message,description) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
 	if table.GetDml(dmlstatement.Insert, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Insert) ==> query must be equal to " + expectedSQl)
 	}
 	// table @meta_id
 	table = tbl.getMetaIdTable(databaseprovider.MySql, "information_schema")
@@ -544,13 +549,13 @@ func Test__Table__GetDml(t *testing.T) {
 	field = table.GetFieldByName("value")
 	fields = []*Field{field}
 	if table.GetDml(dmlstatement.Update, fields) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Update) ==> query must be equal to " + expectedSQl)
 	}
 	// table @meta
 	table = tbl.getMetaTable(databaseprovider.MySql, "information_schema")
 	expectedSQl = "DELETE FROM information_schema.`@meta` WHERE id=? AND schema_id=? AND object_type=? AND reference_id=?"
 	if table.GetDml(dmlstatement.Delete, nil) != expectedSQl {
-		t.Errorf("Table.GetDml() ==> query must be equal to " + expectedSQl)
+		t.Errorf("Table.GetDml(Delete) ==> query must be equal to " + expectedSQl)
 	}
 }
 

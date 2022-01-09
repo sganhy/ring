@@ -20,7 +20,6 @@ type bulkRetrieveQueryItem struct {
 //******************************
 // private methods
 //******************************
-
 func newQueryFilter(field *schema.Field, operation operationtype.OperationType, operand interface{}) (*bulkRetrieveQueryItem, error) {
 	var filter = new(bulkRetrieveQueryItem)
 

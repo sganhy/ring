@@ -275,7 +275,7 @@ func (schema *Schema) Execute(queries []Query, transaction bool) error {
 
 	connection.lastGet = time.Now()
 
-	if transaction {
+	if transaction && len(queries) > 1 {
 		var trans *sql.Tx
 
 		ctx := context.Background()

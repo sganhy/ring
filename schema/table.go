@@ -33,6 +33,7 @@ type Table struct {
 	tableType       tabletype.TableType               //
 	fieldList       string                            // list of field without searchable fields
 	sqlInsert       string                            // cache insert query
+	sqlDelete       string                            // cache delete sql query
 	subject         string                            //
 	provider        databaseprovider.DatabaseProvider //
 	cacheid         *cacheId                          // store id primary key information
@@ -140,6 +141,7 @@ func (table *Table) Init(id int32, name string, description string, fields []Fie
 		table.physicalName = table.getPhysicalName(schemaPhysicalName)
 		table.fieldList = table.getFieldList()
 		table.sqlInsert = table.getInsertSql(provider)
+		table.sqlDelete = table.getDeleteSql(provider)
 	}
 
 }
@@ -418,37 +420,42 @@ func (table *Table) GetDdl(statement ddlstatement.DdlStatement, tableSpace *tabl
 }
 
 func (table *Table) GetDml(dmlType dmlstatement.DmlStatement, fields []*Field) string {
-	var result strings.Builder
 	switch dmlType {
 	case dmlstatement.Insert:
 		return table.sqlInsert
 	case dmlstatement.Update:
-		result.Grow(len(table.sqlInsert))
+		var result strings.Builder
+		var field *Field
+		var searchCount int = 0
+		result.Grow(len(table.sqlInsert) / 2)
 		result.WriteString(dmlType.String())
 		result.WriteString(dmlSpace)
 		result.WriteString(table.physicalName)
 		result.WriteString(dmlUpdateSet)
 		for i := 0; i < len(fields); i++ {
-			result.WriteString(fields[i].GetPhysicalName(table.provider))
+			field = fields[i]
+			result.WriteString(field.GetPhysicalName(table.provider))
 			result.WriteString(operatorEqual)
-			result.WriteString(table.getVariableName(i))
+			result.WriteString(table.getVariableName(i + searchCount))
+			if field.fieldType == fieldtype.String && field.caseSensitive == false {
+				searchCount++
+				result.WriteString(fieldListSeparator)
+				result.WriteString(field.getSearchableFieldName())
+				result.WriteString(operatorEqual)
+				result.WriteString(table.getVariableName(i + searchCount))
+			}
 			if i < len(fields)-1 {
 				result.WriteString(fieldListSeparator)
 			}
 		}
 		result.WriteString(dqlWhere)
-		table.addPrimaryKeyFilter(&result, len(fields))
-		break
+		table.addPrimaryKeyFilter(&result, len(fields)+searchCount)
+		return result.String()
 	case dmlstatement.Delete:
-		result.Grow(len(table.physicalName) + 30)
-		result.WriteString(dmlType.String())
-		result.WriteString(dmlSpace)
-		result.WriteString(table.physicalName)
-		result.WriteString(dqlWhere)
-		table.addPrimaryKeyFilter(&result, 0)
-		break
+		return table.sqlDelete
 	}
-	return result.String()
+	var defaultResult string
+	return defaultResult
 }
 
 // SELECT
@@ -665,8 +672,8 @@ func (table *Table) String() string {
 
 func (table *Table) GetInsertParameters(record []string) []interface{} {
 	count := len(table.fields) + int(table.searchableCount)
-	result := make([]interface{}, count, count)
 
+	result := make([]interface{}, count, count)
 	index := 0
 	searchableCount := 0
 
@@ -674,7 +681,6 @@ func (table *Table) GetInsertParameters(record []string) []interface{} {
 	var field *Field
 
 	for i := 0; i < len(table.fields); i++ {
-
 		index = int(table.mapper[i])
 		value = record[index]
 		field = table.fields[index]
@@ -688,7 +694,6 @@ func (table *Table) GetInsertParameters(record []string) []interface{} {
 			searchableCount++
 			result[i+searchableCount] = field.GetSearchableValue(value, searchabletype.None)
 		}
-
 	}
 
 	return result
@@ -697,6 +702,38 @@ func (table *Table) GetInsertParameters(record []string) []interface{} {
 func (table *Table) GetDeleteParameters(id int64) []interface{} {
 	result := make([]interface{}, 1, 1)
 	result[0] = id
+	return result
+}
+
+func (table *Table) GetUpdateParameters(fields []*Field, record []string) []interface{} {
+	count := len(fields) + 1
+	var field *Field
+
+	for i := 0; i < len(fields); i++ {
+		field = fields[i]
+		if field.caseSensitive == false && field.fieldType == fieldtype.String {
+			count++
+		}
+	}
+	result := make([]interface{}, count, count)
+	index := 0
+	searchableCount := 0
+
+	for i := 0; i < len(fields); i++ {
+		field = fields[i]
+		index = table.GetFieldIndexByName(field.name)
+		result[i+searchableCount] = field.GetParameterValue(record[index])
+		if field.IsCaseSensitive() == false && field.fieldType == fieldtype.String {
+			searchableCount++
+			result[i+searchableCount] = field.GetSearchableValue(record[index], searchabletype.None)
+		}
+	}
+
+	// get primary key
+	index = int(table.mapper[0])
+	field = table.fields[index]
+	result[count-1] = field.GetParameterValue(record[index])
+
 	return result
 }
 
@@ -832,7 +869,6 @@ func (table *Table) getUniqueKey() *Index {
 		return table.GetIndexByName(metaTableName)
 	case tabletype.MetaId:
 		return table.GetIndexByName(metaIdTableName)
-
 	}
 	return nil
 }
@@ -1399,6 +1435,17 @@ func (table *Table) getInsertSql(provider databaseprovider.DatabaseProvider) str
 	table.addVariables(&result)
 	result.WriteString(dmlInsertEnd)
 
+	return result.String()
+}
+
+func (table *Table) getDeleteSql(provider databaseprovider.DatabaseProvider) string {
+	var result strings.Builder
+	result.Grow(len(table.physicalName) + 30)
+	result.WriteString(dmlstatement.Delete.String())
+	result.WriteString(dmlSpace)
+	result.WriteString(table.physicalName)
+	result.WriteString(dqlWhere)
+	table.addPrimaryKeyFilter(&result, 0)
 	return result.String()
 }
 
