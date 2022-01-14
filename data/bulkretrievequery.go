@@ -12,9 +12,7 @@ import (
 )
 
 const defaultPostGreParameterName = "$"
-const maxFilterCount = 255
 const filterSeparator = " AND "
-const errorMessageMaxVariable = "Too many filters (%d max)"
 
 //type queryFunc func(dbConnection *sql.DB, sql string, params []interface{}) (*sql.Rows, error)
 
@@ -30,6 +28,7 @@ type bulkRetrieveQuery struct {
 //******************************
 // public methods (Interface schema.Query implementations)
 //******************************
+
 func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx) error {
 	var provider = query.targetObject.GetDatabaseProvider()
 	var whereClause, parameters = query.getWhereClause(provider)
@@ -38,10 +37,11 @@ func (query bulkRetrieveQuery) Execute(dbConnection *sql.DB, transaction *sql.Tx
 
 	rows, err := dbConnection.Query(sqlQuery, parameters...)
 
+	if rows != nil {
+		rows.Close()
+	}
 	if err != nil {
-		if rows != nil {
-			rows.Close()
-		}
+
 		return err
 	}
 	var rowIndex = 0

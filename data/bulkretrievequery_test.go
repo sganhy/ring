@@ -68,7 +68,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 
 	bulkQuery.Execute(db, nil)
 	if bulkQuery.result.Count() <= 0 {
-		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
+		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() should be greater than 0")
 	}
 	//======================
 	//==== 2 arguments

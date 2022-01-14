@@ -20,6 +20,7 @@ type BulkSave struct {
 //******************************
 // public methods
 //******************************
+
 func (bulkSave *BulkSave) InsertRecord(record *Record) error {
 	bulkSave.insertCount++
 	return bulkSave.addQuery(record, bulksavetype.InsertRecord)

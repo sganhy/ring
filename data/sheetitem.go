@@ -1,7 +1,13 @@
 package data
 
 type sheetItem struct {
-	fileName string
+	id   int
+	name string
+}
+
+func (item *sheetItem) Init(id int, name string) {
+	item.id = id
+	item.name = name
 }
 
 //******************************
