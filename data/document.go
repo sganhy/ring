@@ -98,15 +98,15 @@ func (doc *document) loadXslx() error {
 				panic(err)
 			}
 			doc.loadXmlSheets(fileInArchive, f.Name)
-			doc.loadXmlSharedString(fileInArchive, f.Name, &sharedStrings)
+			doc.loadXmlSharedString(fileInArchive, f, &sharedStrings)
 			fileInArchive.Close()
 		}
 	}
 	return nil
 }
 
-func (doc *document) loadXmlSharedString(reader io.ReadCloser, filePath string, result *[]string) error {
-	if !strings.HasSuffix(filePath, xmlShareddStringsSufix) {
+func (doc *document) loadXmlSharedString(reader io.ReadCloser, file *zip.File, result *[]string) error {
+	if !strings.HasSuffix(file.Name, xmlShareddStringsSufix) {
 		return nil
 	}
 	d := xml.NewDecoder(reader)
@@ -127,12 +127,21 @@ func (doc *document) loadXmlSharedString(reader io.ReadCloser, filePath string, 
 	fmt.Println(count)
 	// allow it once
 	sharedStrings := make([]string, count, count)
+	err := doc.loadXmlSharedStringData(file, result)
 	result = &sharedStrings
-	return doc.loadXmlSharedStringData(reader, result)
+	return err
 }
 
-func (doc *document) loadXmlSharedStringData(reader io.ReadCloser, result *[]string) error {
+func (doc *document) loadXmlSharedStringData(file *zip.File, result *[]string) error {
+	// reopen file to rewind reader
+
+	reader, err := file.Open()
+	if err != nil {
+		return err
+	}
 	d := xml.NewDecoder(reader)
+	defer reader.Close()
+
 	i := 0
 	count := len(*result)
 	loadData := false
@@ -144,7 +153,7 @@ func (doc *document) loadXmlSharedStringData(reader io.ReadCloser, result *[]str
 		}
 		switch ty := tok.(type) {
 		case xml.StartElement:
-			if xmlSharedStringsElement != ty.Name.Local {
+			if xmlSharedStringsElement == ty.Name.Local {
 				loadData = true
 			} else {
 				loadData = false
