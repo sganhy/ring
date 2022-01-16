@@ -127,12 +127,12 @@ func (doc *document) loadXmlSharedString(reader io.ReadCloser, file *zip.File, r
 	fmt.Println(count)
 	// allow it once
 	sharedStrings := make([]string, count, count)
-	err := doc.loadXmlSharedStringData(file, result)
-	result = &sharedStrings
+	err := doc.loadXmlSharedStringData(file, sharedStrings)
+	*result = sharedStrings
 	return err
 }
 
-func (doc *document) loadXmlSharedStringData(file *zip.File, result *[]string) error {
+func (doc *document) loadXmlSharedStringData(file *zip.File, result []string) error {
 	// reopen file to rewind reader
 
 	reader, err := file.Open()
@@ -143,7 +143,7 @@ func (doc *document) loadXmlSharedStringData(file *zip.File, result *[]string) e
 	defer reader.Close()
 
 	i := 0
-	count := len(*result)
+	count := len(result)
 	loadData := false
 
 	for {
@@ -161,7 +161,7 @@ func (doc *document) loadXmlSharedStringData(file *zip.File, result *[]string) e
 			break
 		case xml.CharData:
 			if loadData && i < count {
-				(*result)[i] = string([]byte(xml.CharData(ty)))
+				result[i] = string([]byte(xml.CharData(ty)))
 				i++
 			}
 		}

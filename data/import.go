@@ -21,7 +21,6 @@ const (
 //******************************
 // getters / setters
 //******************************
-
 func (impFile *Import) GetJobId() int64 {
 	return impFile.jobId
 }
@@ -29,7 +28,6 @@ func (impFile *Import) GetJobId() int64 {
 //******************************
 // public methods
 //******************************
-
 func (impFile *Import) SetSchema(schemaName string) error {
 	impFile.currentSchema = schema.GetSchemaByName(schemaName)
 	if impFile.currentSchema == nil {
