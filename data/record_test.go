@@ -125,7 +125,7 @@ func Test__Record__SetField(t *testing.T) {
 		t.Errorf("Record.SetField() ==> 'method' is not equal to %s", dt.UTC().Format(time.RFC3339))
 	}
 	// return errors.New("Unsupported type.")
-	if rcd.SetField("method", new(node)) == nil {
+	if rcd.SetField("method", new(bitchain)) == nil {
 		t.Errorf("Record.SetField() ==> 'method' does not return an error")
 	}
 	// return errors.New("Unsupported type.")

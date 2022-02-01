@@ -6,7 +6,7 @@ import (
 
 //test SetField(), GetField()
 func Test__Node__setValue(t *testing.T) {
-	nodeData := new(node)
+	nodeData := new(bitchain)
 
 	// test value from 0..255
 	for i := 0; i < 256; i++ {
@@ -38,7 +38,7 @@ func Test__Node__setValue(t *testing.T) {
 }
 
 func Test__Node__setAll(t *testing.T) {
-	nodeData := new(node)
+	nodeData := new(bitchain)
 	nodeData.ResetAll(255, true)
 	for i := 0; i < 256; i++ {
 		if nodeData.GetValue(uint8(i)) != true {
@@ -54,7 +54,7 @@ func Test__Node__setAll(t *testing.T) {
 }
 
 func Test__Node__CountSetBits(t *testing.T) {
-	nodeData := new(node)
+	nodeData := new(bitchain)
 	// test value from 0..255
 	// increasing number of bits
 	for i := 0; i < 256; i++ {
@@ -76,7 +76,7 @@ func Test__Node__CountSetBits(t *testing.T) {
 }
 
 func Test__Node__NodeByIndex(t *testing.T) {
-	nodeData := new(node)
+	nodeData := new(bitchain)
 	nodeData.ResetAll(255, true)
 
 	//t.Errorf("nodeData.Count()  %d", nodeData.Count())

@@ -24,7 +24,7 @@ const (
 type Record struct {
 	data         []string      // values from rows
 	recordType   *schema.Table // table definition
-	stateChanged *node         // store information value changes
+	stateChanged *bitchain     // store information value changes
 }
 
 //******************************
@@ -265,7 +265,7 @@ func (record *Record) getUpdatedFields() []*schema.Field {
 
 func (record *Record) updateState(index int) {
 	if record.stateChanged == nil {
-		record.stateChanged = new(node)
+		record.stateChanged = new(bitchain)
 	}
 	var pkIndex = record.recordType.GetPrimaryKeyIndex()
 	if pkIndex == index {

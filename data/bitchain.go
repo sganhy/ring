@@ -6,9 +6,9 @@ import (
 	"strings"
 )
 
-type node struct {
+type bitchain struct {
 	data uint64
-	next *node
+	next *bitchain
 }
 
 const (
@@ -27,16 +27,16 @@ var (
 //******************************
 // getters and setters
 //******************************
-func (nodeInfo *node) getData() uint64 {
-	return nodeInfo.data
+func (node *bitchain) getData() uint64 {
+	return node.data
 }
 
 //******************************
 // public methods
 //******************************
-func (nodeInfo *node) String() string {
+func (node *bitchain) String() string {
 	var sb strings.Builder
-	var nodeTemp = nodeInfo
+	var nodeTemp = node
 	var index = 0
 
 	for ok := true; ok; ok = nodeTemp != nil {
@@ -49,17 +49,17 @@ func (nodeInfo *node) String() string {
 
 	return sb.String()
 }
-func (nodeInfo *node) Count() int {
+func (node *bitchain) Count() int {
 	var result = 1
-	var currentNode = nodeInfo
+	var currentNode = node
 	for currentNode.next != nil {
 		currentNode = currentNode.next
 		result++
 	}
 	return result
 }
-func (nodeInfo *node) NodeByIndex(index int) *node {
-	nodeTemp := nodeInfo
+func (node *bitchain) NodeByIndex(index int) *bitchain {
+	nodeTemp := node
 	i := 0
 	for ok := true; ok; ok = nodeTemp != nil {
 		if i == index {
@@ -70,8 +70,8 @@ func (nodeInfo *node) NodeByIndex(index int) *node {
 	}
 	return nil
 }
-func (nodeInfo *node) SetValue(bitPosition uint8, value bool) {
-	currentNode := nodeInfo
+func (node *bitchain) SetValue(bitPosition uint8, value bool) {
+	currentNode := node
 	for position := int(bitPosition); position >= 0; position -= 64 {
 		if position < 64 {
 			var mask uint64 = 1
@@ -88,14 +88,14 @@ func (nodeInfo *node) SetValue(bitPosition uint8, value bool) {
 				if value == false {
 					return
 				}
-				currentNode.next = new(node)
+				currentNode.next = new(bitchain)
 			}
 			currentNode = currentNode.next
 		}
 	}
 }
-func (nodeInfo *node) GetValue(bitPosition uint8) bool {
-	currentNode := nodeInfo
+func (node *bitchain) GetValue(bitPosition uint8) bool {
+	currentNode := node
 	for position := int(bitPosition); position >= 0; position -= 64 {
 		if position < 64 {
 			return ((currentNode.data >> position) & 1) > 0
@@ -107,9 +107,9 @@ func (nodeInfo *node) GetValue(bitPosition uint8) bool {
 	}
 	return false
 }
-func (nodeInfo *node) ResetAll(bitPosition uint8, value bool) {
+func (node *bitchain) ResetAll(bitPosition uint8, value bool) {
 	if value {
-		currentNode := nodeInfo
+		currentNode := node
 		position := int(bitPosition)
 		for {
 			currentNode.data = nodeAllDataTo1
@@ -118,18 +118,18 @@ func (nodeInfo *node) ResetAll(bitPosition uint8, value bool) {
 				break
 			}
 			if currentNode.next == nil {
-				currentNode.next = new(node)
+				currentNode.next = new(bitchain)
 			}
 			currentNode = currentNode.next
 		}
 	} else {
-		nodeInfo.clearAll(bitPosition)
+		node.clearAll(bitPosition)
 	}
 }
 
 // CountSetBits Hamming weight approach: complexity O(1)
-func (nodeInfo *node) CountSetBits() int {
-	currentNode := nodeInfo
+func (node *bitchain) CountSetBits() int {
+	currentNode := node
 	result := 0
 	var x uint64 = 0
 	for currentNode != nil {
@@ -147,8 +147,8 @@ func (nodeInfo *node) CountSetBits() int {
 // private methods
 //******************************
 // bitPosition [0, 63]
-func (nodeInfo *node) clearAll(bitPosition uint8) {
-	currentNode := nodeInfo
+func (node *bitchain) clearAll(bitPosition uint8) {
+	currentNode := node
 	position := int(bitPosition)
 	for {
 		currentNode.data = 0
