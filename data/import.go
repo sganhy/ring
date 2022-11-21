@@ -7,10 +7,11 @@ import (
 )
 
 type Import struct {
-	insertCount   int
-	updateCount   int
-	jobId         int64
-	currentSchema *schema.Schema
+	insertCount     int
+	updateCount     int
+	jobId           int64
+	currentSchema   *schema.Schema
+	currentDocument *document
 }
 
 const (
@@ -43,8 +44,8 @@ func (impFile *Import) ParseFile(file string) error {
 	var err error
 	impFile.insertCount = 0
 	impFile.updateCount = 0
-	doc := new(document)
-	err = doc.Load(file)
+	impFile.currentDocument = new(document)
+	err = impFile.currentDocument.Load(file)
 	if err != nil {
 		return err
 	}

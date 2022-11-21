@@ -32,9 +32,7 @@ func main() {
 	fmt.Println(value)
 	fmt.Println("2020-04-29Tr22:00:00.000")
 	rcd := new(data.Record)
-	var testte int = 64
-	testte = testte >> 6
-	fmt.Println(testte)
+
 	schema.Init(databaseprovider.PostgreSql, "host=localhost port=5432 user=postgres password=sa dbname=postgres sslmode=disable", 10, 20)
 	//schema.Init(databaseprovider.SqlServer, "server=localhost;User id=NA_USER;Password=NA_USER_PWD;database=CQL_CIV;port=1434", 10, 20)
 	//server=SAKHALOO-PC;user id=sakhaloo;password=hoollehayerazi;database=webApp
@@ -74,7 +72,7 @@ func main() {
 		bs.Save()
 	*/
 	var importFile = schema.Import{}
-	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\rpg_schema.xml")
+	importFile.Init(sourcetype.XmlDocument, "C:\\Temp\\Coding\\quotify_schema.xml")
 	importFile.Load()
 	importFile.Upgrade()
 	var metaSchema = schema.GetSchemaByName("@meta")

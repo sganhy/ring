@@ -5,7 +5,6 @@ import (
 	"ring/data/sortordertype"
 	"ring/schema"
 	"ring/schema/databaseprovider"
-	"strconv"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -94,75 +93,77 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	//======================
 	//==== 17 arguments
 	//======================
-	bulkQuery.result = new(List)
-	db, mock, err = sqlmock.New()
-	rs = mock.NewRows(columns)
-	rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
-	bulkQuery.clearItems()
-	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
-		" AND schema_id=\\$5 AND schema_id=\\$6 AND schema_id=\\$7 AND schema_id=\\$8 AND schema_id=\\$9 AND schema_id=\\$10"+
-		" AND schema_id=\\$11 AND schema_id=\\$12 AND schema_id=\\$13 AND schema_id=\\$14 AND schema_id=\\$15"+
-		" AND schema_id=\\$16 AND schema_id=\\$17 ORDER BY reference_id DESC").
-		WithArgs(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17).
-		WillReturnRows(rs)
-	for i := 0; i < 17; i++ {
-		var newfilter = queryItem2.Clone()
-		newfilter.operand = strconv.Itoa(i + 1)
-		bulkQuery.addFilter(newfilter)
-	}
-	field = table.GetFieldByName("reference_id")
-	bulkQuery.addSort(newQuerySort(field, sortordertype.Descending))
-	bulkQuery.Execute(db, nil)
-	if bulkQuery.result.Count() <= 0 {
-		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
-	}
-	//======================
-	//==== 100 arguments
-	//======================
-	bulkQuery.result = new(List)
-	db, mock, err = sqlmock.New()
-	rs = mock.NewRows(columns)
-	rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
-	bulkQuery.clearItems()
-	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
-		" AND schema_id=\\$5 AND schema_id=\\$6").
-		WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).
-		WillReturnRows(rs)
-	for i := 0; i < 100; i++ {
-		bulkQuery.addFilter(queryItem2)
-	}
-	bulkQuery.Execute(db, nil)
-	if bulkQuery.result.Count() <= 0 {
-		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
-	}
-	//======================
-	//==== 255 arguments
-	//======================
-	bulkQuery.result = new(List)
-	db, mock, err = sqlmock.New()
-	rs = mock.NewRows(columns)
-	rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
-	bulkQuery.clearItems()
-	mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
-		" AND schema_id=\\$5").
-		WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-			1, 1, 1, 1, 1).
-		WillReturnRows(rs)
-	for i := 0; i < 255; i++ {
-		bulkQuery.addFilter(queryItem2)
-	}
-	bulkQuery.Execute(db, nil)
-	if bulkQuery.result.Count() <= 0 {
-		t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
-	}
+	/*
+		bulkQuery.result = new(List)
+		db, mock, err = sqlmock.New()
+		rs = mock.NewRows(columns)
+		rs.AddRow(1, 1, 0, 0, 0, 159744, "ability", "", "ability", true)
+		bulkQuery.clearItems()
+		mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+			" AND schema_id=\\$5 AND schema_id=\\$6 AND schema_id=\\$7 AND schema_id=\\$8 AND schema_id=\\$9 AND schema_id=\\$10"+
+			" AND schema_id=\\$11 AND schema_id=\\$12 AND schema_id=\\$13 AND schema_id=\\$14 AND schema_id=\\$15"+
+			" AND schema_id=\\$16 AND schema_id=\\$17 ORDER BY reference_id DESC").
+			WithArgs(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17).
+			WillReturnRows(rs)
+		for i := 0; i < 17; i++ {
+			var newfilter = queryItem2.Clone()
+			newfilter.operand = strconv.Itoa(i + 1)
+			bulkQuery.addFilter(newfilter)
+		}
+		field = table.GetFieldByName("reference_id")
+		bulkQuery.addSort(newQuerySort(field, sortordertype.Descending))
+		bulkQuery.Execute(db, nil)
+		if bulkQuery.result.Count() <= 0 {
+			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
+		}
+		//======================
+		//==== 100 arguments
+		//======================
+		bulkQuery.result = new(List)
+		db, mock, err = sqlmock.New()
+		rs = mock.NewRows(columns)
+		rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
+		bulkQuery.clearItems()
+		mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+			" AND schema_id=\\$5 AND schema_id=\\$6").
+			WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1).
+			WillReturnRows(rs)
+		for i := 0; i < 100; i++ {
+			bulkQuery.addFilter(queryItem2)
+		}
+		bulkQuery.Execute(db, nil)
+		if bulkQuery.result.Count() <= 0 {
+			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
+		}
+		//======================
+		//==== 255 arguments
+		//======================
+		bulkQuery.result = new(List)
+		db, mock, err = sqlmock.New()
+		rs = mock.NewRows(columns)
+		rs.AddRow(1, 1, 0, 0, 0, 159744, "skill", "", "skill", true)
+		bulkQuery.clearItems()
+		mock.ExpectQuery(baseSql+" WHERE schema_id=\\$1 AND schema_id=\\$2 AND schema_id=\\$3 AND schema_id=\\$4"+
+			" AND schema_id=\\$5").
+			WithArgs(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+				1, 1, 1, 1, 1).
+			WillReturnRows(rs)
+		for i := 0; i < 255; i++ {
+			bulkQuery.addFilter(queryItem2)
+		}
+		bulkQuery.Execute(db, nil)
+		if bulkQuery.result.Count() <= 0 {
+			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
+		}
+	*/
 	//======================
 	//==== out of range
 	//======================
