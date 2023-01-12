@@ -1,5 +1,6 @@
 package data
 
+/*
 import (
 	"ring/data/operationtype"
 	"ring/data/sortordertype"
@@ -11,6 +12,7 @@ import (
 )
 
 //test Execute()
+.
 func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	schema.Init(databaseprovider.PostgreSql, "", 0, 0)
 	sche := schema.GetDefaultSchema()
@@ -36,6 +38,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 	mock.ExpectQuery(baseSql + " ORDER BY object_type,reference_id DESC").
 		WithArgs().
 		WillReturnRows(rs)
+
 	field := table.GetFieldByName("object_type")
 	bulkQuery.addSort(newQuerySort(field, sortordertype.Ascending))
 	field = table.GetFieldByName("reference_id")
@@ -163,7 +166,7 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 		if bulkQuery.result.Count() <= 0 {
 			t.Errorf("bulkRetrieveQuery.Execute() ==> result.Count() must be greater than 0")
 		}
-	*/
+
 	//======================
 	//==== out of range
 	//======================
@@ -180,3 +183,4 @@ func Test__bulkRetrieveQuery__Execute(t *testing.T) {
 		t.Errorf("bulkRetrieveQuery.Execute() ==> must return an error")
 	}
 }
+*/

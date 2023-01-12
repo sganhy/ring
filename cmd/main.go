@@ -26,6 +26,7 @@ const minint32 string = "-2147483648"
 //**************************
 func main() {
 
+	data.Test__bulkRetrieveQuery__Execute(nil)
 	elemf0 := new(schema.Field)
 	elemf0.Init(11, "aName Test", "AField Test", fieldtype.DateTime, 10, "test default", true, false, false, true, true)
 	value, _ := elemf0.GetValue("2020-04-30T00:00:00.000Z")
