@@ -7,5 +7,5 @@ go get github.com/DATA-DOG/go-sqlmock
 go get github.com/go-sql-driver/mysql
 go get github.com/lib/pq
 go get golang.org/x/text
-go install pause
+go get github.com/denisenkom/go-mssqldb
 pause
