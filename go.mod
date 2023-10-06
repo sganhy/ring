@@ -7,7 +7,7 @@ require (
 	github.com/denisenkom/go-mssqldb v0.12.3
 	github.com/go-sql-driver/mysql v1.7.1
 	github.com/lib/pq v1.10.9
-	golang.org/x/text v0.12.0
+	golang.org/x/text v0.13.0
 )
 
 require (
